@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="reporttree.client/reporttree.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="ReportTree.Server/ReportTree.Server.csproj" />
+</Solution>

@@ -1,0 +1,53 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/ReportTree.Server/ReportTree.Server.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile",
+            "dependsOn": [
+                "npm install"
+            ]
+        },
+        {
+            "label": "npm install",
+            "type": "shell",
+            "command": "npm install",
+            "options": {
+                "cwd": "${workspaceFolder}/reporttree.client"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "publish",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/ReportTree.Server/ReportTree.Server.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/ReportTree.Server/ReportTree.Server.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
