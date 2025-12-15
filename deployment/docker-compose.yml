@@ -1,11 +1,30 @@
 services:
+  caddy:
+    image: caddy:latest
+    container_name: pbihoster-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - pbihoster
+
   pbihoster:
     image: ghcr.io/aenas11/pbihoster:main
     container_name: pbihoster
     restart: unless-stopped
-    ports:
-      - "8080:8080"  # Change left side to map different host port (e.g., "80:8080")
+    # Ports only exposed internally to Caddy, not to host
+    expose:
+      - "8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - PORT=8080  # Change this if you want the app to listen on a different internal port
+      - PORT=8080
       - Jwt__Key=this-is-a-very-secure-key-for-development-only-12345
+
+volumes:
+  caddy_data:
+  caddy_config:

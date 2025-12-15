@@ -1,0 +1,15 @@
+# HTTP-only version (for testing without a domain)
+# Use this if you want to test locally or don't have a domain set up yet
+# Run with: docker compose -f docker-compose.http.yml up -d
+
+services:
+  pbihoster:
+    image: ghcr.io/aenas11/pbihoster:main
+    container_name: pbihoster
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=8080
+      - Jwt__Key=this-is-a-very-secure-key-for-development-only-12345
