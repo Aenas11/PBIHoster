@@ -4,7 +4,7 @@ services:
     container_name: pbihoster
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8080:8080"  # Change left side to map different host port (e.g., "80:8080")
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_HTTP_PORTS=8080
+      - PORT=8080  # Change this if you want the app to listen on a different internal port
