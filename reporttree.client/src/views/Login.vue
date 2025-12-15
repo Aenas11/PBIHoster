@@ -34,17 +34,20 @@ async function handleLogin() {
         
         <cv-text-input
           v-model="username"
+          aria-required="true"
           label="Username"
           placeholder="Enter username"
           style="margin-bottom: 1rem;"
         />
         
         <cv-text-input
-          v-model="password"
-          label="Password"
-          type="password"
-          placeholder="Enter password"
-          style="margin-bottom: 1rem;"
+              v-model="password"
+              aria-required="true"
+              label="Password"
+              type="password"
+              placeholder="Enter password"
+              style="margin-bottom: 1rem;"
+              @keyup.enter="handleLogin"
         />
         
         <div v-if="error" style="color: #da1e28; margin-bottom: 1rem;">

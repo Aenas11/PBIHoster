@@ -51,11 +51,6 @@ export default defineConfig({
                 target: 'http://localhost:5000',
                 changeOrigin: true,
                 secure: false
-            },
-            '/WeatherForecast': {
-                target: 'http://localhost:5000',
-                changeOrigin: true,
-                secure: false
             }
         }
     }
