@@ -48,6 +48,29 @@
                 "${workspaceFolder}/ReportTree.Server/ReportTree.Server.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "npm: dev",
+            "type": "shell",
+            "command": "npm run dev",
+            "options": {
+                "cwd": "${workspaceFolder}/reporttree.client"
+            },
+            "isBackground": true,
+            "dependsOn": [
+                "npm install"
+            ],
+            "problemMatcher": {
+                "owner": "custom",
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "VITE v",
+                    "endsPattern": "Local:"
+                }
+            }
         }
     ]
 }
