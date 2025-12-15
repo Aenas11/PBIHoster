@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ReportTree.Server.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [Authorize(Policy = "CanViewReports")]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries =
