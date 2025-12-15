@@ -5,6 +5,14 @@ namespace ReportTree.Server
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            
+            // Configure Kestrel to listen on port from environment or default to 8080
+            builder.WebHost.ConfigureKestrel(serverOptions =>
+            {
+                var port = builder.Configuration.GetValue<int>("PORT", 8080);
+                serverOptions.ListenAnyIP(port);
+            });
+            
             builder.Services.AddEndpointsApiExplorer();
 
             // Add services to the container.
@@ -84,8 +92,7 @@ namespace ReportTree.Server
                 return Results.Ok(new { token });
             });
 
-            app.MapGet("/", () => "ReportTree Server is running. Access the frontend at http://localhost:5173");
-
+            // Serve the Vue.js frontend for all non-API routes
             app.MapFallbackToFile("/index.html");
 
             app.Run();
