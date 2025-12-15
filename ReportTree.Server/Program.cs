@@ -1,4 +1,3 @@
-
 namespace ReportTree.Server
 {
     public class Program
@@ -19,7 +18,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IUserRepository, LiteDbUserRepository>();
 
             // JWT Auth
-            var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev-super-secret-key-change";
+            var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev-super-secret-key-change-must-be-longer-than-256-bits";
             var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ReportTree";
             var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtKey));
 
@@ -84,6 +83,8 @@ namespace ReportTree.Server
                 var token = tokens.Generate(user);
                 return Results.Ok(new { token });
             });
+
+            app.MapGet("/", () => "ReportTree Server is running. Access the frontend at http://localhost:5173");
 
             app.MapFallbackToFile("/index.html");
 
