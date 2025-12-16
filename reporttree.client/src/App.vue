@@ -41,8 +41,12 @@ function handleLogout() {
   router.push('/login')
 }
 
+function toggleMenu() {
+  isSideNavExpanded.value = !isSideNavExpanded.value
+}
+
 const contentMargin = computed(() => {
-  return isSideNavFixed.value && isSideNavExpanded.value ? 'margin-left: 16rem' : 'margin-left: 0'
+  return isSideNavFixed.value && isSideNavExpanded.value ? 'margin-left: 16rem' : 'margin-left: 3rem'
 })
 </script>
 
@@ -50,7 +54,12 @@ const contentMargin = computed(() => {
   <div class="app-wrapper">
     <div v-if="showShell" class="app-with-shell">
       <cv-header aria-label="ReportTree">
-        <cv-header-menu-button aria-label="Header menu" aria-controls="side-nav" />
+        <cv-header-menu-button 
+          aria-label="Header menu" 
+          aria-controls="side-nav" 
+          @click="toggleMenu"
+          :active="isSideNavExpanded"
+        />
         <cv-header-name href="#" prefix="">ReportTree</cv-header-name>
         <template v-slot:header-global>
           <cv-header-global-action aria-label="Logout" @click="handleLogout" tip-position="bottom" tip-alignment="end">
