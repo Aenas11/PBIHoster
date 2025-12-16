@@ -1,6 +1,8 @@
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
 using ReportTree.Server.Security;
+using ReportTree.Server.DTOs;
+using ReportTree.Server.Services;
 
 namespace ReportTree.Server
 {
@@ -28,6 +30,7 @@ namespace ReportTree.Server
             // LiteDB
             builder.Services.AddSingleton<LiteDB.LiteDatabase>(_ => new LiteDB.LiteDatabase(builder.Configuration["LiteDb:ConnectionString"] ?? "Filename=reporttree.db;Connection=shared"));
             builder.Services.AddSingleton<IUserRepository, LiteDbUserRepository>();
+            builder.Services.AddScoped<AuthService>();
 
             // JWT Auth
             var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev-super-secret-key-change-must-be-longer-than-256-bits";
@@ -81,19 +84,16 @@ namespace ReportTree.Server
             app.MapControllers();
 
             // Minimal auth endpoints
-            app.MapPost("/api/auth/register", (RegisterRequest req, IUserRepository repo) =>
+            app.MapPost("/api/auth/register", async (RegisterRequest req, AuthService auth) =>
             {
-                var user = new AppUser { Username = req.Username, Roles = req.Roles?.ToList() ?? new List<string>() };
-                repo.Upsert(user, req.Password);
+                await auth.RegisterAsync(req.Username, req.Password, req.Roles?.ToList() ?? new List<string>());
                 return Results.Ok();
             });
 
-            app.MapPost("/api/auth/login", (LoginRequest req, IUserRepository repo, ITokenService tokens) =>
+            app.MapPost("/api/auth/login", async (LoginRequest req, AuthService auth) =>
             {
-                var user = repo.Validate(req.Username, req.Password);
-                if (user == null) return Results.Unauthorized();
-                var token = tokens.Generate(user);
-                return Results.Ok(new { token });
+                var token = await auth.LoginAsync(req.Username, req.Password);
+                return token != null ? Results.Ok(new LoginResponse(token)) : Results.Unauthorized();
             });
 
             // Serve the Vue.js frontend for all non-API routes
@@ -104,6 +104,3 @@ namespace ReportTree.Server
     }
 }
 
-// RBAC models and services
-public record RegisterRequest(string Username, string Password, IEnumerable<string>? Roles);
-public record LoginRequest(string Username, string Password);

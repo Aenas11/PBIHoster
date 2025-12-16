@@ -7,19 +7,18 @@ namespace ReportTree.Server.Persistance
         private readonly LiteDB.LiteDatabase _db;
         public LiteDbUserRepository(LiteDB.LiteDatabase db) { _db = db; }
 
-        public void Upsert(AppUser user, string plainPassword)
+        public Task UpsertAsync(AppUser user)
         {
             var col = _db.GetCollection<AppUser>("users");
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(plainPassword);
             col.Upsert(user);
+            return Task.CompletedTask;
         }
 
-        public AppUser? Validate(string username, string plainPassword)
+        public Task<AppUser?> GetByUsernameAsync(string username)
         {
             var col = _db.GetCollection<AppUser>("users");
             var user = col.FindOne(x => x.Username == username);
-            if (user == null) return null;
-            return BCrypt.Net.BCrypt.Verify(plainPassword, user.PasswordHash) ? user : null;
+            return Task.FromResult<AppUser?>(user);
         }
     }
 }

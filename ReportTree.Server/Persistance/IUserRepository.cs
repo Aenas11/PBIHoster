@@ -4,7 +4,7 @@ namespace ReportTree.Server.Persistance
 {
     public interface IUserRepository
     {
-        void Upsert(AppUser user, string plainPassword);
-        AppUser? Validate(string username, string plainPassword);
+        Task UpsertAsync(AppUser user);
+        Task<AppUser?> GetByUsernameAsync(string username);
     }
 }
