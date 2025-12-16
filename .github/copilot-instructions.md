@@ -5,7 +5,7 @@
 - **Database**: LiteDB (Embedded NoSQL).
 - **Deployment**: Docker Compose with Caddy reverse proxy.
 - **Auth**: JWT-based with roles (Admin, Editor, Viewer).
-- **UI Library**: Carbon Design System for Vue.
+- **UI Library**: Carbon Design System for Vue. https://carbondesignsystem.com/components/overview/components/
 - **Purpose**: Host and manage Power BI reports (https://learn.microsoft.com/en-us/power-bi/developer/embedded/embed-organization-app) where "App ownds the data" approach with user authentication and role-based access while also allowing public access to specifiied pages. 
 
 ## Architecture & Patterns

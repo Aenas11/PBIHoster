@@ -61,11 +61,7 @@
                 this.post = null;
                 this.loading = true;
 
-                const response = await fetch('weatherforecast');
-                if (response.ok) {
-                    this.post = await response.json() as Forecast[];
-                    this.loading = false;
-                }
+
             }
         },
     });
