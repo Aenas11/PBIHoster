@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
@@ -15,14 +15,14 @@ async function handleLogin() {
   loading.value = true
   error.value = ''
   
-  const success = await auth.login(username.value, password.value)
-  
-  if (success) {
+  try {
+    await auth.login(username.value, password.value)
     router.push('/')
-  } else {
+  } catch {
     error.value = 'Invalid username or password'
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 </script>
 

@@ -30,14 +30,21 @@
     </div>
 </template>
 
-<script lang="js">
+<script lang="ts">
     import { defineComponent } from 'vue';
+
+    interface Forecast {
+        date: string;
+        temperatureC: number;
+        temperatureF: number;
+        summary: string;
+    }
 
     export default defineComponent({
         data() {
             return {
                 loading: false,
-                post: null
+                post: null as Forecast[] | null
             };
         },
         async created() {
@@ -54,9 +61,9 @@
                 this.post = null;
                 this.loading = true;
 
-                var response = await fetch('weatherforecast');
+                const response = await fetch('weatherforecast');
                 if (response.ok) {
-                    this.post = await response.json();
+                    this.post = await response.json() as Forecast[];
                     this.loading = false;
                 }
             }
