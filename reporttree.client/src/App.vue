@@ -2,7 +2,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
-import Logout20 from '@carbon/icons-vue/es/logout/20'
+import {Logout20 } from '@carbon/icons-vue'
 import TheFooter from './components/TheFooter.vue'
 import TheSideMenu from './components/TheSideMenu.vue'
 

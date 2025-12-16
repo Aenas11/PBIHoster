@@ -14,7 +14,7 @@
     "lint": "eslint . --fix --cache"
   },
   "dependencies": {
-    "@carbon/icons-vue": "^10.102.0",
+    "@carbon/icons-vue": "^10.120.0",
     "@carbon/vue": "^3.0.29",
     "carbon-components": "^10.58.5",
     "jwt-decode": "^4.0.0",
