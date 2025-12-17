@@ -31,31 +31,23 @@ const contentStyle = computed(() => ({
 
 <template>
   <div class="app-shell">
-    <AppHeader
-      :is-side-nav-expanded="layout.isSideNavExpanded.value"
-      :is-tools-panel-expanded="isToolsPanelExpanded"
-      @toggle-menu="layout.toggleSideNav"
-      @toggle-tools-panel="toggleToolsPanel"
-      @logout="handleLogout"
-    >
+    <AppHeader :is-side-nav-expanded="layout.isSideNavExpanded.value" :is-tools-panel-expanded="isToolsPanelExpanded"
+      @toggle-menu="layout.toggleSideNav" @toggle-tools-panel="toggleToolsPanel" @logout="handleLogout">
       <template #right-panels>
         <ToolsPanel :expanded="isToolsPanelExpanded" />
       </template>
     </AppHeader>
-    
-    <TheSideMenu 
-      :fixed="layout.isSideNavFixed.value" 
-      v-model:expanded="layout.isSideNavExpanded.value" 
-      class="app-side-nav"
-    />
-    
-    <cv-content id="main-content" :style="contentStyle">
+
+    <TheSideMenu :fixed="layout.isSideNavFixed.value" v-model:expanded="layout.isSideNavExpanded.value"
+      class="app-side-nav" />
+
+    <div id="main-content" class="cds--content" :style="contentStyle">
       <router-view v-slot="{ Component }">
         <keep-alive :max="5">
           <component :is="Component" />
         </keep-alive>
       </router-view>
-    </cv-content>
+    </div>
   </div>
 </template>
 

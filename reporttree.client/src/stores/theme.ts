@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { white, g10, g90, g100 } from '@carbon/themes'
+import { themes as builtInThemes } from '../config/themes'
 
 export interface CustomTheme {
     id: string
@@ -14,13 +14,6 @@ export interface CustomTheme {
 }
 
 export type ThemeType = 'white' | 'g10' | 'g90' | 'g100' | 'custom'
-
-const builtInThemes = {
-    white,
-    g10,
-    g90,
-    g100
-}
 
 export const useThemeStore = defineStore('theme', () => {
     const currentTheme = ref<ThemeType>('white')
@@ -42,6 +35,11 @@ export const useThemeStore = defineStore('theme', () => {
         }
     }
 
+    // Helper to convert camelCase to kebab-case
+    function toKebabCase(str: string) {
+        return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+    }
+
     // Apply theme to document
     function applyTheme(theme: ThemeType, customTokens?: Record<string, string>) {
         const root = document.documentElement
@@ -52,14 +50,20 @@ export const useThemeStore = defineStore('theme', () => {
         if (theme === 'custom' && customTokens) {
             // Apply custom theme tokens as CSS variables
             Object.entries(customTokens).forEach(([key, value]) => {
-                root.style.setProperty(`--cds-${key}`, value)
+                // Custom tokens might already be kebab-case or camelCase, handle both if needed
+                // For now assuming custom tokens follow the same convention as built-in if they come from the same editor
+                const cssKey = toKebabCase(key);
+                root.style.setProperty(`--cds-${cssKey}`, value)
             })
             root.classList.add('cds--white') // Use white as base for custom themes
         } else if (theme !== 'custom') {
             // Apply built-in theme
             const themeTokens = builtInThemes[theme]
             Object.entries(themeTokens).forEach(([key, value]) => {
-                root.style.setProperty(`--cds-${key}`, String(value))
+                if (typeof value === 'string') {
+                    const cssKey = toKebabCase(key);
+                    root.style.setProperty(`--cds-${cssKey}`, value)
+                }
             })
             root.classList.add(`cds--${theme}`)
         }

@@ -24,4 +24,9 @@ export default [
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
   ...vueTs(),
+  {
+    rules: {
+      'vue/no-deprecated-slot-attribute': 'off',
+    }
+  }
 ]

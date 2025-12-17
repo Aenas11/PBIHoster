@@ -1,5 +1,6 @@
 <!-- Configuration component for SimpleHtmlComponent  -->
 <script setup lang="ts">
+import '@carbon/web-components/es/components/textarea/index.js';
 import type { ComponentConfigProps } from '../../types/components'
 import { ref, watch } from 'vue'
 
@@ -20,8 +21,9 @@ watch(content, (newContent) => {
 
 <template>
   <div class="config-container">
-    <cv-text-area v-model="content" label="HTML Content" placeholder="Enter HTML content..." :rows="10"
-      helper-text="Enter the HTML content to display in the component" />
+    <cds-textarea :value="content" label="HTML Content" placeholder="Enter HTML content..." rows="10"
+      helper-text="Enter the HTML content to display in the component"
+      @input="content = ($event.target as HTMLTextAreaElement).value" />
 
     <div class="preview-section">
       <h4>Preview</h4>

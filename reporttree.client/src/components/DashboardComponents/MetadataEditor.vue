@@ -1,5 +1,7 @@
 <!-- Shared metadata editor for all grid items -->
 <script setup lang="ts">
+import '@carbon/web-components/es/components/text-input/index.js';
+import '@carbon/web-components/es/components/textarea/index.js';
 import { ref, watch } from 'vue'
 import type { GridItemWithComponent } from '../../types/layout'
 
@@ -61,10 +63,11 @@ const formatDate = (dateStr: string) => {
   <div class="metadata-editor">
     <div class="metadata-section">
 
-      <cv-text-input v-model="title" label="Title" placeholder="Enter panel title" @update:modelValue="updateTitle" />
+      <cds-text-input :value="title" label="Title" placeholder="Enter panel title"
+        @input="updateTitle(($event.target as HTMLInputElement).value)" />
 
-      <cv-text-area v-model="description" label="Description" placeholder="Enter panel description"
-        @update:modelValue="updateDescription" :rows="3" />
+      <cds-textarea :value="description" label="Description" placeholder="Enter panel description"
+        @input="updateDescription(($event.target as HTMLTextAreaElement).value)" rows="3" />
     </div>
 
     <div class="timestamps">

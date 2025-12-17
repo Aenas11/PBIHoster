@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '@carbon/web-components/es/components/ui-shell/index.js';
 import { Logout20, Switcher20 } from '@carbon/icons-vue'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 
@@ -15,29 +16,24 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <cv-header aria-label="ReportTree">
-    <cv-header-menu-button aria-label="Header menu" aria-controls="side-nav" @click="emit('toggleMenu')"
-      :active="isSideNavExpanded" />
-    <cv-header-name href="#" prefix="">ReportTree</cv-header-name>
+  <cds-header aria-label="ReportTree">
+    <cds-header-menu-button button-label-active="Close menu" button-label-inactive="Open menu"
+      @click="emit('toggleMenu')" :active="isSideNavExpanded" />
+    <cds-header-name href="#" prefix="">ReportTree</cds-header-name>
 
-    <template v-slot:header-global>
+    <div class="cds--header__global">
       <!-- Theme Switcher -->
       <ThemeSwitcher />
+      <cds-header-global-action aria-label="Tools" tooltip-text="Tools" :active="isToolsPanelExpanded"
+        @click="emit('toggleToolsPanel')" tooltip-position="bottom" tooltip-alignment="end">
+        <Switcher20 slot="icon" />
+      </cds-header-global-action>
+      <cds-header-global-action aria-label="Logout" tooltip-text="Logout" @click="emit('logout')"
+        tooltip-position="bottom" tooltip-alignment="end">
+        <Logout20 slot="icon" />
+      </cds-header-global-action>
+    </div>
 
-      <cv-header-global-action aria-label="Tools" label="Tools" :active="isToolsPanelExpanded"
-        @click="emit('toggleToolsPanel')" tip-position="bottom" tip-alignment="end">
-        <Switcher20 />
-      </cv-header-global-action>
-      <cv-header-global-action aria-label="Logout" label="Logout" @click="emit('logout')" tip-position="bottom"
-        tip-alignment="end">
-        <Logout20 />
-      </cv-header-global-action>
-
-
-    </template>
-
-    <template v-slot:right-panels>
-      <slot name="right-panels"></slot>
-    </template>
-  </cv-header>
+    <slot name="right-panels"></slot>
+  </cds-header>
 </template>

@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import '@carbon/web-components/es/components/tile/index.js';
+import '@carbon/web-components/es/components/text-input/index.js';
+import '@carbon/web-components/es/components/button/index.js';
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -14,7 +17,7 @@ const loading = ref(false)
 async function handleLogin() {
   loading.value = true
   error.value = ''
-  
+
   try {
     await auth.login(username.value, password.value)
     router.push('/')
@@ -29,35 +32,24 @@ async function handleLogin() {
 <template>
   <div class="login-container">
     <div class="login-card">
-      <cv-tile>
+      <cds-tile>
         <h2 style="margin-bottom: 1rem;">Login to ReportTree</h2>
-        
-        <cv-text-input
-          v-model="username"
-          aria-required="true"
-          label="Username"
-          placeholder="Enter username"
-          style="margin-bottom: 1rem;"
-        />
-        
-        <cv-text-input
-              v-model="password"
-              aria-required="true"
-              label="Password"
-              type="password"
-              placeholder="Enter password"
-              style="margin-bottom: 1rem;"
-              @keyup.enter="handleLogin"
-        />
-        
+
+        <cds-text-input :value="username" @input="username = ($event.target as HTMLInputElement).value" label="Username"
+          placeholder="Enter username" style="margin-bottom: 1rem;"></cds-text-input>
+
+        <cds-text-input :value="password" @input="password = ($event.target as HTMLInputElement).value" label="Password"
+          type="password" placeholder="Enter password" style="margin-bottom: 1rem;"
+          @keyup.enter="handleLogin"></cds-text-input>
+
         <div v-if="error" style="color: #da1e28; margin-bottom: 1rem;">
           {{ error }}
         </div>
-        
-        <cv-button @click="handleLogin" :disabled="loading">
+
+        <cds-button @click="handleLogin" :disabled="loading">
           {{ loading ? 'Logging in...' : 'Login' }}
-        </cv-button>
-      </cv-tile>
+        </cds-button>
+      </cds-tile>
     </div>
   </div>
 </template>

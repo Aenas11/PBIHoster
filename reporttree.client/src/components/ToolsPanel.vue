@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import '@carbon/web-components/es/components/ui-shell/index.js';
+import '@carbon/web-components/es/components/button/index.js';
 import { ref } from 'vue'
 import { Add20, TrashCan20, Save20 } from '@carbon/icons-vue'
 import { useGridLayout } from '../composables/useGridLayout'
@@ -27,12 +29,12 @@ const handleClearLayout = () => {
   gridLayout.clearLayout()
 }
 
-const handleSaveLayout = async (pageId:string) => {
+const handleSaveLayout = async (pageId: string) => {
   isSaving.value = true
   saveStatus.value = null
-  
+
   try {
-    
+
     const response = await layoutService.saveLayout({
       pageId,
       layout: gridLayout.layout.value,
@@ -41,7 +43,7 @@ const handleSaveLayout = async (pageId:string) => {
         createdAt: new Date().toISOString()
       }
     })
-    
+
     if (response.success) {
       saveStatus.value = { type: 'success', message: 'Layout saved successfully!' }
       // Clear success message after 3 seconds
@@ -61,62 +63,44 @@ const handleSaveLayout = async (pageId:string) => {
 </script>
 
 <template>
-  <cv-header-panel id="tools-panel" :expanded="expanded">
+  <cds-header-panel id="tools-panel" :expanded="expanded">
     <div class="tools-panel-content">
       <h3 class="tools-title">Tools Menu</h3>
-      
+
       <div class="tools-section">
         <h4 class="section-title">Add Components</h4>
-        
-        <cv-button 
-          v-for="component in availableComponents"
-          :key="component.type"
-          kind="primary" 
-          size="sm" 
-          class="tool-button"
-          @click="() => handleAddPanel(component.type)"
-          :title="component.description"
-        >
-          <Add20 class="button-icon" />
+
+        <cds-button v-for="component in availableComponents" :key="component.type" kind="primary" size="sm"
+          class="tool-button" @click="() => handleAddPanel(component.type)" :title="component.description">
+          <Add20 slot="icon" class="button-icon" />
           {{ component.name }}
-        </cv-button>
-        
+        </cds-button>
+
         <p v-if="availableComponents.length === 0" class="no-components">
           No components registered
         </p>
       </div>
-      
+
       <div class="tools-section">
         <h4 class="section-title">Layout Actions</h4>
-        
-        
-        <cv-button 
-          kind="tertiary" 
-          size="sm" 
-          class="tool-button"
+
+
+        <cds-button kind="tertiary" size="sm" class="tool-button"
           @click="() => handleSaveLayout(route.params.id as string)"
-          :disabled="isSaving || gridLayout.layout.value.length === 0"
-        >
-          <Save20 class="button-icon" />
+          :disabled="isSaving || gridLayout.layout.value.length === 0">
+          <Save20 slot="icon" class="button-icon" />
+
           {{ isSaving ? 'Saving...' : 'Save Layout' }}
-        </cv-button>
-        
-        <cv-button 
-          kind="danger" 
-          size="sm" 
-          class="tool-button"
-          @click="handleClearLayout"
-        >
-          <TrashCan20 class="button-icon" />
+        </cds-button>
+
+        <cds-button kind="danger" size="sm" class="tool-button" @click="handleClearLayout">
+          <TrashCan20 slot="icon" class="button-icon" />
           Clear Layout
-        </cv-button>
+        </cds-button>
       </div>
 
       <div v-if="saveStatus" class="tools-section">
-        <div 
-          class="save-status"
-          :class="`save-status--${saveStatus.type}`"
-        >
+        <div class="save-status" :class="`save-status--${saveStatus.type}`">
           {{ saveStatus.message }}
         </div>
       </div>
@@ -126,8 +110,9 @@ const handleSaveLayout = async (pageId:string) => {
         <p class="panel-count">{{ gridLayout.layout.value.length }} panels</p>
       </div>
     </div>
-  </cv-header-panel>
+  </cds-header-panel>
 </template>
+
 
 <style scoped>
 .tools-panel-content {
@@ -227,7 +212,7 @@ const handleSaveLayout = async (pageId:string) => {
     background: #0e6027;
     color: #d0e2d0;
   }
-  
+
   .save-status--error {
     background: #750e13;
     color: #ffd7d9;
@@ -239,6 +224,7 @@ const handleSaveLayout = async (pageId:string) => {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

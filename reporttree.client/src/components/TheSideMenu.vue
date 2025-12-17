@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useLayout } from '../composables/useLayout'
 import { Add20 } from '@carbon/icons-vue'
+import '@carbon/web-components/es/components/ui-shell/index.js';
 
 defineProps<{
   fixed: boolean
@@ -12,6 +14,7 @@ const expanded = defineModel<boolean>('expanded')
 
 const auth = useAuthStore()
 const layout = useLayout()
+const router = useRouter()
 
 const isAdmin = computed(() => auth.roles.includes('Admin'))
 const canCreate = computed(() => auth.roles.includes('Admin') || auth.roles.includes('Editor'))
@@ -21,6 +24,12 @@ function handleMobileNavigation() {
   layout.closeSideNavOnMobile()
 }
 
+function navigateTo(path: string, event: Event) {
+  event.preventDefault();
+  router.push(path);
+  handleMobileNavigation();
+}
+
 function createPage() {
   // TODO: Implement create page logic
   console.log('Create page clicked')
@@ -28,31 +37,26 @@ function createPage() {
 </script>
 
 <template>
-  <cv-side-nav id="side-nav" :fixed="fixed" v-model:expanded="expanded" aria-label="Side navigation" class="side-nav-container">
-    <cv-side-nav-items>
-      <cv-side-nav-link to="/" @click="handleMobileNavigation">Dashboard</cv-side-nav-link>
-      <cv-side-nav-link to="/reports" @click="handleMobileNavigation">Reports</cv-side-nav-link>
-      <cv-side-nav-link 
-        v-if="isAdmin"
-        to="/admin"
-        @click="handleMobileNavigation"
-      >
+  <cds-side-nav id="side-nav" :fixed="fixed" :expanded="expanded" aria-label="Side navigation"
+    class="side-nav-container">
+    <cds-side-nav-items>
+      <cds-side-nav-link href="/" @click="navigateTo('/', $event)">Dashboard</cds-side-nav-link>
+      <cds-side-nav-link href="/reports" @click="navigateTo('/reports', $event)">Reports</cds-side-nav-link>
+      <cds-side-nav-link v-if="isAdmin" href="/admin" @click="navigateTo('/admin', $event)">
         Admin
-      </cv-side-nav-link>
-    </cv-side-nav-items>
-    
+      </cds-side-nav-link>
+    </cds-side-nav-items>
+
     <div class="side-nav-spacer"></div>
 
-    <cv-side-nav-items v-if="canCreate">
-      <cv-side-nav-divider />
-      <cv-side-nav-link @click="createPage">
-        <template #nav-icon>
-          <Add20 />
-        </template>
+    <cds-side-nav-items v-if="canCreate">
+      <cds-side-nav-divider></cds-side-nav-divider>
+      <cds-side-nav-link href="javascript:void(0)" @click="createPage">
+        <Add20 slot="title-icon" />
         Create Page
-      </cv-side-nav-link>
-    </cv-side-nav-items>
-  </cv-side-nav>
+      </cds-side-nav-link>
+    </cds-side-nav-items>
+  </cds-side-nav>
 </template>
 
 <!-- <style scoped>

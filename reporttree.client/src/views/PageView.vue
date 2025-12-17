@@ -1,5 +1,9 @@
 <!-- page with dynamic layout -->
 <script setup lang="ts">
+import '@carbon/web-components/es/components/loading/index.js';
+import '@carbon/web-components/es/components/button/index.js';
+import '@carbon/web-components/es/components/modal/index.js';
+import '@carbon/web-components/es/components/tabs/index.js';
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import { useGridLayout } from '../composables/useGridLayout'
 import { useComponentRegistry } from '../composables/useComponentRegistry'
@@ -24,6 +28,8 @@ const configModalMetadata = ref<GridItemWithComponent['metadata']>({
   createdAt: '',
   updatedAt: ''
 })
+
+const activeTab = ref('general')
 
 // Load layout when component mounts or route changes
 onMounted(async () => {
@@ -130,7 +136,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   <div class="page-view">
     <!-- Loading state -->
     <div v-if="gridLayout.isLoading.value" class="loading-state">
-      <cv-loading />
+      <cds-loading />
       <p>Loading page layout...</p>
     </div>
 
@@ -143,13 +149,13 @@ const getConfigComponent = (item: GridItemWithComponent) => {
           <div class="panel-header">
             <span class="panel-title" v-if="item.metadata.title">{{ item.metadata.title }}</span>
             <div class="panel-actions">
-              <cv-button kind="ghost" size="sm" @click="openConfigModal(item)" class="config-button"
+              <cds-button kind="ghost" size="sm" @click="openConfigModal(item)" class="config-button"
                 :disabled="!getConfigComponent(item)">
-                <SettingsEdit20 />
-              </cv-button>
-              <cv-button kind="ghost" size="sm" @click="removePanel(item.i)" class="remove-button">
-                <TrashCan20 />
-              </cv-button>
+                <SettingsEdit20 slot="icon" />
+              </cds-button>
+              <cds-button kind="ghost" size="sm" @click="removePanel(item.i)" class="remove-button">
+                <TrashCan20 slot="icon" />
+              </cds-button>
             </div>
           </div>
           <div class="panel-body">
@@ -167,35 +173,37 @@ const getConfigComponent = (item: GridItemWithComponent) => {
     </div>
 
     <!-- Config Modal -->
-    <cv-modal :visible="isConfigModalOpen" @modal-hidden="cancelConfig" size="default" :primary-button-disabled="false"
-      @primary-click="saveConfig" @secondary-click="cancelConfig" class="config-modal">
-      <!-- <template #label>Configure Component</template> -->
-      <!-- <template #title>{{ configModalItem?.componentType || 'Component' }} Settings</template> -->
-      <template #title>Settings</template>
-      <template #content>
+    <cds-modal :open="isConfigModalOpen" @cds-modal-closed="cancelConfig" size="lg" class="config-modal">
+      <cds-modal-header>
+        <cds-modal-close-button></cds-modal-close-button>
+        <cds-modal-heading>Settings</cds-modal-heading>
+      </cds-modal-header>
+      <cds-modal-body>
         <div class="config-modal-wrapper">
-          <cv-tabs aria-label="Configuration tabs" class="config-tabs">
-            <!-- General Tab (Metadata) -->
-            <cv-tab label="General">
-              <div class="tab-content">
-                <MetadataEditor v-model="configModalMetadata" />
-              </div>
-            </cv-tab>
-
-            <!-- Component Settings Tab (only if component has config) -->
-            <cv-tab v-if="configModalItem && getConfigComponent(configModalItem)" label="Component">
-              <div class="tab-content">
-                <component :is="getConfigComponent(configModalItem)" v-model="configModalValue" />
-              </div>
-            </cv-tab>
-          </cv-tabs>
+          <cds-tabs :value="activeTab" @cds-tabs-selected="(e: CustomEvent) => activeTab = e.detail.item.value"
+            class="config-tabs">
+            <cds-tab value="general">General</cds-tab>
+            <cds-tab v-if="configModalItem && getConfigComponent(configModalItem)" value="component">Component</cds-tab>
+          </cds-tabs>
+          <div class="cds-tab-content">
+            <div v-show="activeTab === 'general'" role="tabpanel">
+              <MetadataEditor v-model="configModalMetadata" />
+            </div>
+            <div v-if="configModalItem && getConfigComponent(configModalItem)" v-show="activeTab === 'component'"
+              role="tabpanel">
+              <component :is="getConfigComponent(configModalItem)" v-model="configModalValue" />
+            </div>
+          </div>
         </div>
-      </template>
-      <template #primary-button>Save</template>
-      <template #secondary-button>Cancel</template>
-    </cv-modal>
+      </cds-modal-body>
+      <cds-modal-footer>
+        <cds-modal-footer-button kind="secondary" @click="cancelConfig">Cancel</cds-modal-footer-button>
+        <cds-modal-footer-button kind="primary" @click="saveConfig">Save</cds-modal-footer-button>
+      </cds-modal-footer>
+    </cds-modal>
   </div>
 </template>
+
 
 <style scoped>
 .page-view {

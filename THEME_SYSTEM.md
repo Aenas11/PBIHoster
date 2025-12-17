@@ -38,23 +38,20 @@ The PBIHoster application now includes a comprehensive theme system based on Car
 
 ### Theme Token Structure
 
-Custom themes use Carbon Design System color tokens. Here's a minimal example:
+Custom themes use Carbon Design System v10 color tokens. Here's a minimal example:
 
 ```json
 {
-  "background": "#ffffff",
-  "interactive-01": "#0f62fe",
-  "interactive-02": "#393939",
   "ui-background": "#ffffff",
   "ui-01": "#f4f4f4",
   "text-01": "#161616",
   "text-02": "#525252",
-  "link-01": "#0f62fe"
+  "link-01": "#0f62fe",
+  "interactive-01": "#0f62fe"
 }
 ```
 
-For a complete list of available tokens, visit:
-https://carbondesignsystem.com/elements/color/tokens/
+For a complete list of available tokens, refer to Carbon v10 documentation or the `src/config/themes.ts` file.
 
 ## Developer Guide
 

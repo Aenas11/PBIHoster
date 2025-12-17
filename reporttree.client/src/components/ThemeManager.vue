@@ -5,6 +5,13 @@ import { useAuthStore } from '@/stores/auth'
 import type { CustomTheme } from '@/stores/theme'
 import { Add20, TrashCan20 } from '@carbon/icons-vue'
 
+import '@carbon/web-components/es/components/button/index.js';
+import '@carbon/web-components/es/components/data-table/index.js';
+import '@carbon/web-components/es/components/modal/index.js';
+import '@carbon/web-components/es/components/text-input/index.js';
+import '@carbon/web-components/es/components/textarea/index.js';
+import '@carbon/web-components/es/components/accordion/index.js';
+
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
 
@@ -109,53 +116,62 @@ const sampleThemeJson = `{
 
 <template>
     <div v-if="canManageThemes" class="theme-manager">
-        <cv-button @click="openCreateModal" kind="primary">
-            <Add20 />
+        <cds-button @click="openCreateModal" kind="primary">
             Create Custom Theme
-        </cv-button>
+            <Add20 slot="icon" />
+        </cds-button>
 
-        <cv-data-table v-if="themeStore.customThemes.length > 0"
-            :columns="['Name', 'Organization', 'Created By', 'Actions']" class="theme-table">
-            <template v-slot:data>
-                <cv-data-table-row v-for="theme in themeStore.customThemes" :key="theme.id">
-                    <cv-data-table-cell>{{ theme.name }}</cv-data-table-cell>
-                    <cv-data-table-cell>{{ theme.organizationId || 'Global' }}</cv-data-table-cell>
-                    <cv-data-table-cell>{{ theme.createdBy }}</cv-data-table-cell>
-                    <cv-data-table-cell>
-                        <cv-button kind="ghost" size="sm" @click="openEditModal(theme)">
+        <cds-table v-if="themeStore.customThemes.length > 0" class="theme-table">
+            <cds-table-head>
+                <cds-table-header-row>
+                    <cds-table-header-cell>Name</cds-table-header-cell>
+                    <cds-table-header-cell>Organization</cds-table-header-cell>
+                    <cds-table-header-cell>Created By</cds-table-header-cell>
+                    <cds-table-header-cell>Actions</cds-table-header-cell>
+                </cds-table-header-row>
+            </cds-table-head>
+            <cds-table-body>
+                <cds-table-row v-for="theme in themeStore.customThemes" :key="theme.id">
+                    <cds-table-cell>{{ theme.name }}</cds-table-cell>
+                    <cds-table-cell>{{ theme.organizationId || 'Global' }}</cds-table-cell>
+                    <cds-table-cell>{{ theme.createdBy }}</cds-table-cell>
+                    <cds-table-cell>
+                        <cds-button kind="ghost" size="sm" @click="openEditModal(theme)">
                             Edit
-                        </cv-button>
-                        <cv-button kind="danger-ghost" size="sm" @click="deleteTheme(theme.id)">
-                            <TrashCan20 />
-                        </cv-button>
-                    </cv-data-table-cell>
-                </cv-data-table-row>
-            </template>
-        </cv-data-table>
+                        </cds-button>
+                        <cds-button kind="danger-ghost" size="sm" @click="deleteTheme(theme.id)">
+                            <TrashCan20 slot="icon" />
+                        </cds-button>
+                    </cds-table-cell>
+                </cds-table-row>
+            </cds-table-body>
+        </cds-table>
 
-        <cv-modal :visible="showModal" @modal-hidden="showModal = false"
-            :primary-button-disabled="!themeName || !themeTokens" @primary-click="saveTheme"
-            @secondary-click="showModal = false">
-            <template v-slot:label>Custom Theme</template>
-            <template v-slot:title>{{ editingTheme ? 'Edit' : 'Create' }} Custom Theme</template>
-            <template v-slot:content>
-                <cv-text-input v-model="themeName" label="Theme Name" placeholder="Enter theme name"
-                    class="theme-input" />
+        <cds-modal :open="showModal" @cds-modal-closed="showModal = false">
+            <cds-modal-header>
+                <cds-modal-close-button></cds-modal-close-button>
+                <cds-modal-label>Custom Theme</cds-modal-label>
+                <cds-modal-heading>{{ editingTheme ? 'Edit' : 'Create' }} Custom Theme</cds-modal-heading>
+            </cds-modal-header>
+            <cds-modal-body>
+                <cds-text-input :value="themeName" @input="themeName = ($event.target as HTMLInputElement).value"
+                    label="Theme Name" placeholder="Enter theme name" class="theme-input">
+                </cds-text-input>
 
-                <cv-text-input v-model="organizationId" label="Organization ID (Optional)"
-                    placeholder="Leave empty for global theme" class="theme-input" />
+                <cds-text-input :value="organizationId"
+                    @input="organizationId = ($event.target as HTMLInputElement).value"
+                    label="Organization ID (Optional)" placeholder="Leave empty for global theme" class="theme-input">
+                </cds-text-input>
 
-                <cv-text-area v-model="themeTokens" label="Theme Tokens (JSON)" placeholder="Enter theme tokens as JSON"
-                    rows="15" class="theme-input" />
+                <cds-textarea :value="themeTokens" @input="themeTokens = ($event.target as HTMLTextAreaElement).value"
+                    label="Theme Tokens (JSON)" placeholder="Enter theme tokens as JSON" rows="15" class="theme-input">
+                </cds-textarea>
 
-                <cv-accordion>
-                    <cv-accordion-item>
-                        <template v-slot:title>Sample Theme JSON</template>
-                        <template v-slot:content>
-                            <pre class="sample-json">{{ sampleThemeJson }}</pre>
-                        </template>
-                    </cv-accordion-item>
-                </cv-accordion>
+                <cds-accordion>
+                    <cds-accordion-item title="Sample Theme JSON">
+                        <pre class="sample-json">{{ sampleThemeJson }}</pre>
+                    </cds-accordion-item>
+                </cds-accordion>
 
                 <p class="theme-help">
                     For a complete list of Carbon theme tokens, visit:
@@ -163,10 +179,13 @@ const sampleThemeJson = `{
                         Carbon Design System Color Tokens
                     </a>
                 </p>
-            </template>
-            <template v-slot:primary-button>Save</template>
-            <template v-slot:secondary-button>Cancel</template>
-        </cv-modal>
+            </cds-modal-body>
+            <cds-modal-footer>
+                <cds-modal-footer-button kind="secondary" @click="showModal = false">Cancel</cds-modal-footer-button>
+                <cds-modal-footer-button kind="primary" :disabled="!themeName || !themeTokens"
+                    @click="saveTheme">Save</cds-modal-footer-button>
+            </cds-modal-footer>
+        </cds-modal>
     </div>
 </template>
 
