@@ -16,7 +16,7 @@ export function useGridLayout() {
      */
     const addPanel = (componentType: string, customConfig?: Partial<CreateGridItemInput>) => {
         const componentDef = getComponent(componentType)
-        
+
         if (!componentDef) {
             console.error(`Cannot add panel: Component type "${componentType}" not found`)
             return
@@ -40,7 +40,7 @@ export function useGridLayout() {
                 createdAt: new Date().toISOString()
             }
         }
-        
+
         console.log('Adding new panel:', {
             id: newItem.i,
             type: newItem.componentType,
@@ -48,7 +48,7 @@ export function useGridLayout() {
             size: { w: newItem.w, h: newItem.h },
             hasConfig: !!newItem.componentConfig
         })
-        
+
         layout.value.push(newItem)
         console.log('Total panels after add:', layout.value.length)
         return newItem
@@ -99,11 +99,11 @@ export function useGridLayout() {
                 }
             ])
         )
-        
+
         // Update layout positions while preserving component data
         newLayout.forEach((item, index) => {
-            const data = dataMap.get(item.i)
-            if (data) {
+            const data = dataMap.get(String(item.i))
+            if (data && layout.value[index]) {
                 // Merge position update with existing component data
                 Object.assign(layout.value[index], {
                     ...item,
@@ -120,9 +120,9 @@ export function useGridLayout() {
     const updateLayout = (newLayout: Layout) => {
         // Preserve component data when updating layout positions
         const layoutMap = new Map(layout.value.map(item => [item.i, item]))
-        
+
         layout.value = newLayout.map(layoutItem => {
-            const existingItem = layoutMap.get(layoutItem.i)
+            const existingItem = layoutMap.get(String(layoutItem.i))
             if (existingItem) {
                 // Merge grid position updates with existing component data
                 return {
