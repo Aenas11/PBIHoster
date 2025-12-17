@@ -66,13 +66,27 @@ export function useGridLayout() {
 
     /**
      * Update panel configuration
+     * Forces re-render by replacing the item in the array
      */
     const updatePanelConfig = (id: string, config: Record<string, unknown>) => {
-        const item = layout.value.find(item => item.i === id)
-        if (item) {
-            item.componentConfig = { ...item.componentConfig, ...config }
-            if (!item.metadata) item.metadata = {}
-            item.metadata.updatedAt = new Date().toISOString()
+        const index = layout.value.findIndex(item => item.i === id)
+        if (index !== -1 && layout.value[index]) {
+            const item = layout.value[index]
+            // Replace the entire item to trigger Vue reactivity
+            layout.value[index] = {
+                ...item,
+                componentConfig: { ...config },
+                metadata: {
+                    ...(item.metadata || {}),
+                    updatedAt: new Date().toISOString()
+                }
+            } as GridItemWithComponent
+
+            //refresh method to force re-render
+            if (layout.value[index].refresh) {
+                layout.value[index].refresh!()
+            }
+
         }
     }
 

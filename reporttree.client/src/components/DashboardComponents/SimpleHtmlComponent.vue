@@ -1,11 +1,14 @@
 <!-- component that renders simple HTML content from config  -->
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { DashboardComponentProps } from '../../types/components'
 
 const props = defineProps<DashboardComponentProps>()
 
-// Access HTML content from config
-const htmlContent = props.config.content || '<p>No content configured</p>'
+// Use computed to ensure reactivity when config changes
+const htmlContent = computed(() => {
+  return props.config.content || '<p>No content configured</p>'
+})
 </script>
 
 <template>
@@ -16,6 +19,6 @@ const htmlContent = props.config.content || '<p>No content configured</p>'
 .simple-html-content {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: auto;  
 }
 </style>

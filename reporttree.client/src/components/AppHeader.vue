@@ -24,6 +24,16 @@ const emit = defineEmits<{
     <cv-header-name href="#" prefix="">ReportTree</cv-header-name>
     
     <template v-slot:header-global>
+            <cv-header-global-action 
+        aria-label="Tools" 
+        label="Tools"
+        :active="isToolsPanelExpanded"
+        @click="emit('toggleToolsPanel')"
+        tip-position="bottom" 
+        tip-alignment="end"
+      >
+        <Switcher20 />
+      </cv-header-global-action>
       <cv-header-global-action 
         aria-label="Logout" 
         label="Logout" 
@@ -34,16 +44,7 @@ const emit = defineEmits<{
         <Logout20 />
       </cv-header-global-action>
       
-      <cv-header-global-action 
-        aria-label="Tools" 
-        label="Tools"
-        :active="isToolsPanelExpanded"
-        @click="emit('toggleToolsPanel')"
-        tip-position="bottom" 
-        tip-alignment="end"
-      >
-        <Switcher20 />
-      </cv-header-global-action>
+
     </template>
     
     <template v-slot:right-panels>

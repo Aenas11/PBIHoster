@@ -22,7 +22,7 @@ export interface GridItemWithComponent {
     maxH?: number
     /** Whether item is static (not draggable/resizable) */
     static?: boolean
-    
+
     /** Component type identifier */
     componentType: string
     /** Component-specific configuration data */
@@ -34,6 +34,9 @@ export interface GridItemWithComponent {
         createdAt?: string
         updatedAt?: string
     }
+
+    //refresh method to force re-render
+    refresh?: () => void
 }
 
 /**
