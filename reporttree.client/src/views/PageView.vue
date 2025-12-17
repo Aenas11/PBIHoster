@@ -183,7 +183,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
             </cv-tab>
 
             <!-- Component Settings Tab (only if component has config) -->
-            <cv-tab v-if="configModalItem && getConfigComponent(configModalItem)" label="Component Settings">
+            <cv-tab v-if="configModalItem && getConfigComponent(configModalItem)" label="Component">
               <div class="tab-content">
                 <component :is="getConfigComponent(configModalItem)" v-model="configModalValue" />
               </div>
@@ -259,6 +259,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   display: flex;
   gap: 0.25rem;
   align-items: center;
+  margin-left: auto;
 }
 
 
