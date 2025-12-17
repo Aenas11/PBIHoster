@@ -5,7 +5,7 @@
 - **Database**: LiteDB (Embedded NoSQL).
 - **Deployment**: Docker Compose with Caddy reverse proxy.
 - **Auth**: JWT-based with roles (Admin, Editor, Viewer).
-- **UI Library**: Carbon Design System for Vue. https://carbondesignsystem.com/components/overview/components/
+- **UI Library**: Carbon Design System V11. For general UI use components from this system https://web-components.carbondesignsystem.com/?path=/docs/introduction-welcome--overview
 - **Purpose**: Host and manage Power BI reports (https://learn.microsoft.com/en-us/power-bi/developer/embedded/embed-organization-app) where "App ownds the data" approach with user authentication and role-based access while also allowing public access to specifiied pages. 
 
 ## Architecture & Patterns
@@ -24,7 +24,7 @@
 - **Framework**: Vue 3 (Composition API) + TypeScript.
 - **Build Tool**: Vite.
 - **State Management**: Pinia (`stores/auth.ts`).
-- **UI Library**: Carbon Design System (`@carbon/vue`). Source code for UI library is here : UI shell = "https://github.com/carbon-design-system/carbon-components-vue/tree/main/src/components/CvUIShell". Other components = "https://github.com/carbon-design-system/carbon-components-vue/tree/main/src/components".
+- **UI Library**: Carbon Design System (`@carbon/vue`). Source code for UI library is here : UI shell = "https://web-components.carbondesignsystem.com/?path=/docs/components-ui-shell--overview". Other components = "https://web-components.carbondesignsystem.com/?path=/docs/introduction-welcome--overview". For icons use this https://www.npmjs.com/package/@carbon/icons-vue 
 - **Routing**: Vue Router (`router/index.ts`).
 
 ## Developer Workflows
