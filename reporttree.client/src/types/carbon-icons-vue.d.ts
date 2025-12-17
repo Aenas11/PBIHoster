@@ -8,4 +8,6 @@ declare module '@carbon/icons-vue' {
     export const TrashCan20: DefineComponent
     export const Save20: DefineComponent
     export const SettingsEdit20: DefineComponent
+    // export const ColorPalette: DefineComponent
+    export const ColorSwitch20: DefineComponent
 }

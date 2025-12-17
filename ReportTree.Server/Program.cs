@@ -28,8 +28,10 @@ namespace ReportTree.Server
             builder.Services.AddOpenApi();
 
             // LiteDB
-            builder.Services.AddSingleton<LiteDB.LiteDatabase>(_ => new LiteDB.LiteDatabase(builder.Configuration["LiteDb:ConnectionString"] ?? "Filename=reporttree.db;Connection=shared"));
+            var dbConnectionString = builder.Configuration["LiteDb:ConnectionString"] ?? "Filename=reporttree.db;Connection=shared";
+            builder.Services.AddSingleton<LiteDB.LiteDatabase>(_ => new LiteDB.LiteDatabase(dbConnectionString));
             builder.Services.AddSingleton<IUserRepository, LiteDbUserRepository>();
+            builder.Services.AddSingleton<IThemeRepository>(_ => new LiteDbThemeRepository(dbConnectionString));
             builder.Services.AddScoped<AuthService>();
 
             // JWT Auth
