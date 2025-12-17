@@ -18,10 +18,10 @@ const removePanel = (id: string) => {
 
 <template>
   <div class="page-view">
-    <div class="page-header">
+    <!-- <div class="page-header">
       <h1>Page View</h1>
       <p class="page-description">Dynamic grid layout with draggable and resizable panels</p>
-    </div>
+    </div> -->
     
     <GridLayout
       v-model:layout="gridLayout.layout.value"
@@ -76,24 +76,10 @@ const removePanel = (id: string) => {
 
 <style scoped>
 .page-view {
-  padding: 2rem;
-  min-height: 100%;
-}
-
-.page-header {
-  margin-bottom: 2rem;
-}
-
-.page-header h1 {
-  margin: 0 0 0.5rem 0;
-  font-size: 2rem;
-  font-weight: 600;
-}
-
-.page-description {
-  margin: 0;
-  color: #525252;
-  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* padding: 1rem; */
 }
 
 @media (prefers-color-scheme: dark) {

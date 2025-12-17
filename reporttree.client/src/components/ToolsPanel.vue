@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { Add20, TrashCan20 } from '@carbon/icons-vue'
+import { ref } from 'vue'
+import { Add20, TrashCan20, Save20 } from '@carbon/icons-vue'
 import { useGridLayout } from '../composables/useGridLayout'
+import { layoutService } from '../services/layoutService'
+import { useRoute } from 'vue-router'
 
 defineProps<{
   expanded: boolean
 }>()
 
+const route = useRoute()
 const gridLayout = useGridLayout()
+const isSaving = ref(false)
+const saveStatus = ref<{ type: 'success' | 'error', message: string } | null>(null)
 
 const handleAddPanel = () => {
   gridLayout.addPanel()
@@ -14,6 +20,38 @@ const handleAddPanel = () => {
 
 const handleClearLayout = () => {
   gridLayout.clearLayout()
+}
+
+const handleSaveLayout = async () => {
+  isSaving.value = true
+  saveStatus.value = null
+  
+  try {
+    const pageId = route.path || 'default-page'
+    const response = await layoutService.saveLayout({
+      pageId,
+      layout: gridLayout.layout.value,
+      metadata: {
+        name: `Layout ${new Date().toLocaleString()}`,
+        createdAt: new Date().toISOString()
+      }
+    })
+    
+    if (response.success) {
+      saveStatus.value = { type: 'success', message: 'Layout saved successfully!' }
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        saveStatus.value = null
+      }, 3000)
+    } else {
+      saveStatus.value = { type: 'error', message: 'Failed to save layout' }
+    }
+  } catch (error) {
+    console.error('Error saving layout:', error)
+    saveStatus.value = { type: 'error', message: 'Error saving layout' }
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>
 
@@ -36,6 +74,17 @@ const handleClearLayout = () => {
         </cv-button>
         
         <cv-button 
+          kind="tertiary" 
+          size="sm" 
+          class="tool-button"
+          @click="handleSaveLayout"
+          :disabled="isSaving || gridLayout.layout.value.length === 0"
+        >
+          <Save20 class="button-icon" />
+          {{ isSaving ? 'Saving...' : 'Save Layout' }}
+        </cv-button>
+        
+        <cv-button 
           kind="danger" 
           size="sm" 
           class="tool-button"
@@ -44,6 +93,15 @@ const handleClearLayout = () => {
           <TrashCan20 class="button-icon" />
           Clear Layout
         </cv-button>
+      </div>
+
+      <div v-if="saveStatus" class="tools-section">
+        <div 
+          class="save-status"
+          :class="`save-status--${saveStatus.type}`"
+        >
+          {{ saveStatus.message }}
+        </div>
       </div>
 
       <div class="tools-section">
@@ -109,6 +167,49 @@ const handleClearLayout = () => {
   .panel-count {
     color: #c6c6c6;
     background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.save-status {
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.save-status--success {
+  background: #d0e2d0;
+  color: #0e6027;
+  border: 1px solid #0e6027;
+}
+
+.save-status--error {
+  background: #ffd7d9;
+  color: #750e13;
+  border: 1px solid #750e13;
+}
+
+@media (prefers-color-scheme: dark) {
+  .save-status--success {
+    background: #0e6027;
+    color: #d0e2d0;
+  }
+  
+  .save-status--error {
+    background: #750e13;
+    color: #ffd7d9;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

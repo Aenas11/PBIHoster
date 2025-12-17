@@ -6,4 +6,5 @@ declare module '@carbon/icons-vue' {
     export const Logout20: DefineComponent
     export const Switcher20: DefineComponent
     export const TrashCan20: DefineComponent
+    export const Save20: DefineComponent
 }
