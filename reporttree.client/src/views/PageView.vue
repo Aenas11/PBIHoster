@@ -50,11 +50,11 @@ const removePanel = (id: string) => {
  */
 const resolveComponent = (item: GridItemWithComponent) => {
   const componentDef = getComponent(item.componentType)
-  
+
   if (componentDef) {
     return componentDef.component
   }
-  
+
   // Return error component if not found
   console.warn(`Component type "${item.componentType}" not found in registry`)
   return ErrorComponent
@@ -77,16 +77,16 @@ const openConfigModal = (item: GridItemWithComponent) => {
 const saveConfig = () => {
   if (configModalItem.value) {
     const itemId = configModalItem.value.i
-    
+
     // Update timestamp
     const updatedMetadata = {
       ...configModalMetadata.value,
       updatedAt: new Date().toISOString()
     }
-    
+
     // Update both config and metadata
     gridLayout.updatePanelConfig(itemId, configModalValue.value, updatedMetadata)
-    
+
     // Close modal and reset state
     isConfigModalOpen.value = false
     configModalItem.value = null
@@ -133,66 +133,30 @@ const getConfigComponent = (item: GridItemWithComponent) => {
       <cv-loading />
       <p>Loading page layout...</p>
     </div>
-    
-    <GridLayout
-      v-else
-      v-model:layout="gridLayout.layout.value"
-      :col-num="12"
-      :row-height="30"
-      :is-draggable="true"
-      :is-resizable="true"
-      :vertical-compact="false"
-      :use-css-transforms="true"
-      :margin="[10, 10]"
-      @layout-updated="gridLayout.onLayoutUpdated"
-      class="grid-container"
-    >
-      <GridItem
-        v-for="item in (gridLayout.layout.value as GridItemWithComponent[])"
-        :key="item.i"
-        :x="item.x"
-        :y="item.y"
-        :w="item.w"
-        :h="item.h"
-        :i="item.i"
-        :min-w="item.minW"
-        :min-h="item.minH"
-        class="grid-item"
-      >
+
+    <GridLayout v-else v-model:layout="gridLayout.layout.value" :col-num="12" :row-height="30" :is-draggable="true"
+      :is-resizable="true" :vertical-compact="false" :use-css-transforms="true" :margin="[10, 10]"
+      @layout-updated="gridLayout.onLayoutUpdated" class="grid-container">
+      <GridItem v-for="item in (gridLayout.layout.value as GridItemWithComponent[])" :key="item.i" :x="item.x"
+        :y="item.y" :w="item.w" :h="item.h" :i="item.i" :min-w="item.minW" :min-h="item.minH" class="grid-item">
         <div class="panel-content">
           <div class="panel-header">
-            <span class="panel-title">{{ item.metadata.title || item.i }}</span>
+            <span class="panel-title" v-if="item.metadata.title">{{ item.metadata.title }}</span>
             <div class="panel-actions">
-              <cv-button
-                kind="ghost"
-                size="sm"
-                @click="openConfigModal(item)"
-                class="config-button"
-                :disabled="!getConfigComponent(item)"
-              >
+              <cv-button kind="ghost" size="sm" @click="openConfigModal(item)" class="config-button"
+                :disabled="!getConfigComponent(item)">
                 <SettingsEdit20 />
               </cv-button>
-              <cv-button
-                kind="ghost"
-                size="sm"
-                @click="removePanel(item.i)"
-                class="remove-button"
-              >
+              <cv-button kind="ghost" size="sm" @click="removePanel(item.i)" class="remove-button">
                 <TrashCan20 />
               </cv-button>
             </div>
           </div>
           <div class="panel-body">
             <!-- Dynamic component with proper props -->
-            <component 
-              :is="resolveComponent(item)"
-              :id="`component-${item.i}`"
-              :key="`component-${item.i}`"
-              :config="item.componentConfig"
-              :dimensions="{ w: item.w, h: item.h }"
-              :component-type="item.componentType"
-              class="dynamic-component"
-            />
+            <component :is="resolveComponent(item)" :id="`component-${item.i}`" :key="`component-${item.i}`"
+              :config="item.componentConfig" :dimensions="{ w: item.w, h: item.h }" :component-type="item.componentType"
+              class="dynamic-component" />
           </div>
         </div>
       </GridItem>
@@ -203,18 +167,11 @@ const getConfigComponent = (item: GridItemWithComponent) => {
     </div>
 
     <!-- Config Modal -->
-    <cv-modal
-      :visible="isConfigModalOpen"
-      @modal-hidden="cancelConfig"
-      size="default"
-      :primary-button-disabled="false"
-      @primary-click="saveConfig"
-      @secondary-click="cancelConfig"
-      class="config-modal"
-    >
+    <cv-modal :visible="isConfigModalOpen" @modal-hidden="cancelConfig" size="default" :primary-button-disabled="false"
+      @primary-click="saveConfig" @secondary-click="cancelConfig" class="config-modal">
       <!-- <template #label>Configure Component</template> -->
       <!-- <template #title>{{ configModalItem?.componentType || 'Component' }} Settings</template> -->
-       <template #title>Settings</template>
+      <template #title>Settings</template>
       <template #content>
         <div class="config-modal-wrapper">
           <cv-tabs aria-label="Configuration tabs" class="config-tabs">
@@ -224,17 +181,11 @@ const getConfigComponent = (item: GridItemWithComponent) => {
                 <MetadataEditor v-model="configModalMetadata" />
               </div>
             </cv-tab>
-            
+
             <!-- Component Settings Tab (only if component has config) -->
-            <cv-tab 
-              v-if="configModalItem && getConfigComponent(configModalItem)" 
-              label="Component Settings"
-            >
+            <cv-tab v-if="configModalItem && getConfigComponent(configModalItem)" label="Component Settings">
               <div class="tab-content">
-                <component 
-                  :is="getConfigComponent(configModalItem)"
-                  v-model="configModalValue"
-                />
+                <component :is="getConfigComponent(configModalItem)" v-model="configModalValue" />
               </div>
             </cv-tab>
           </cv-tabs>
@@ -260,18 +211,8 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   }
 }
 
-.grid-container {
-  min-height: 500px;
-  background: rgba(243, 224, 224, 0.829);
-  border-radius: 8px;
-  padding: 10px;
-}
+.grid-container {}
 
-@media (prefers-color-scheme: dark) {
-  .grid-container {
-    background: rgb(231, 225, 225);
-  }
-}
 
 .grid-item {
   background: white;
@@ -287,7 +228,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
 
 @media (prefers-color-scheme: dark) {
   .grid-item {
-    background: #ebdfdf;
+    /* background: #ebdfdf; */
     border-color: #393939;
   }
 }
@@ -320,11 +261,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   align-items: center;
 }
 
-.panel-id {
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #161616;
-}
+
 
 .panel-title {
   font-weight: 600;
@@ -334,13 +271,6 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@media (prefers-color-scheme: dark) {
-  .panel-id,
-  .panel-title {
-    color: #f4f4f4;
-  }
 }
 
 .config-button,
@@ -429,19 +359,9 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   height: 100%;
 }
 
-.tab-content {
-  padding: 1.5rem 0 0.5rem 0;
-}
-
 .no-config {
   padding: 2rem;
   text-align: center;
   color: #525252;
-}
-
-@media (prefers-color-scheme: dark) {
-  .no-config {
-    color: #c6c6c6;
-  }
 }
 </style>

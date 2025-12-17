@@ -20,14 +20,9 @@ watch(content, (newContent) => {
 
 <template>
   <div class="config-container">
-    <cv-text-area
-      v-model="content"
-      label="HTML Content"
-      placeholder="Enter HTML content..."
-      :rows="10"
-      helper-text="Enter the HTML content to display in the component"
-    />
-    
+    <cv-text-area v-model="content" label="HTML Content" placeholder="Enter HTML content..." :rows="10"
+      helper-text="Enter the HTML content to display in the component" />
+
     <div class="preview-section">
       <h4>Preview</h4>
       <div v-html="content" class="preview-content"></div>
@@ -36,13 +31,6 @@ watch(content, (newContent) => {
 </template>
 
 <style scoped>
-.config-container {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
 .preview-section {
   border: 1px solid #e0e0e0;
   padding: 1rem;
