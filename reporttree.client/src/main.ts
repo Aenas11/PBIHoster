@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import 'carbon-components/css/carbon-components.css'
+// import 'grid-layout-plus/dist/style.css'
 import CarbonVue3 from '@carbon/vue'
 
 const app = createApp(App)
