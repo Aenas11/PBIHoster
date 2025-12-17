@@ -7,6 +7,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     roles?: string[]
+    keepAlive?: boolean
   }
 }
 
@@ -17,13 +18,13 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: TheWelcome,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, keepAlive: true }
     },
     {
       path: '/page/:id',
       name: 'page',
       component: () => import('../views/PageView.vue'),
-      meta: { requiresAuth: true, layout: 'page' }
+      meta: { requiresAuth: true, keepAlive: true }
     },
     {
       path: '/login',
@@ -34,7 +35,7 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: () => import('../components/HelloWorld.vue'), // Placeholder for Admin
-      meta: { requiresAuth: true, roles: ['Admin'] }
+      meta: { requiresAuth: true, roles: ['Admin'], keepAlive: false }
     }
   ]
 })

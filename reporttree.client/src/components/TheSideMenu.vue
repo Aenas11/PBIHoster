@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useLayout } from '../composables/useLayout'
 import { Add20 } from '@carbon/icons-vue'
 
 defineProps<{
@@ -10,14 +11,14 @@ defineProps<{
 const expanded = defineModel<boolean>('expanded')
 
 const auth = useAuthStore()
+const layout = useLayout()
+
 const isAdmin = computed(() => auth.roles.includes('Admin'))
 const canCreate = computed(() => auth.roles.includes('Admin') || auth.roles.includes('Editor'))
 
 function handleMobileNavigation() {
-  // Close side nav on mobile after navigation
-  if (window.innerWidth <= 1056) {
-    expanded.value = false
-  }
+  // Use the composable's method
+  layout.closeSideNavOnMobile()
 }
 
 function createPage() {
