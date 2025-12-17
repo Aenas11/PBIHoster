@@ -22,12 +22,12 @@ const handleClearLayout = () => {
   gridLayout.clearLayout()
 }
 
-const handleSaveLayout = async () => {
+const handleSaveLayout = async (pageId:string) => {
   isSaving.value = true
   saveStatus.value = null
   
   try {
-    const pageId = route.path || 'default-page'
+    
     const response = await layoutService.saveLayout({
       pageId,
       layout: gridLayout.layout.value,
@@ -77,7 +77,7 @@ const handleSaveLayout = async () => {
           kind="tertiary" 
           size="sm" 
           class="tool-button"
-          @click="handleSaveLayout"
+          @click="() => handleSaveLayout(route.params.id as string)"
           :disabled="isSaving || gridLayout.layout.value.length === 0"
         >
           <Save20 class="button-icon" />

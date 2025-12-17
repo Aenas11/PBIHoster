@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import type { Layout } from 'grid-layout-plus'
+import { layoutService } from '../services/layoutService'
 
 export interface GridItem {
     i: string
@@ -16,6 +17,7 @@ export interface GridItem {
 
 const layout = ref<GridItem[]>([])
 const nextId = ref(0)
+const isLoading = ref(false)
 
 export function useGridLayout() {
     const addPanel = () => {
@@ -47,11 +49,49 @@ export function useGridLayout() {
         nextId.value = 0
     }
 
+    // Load layout from API using layoutService
+    const loadLayout = async (pageId: string) => {
+        isLoading.value = true
+        try {
+            // Get all layouts for this page
+            const layouts = await layoutService.getLayoutsByPage(pageId)
+
+            if (layouts.length > 0) {
+                // Use the most recent layout (last one in the array)
+                const mostRecentLayout = layouts[layouts.length - 1]
+                layout.value = mostRecentLayout.layout
+
+                // Update nextId to avoid conflicts
+                const maxId = mostRecentLayout.layout.reduce((max, item) => {
+                    const match = item.i.match(/panel-(\d+)/)
+                    if (match) {
+                        const id = parseInt(match[1])
+                        return Math.max(max, id)
+                    }
+                    return max
+                }, -1)
+                nextId.value = maxId + 1
+            } else {
+                // No saved layout found, start with empty layout
+                console.log(`No saved layout found for page ${pageId}`)
+                clearLayout()
+            }
+        } catch (error) {
+            console.error('Failed to load page layout:', error)
+            // Fall back to empty layout on error
+            clearLayout()
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         layout: computed(() => layout.value),
+        isLoading: computed(() => isLoading.value),
         addPanel,
         removePanel,
         updateLayout,
-        clearLayout
+        clearLayout,
+        loadLayout
     }
 }

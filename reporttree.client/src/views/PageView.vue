@@ -4,8 +4,59 @@ import { GridLayout, GridItem } from 'grid-layout-plus'
 import type { Layout } from 'grid-layout-plus'
 import { useGridLayout } from '../composables/useGridLayout'
 import { TrashCan20 } from '@carbon/icons-vue'
+import type { ComponentPublicInstance } from 'vue'
+import { onMounted, watch, reactive, markRaw } from 'vue'
+import { useRoute } from 'vue-router'
+import SimpleHtmlComponent from '../components/DashboardComponents/SimpleHtmlComponent.vue'
+import SimpleHtmlComponentConfigure from '../components/DashboardComponents/SimpleHtmlComponentConfigure.vue'
 
+interface ReportComponentConfig {
+  type: string
+  name: string
+  description: string
+  componentElement: ComponentPublicInstance | object
+  componentConfigElement: ComponentPublicInstance | object
+}
+
+const route = useRoute()
 const gridLayout = useGridLayout()
+
+const reportType = reactive<{[key: string]: ReportComponentConfig | null}>({
+    'SimpleHtmlComponent': {
+        type: 'SimpleHtmlComponent',
+        name: 'Simple HTML Component',
+        description: 'A simple component that displays static HTML content.',
+        componentElement: markRaw(SimpleHtmlComponent),
+        componentConfigElement: markRaw(SimpleHtmlComponentConfigure),
+    },
+    'TestComponent': {
+        type: 'TestComponent',
+        name: 'Test Component',
+        description: 'A test component for demonstration purposes.',
+        componentElement: markRaw({
+            template: `<div><h3>Test Component</h3><p>This is a test component.</p></div>`
+        }),
+        componentConfigElement: markRaw({
+            template: `<div><p>No configuration available.</p></div>`
+        }),
+    },
+    
+});
+
+// Load layout when component mounts or route changes
+onMounted(async () => {
+  const pageId = route.params.id as string
+  if (pageId) {
+    await gridLayout.loadLayout(pageId)
+  }
+})
+
+// Watch for route changes
+watch(() => route.params.id, async (newId) => {
+  if (newId) {
+    await gridLayout.loadLayout(newId as string)
+  }
+})
 
 const handleLayoutUpdated = (newLayout: Layout) => {
   gridLayout.updateLayout(newLayout)
@@ -14,16 +65,34 @@ const handleLayoutUpdated = (newLayout: Layout) => {
 const removePanel = (id: string) => {
   gridLayout.removePanel(id)
 }
+
+const renderSelectedDashboardComponent = (item: unknown) => {
+    let componentType = reportType[item.type];
+    //TODO: for now we return only SimpleHtmlComponent, later we can expand this to support multiple component types
+    componentType = reportType['SimpleHtmlComponent'];
+
+
+    // Return the component element if found, else return a default message component
+    if (componentType) {
+        return componentType.componentElement;
+    }
+    return {
+        template: `<div><p>Component not found.</p></div>`
+    };
+}
+
 </script>
 
 <template>
   <div class="page-view">
-    <!-- <div class="page-header">
-      <h1>Page View</h1>
-      <p class="page-description">Dynamic grid layout with draggable and resizable panels</p>
-    </div> -->
+    <!-- Loading state -->
+    <div v-if="gridLayout.isLoading.value" class="loading-state">
+      <cv-loading />
+      <p>Loading page layout...</p>
+    </div>
     
     <GridLayout
+      v-else
       v-model:layout="gridLayout.layout.value"
       :col-num="12"
       :row-height="30"
@@ -60,16 +129,24 @@ const removePanel = (id: string) => {
             </cv-button>
           </div>
           <div class="panel-body">
-            <p>Panel content goes here</p>
+            <!-- <p>Panel content goes here</p>
             <p class="panel-info">Position: ({{ item.x }}, {{ item.y }})</p>
-            <p class="panel-info">Size: {{ item.w }} × {{ item.h }}</p>
+            <p class="panel-info">Size: {{ item.w }} × {{ item.h }}</p> -->
+
+                              <component :id="'component' + item.i"
+                              :key="'component' + item.i"
+                                :is=renderSelectedDashboardComponent(item)
+                                :model="item"
+                             
+                             class="dynamic-component">
+                  </component>
           </div>
         </div>
       </GridItem>
     </GridLayout>
 
-    <div v-if="gridLayout.layout.value.length === 0" class="empty-state">
-      <p>No panels yet. Use the Tools menu to add panels.</p>
+    <div v-if="!gridLayout.isLoading.value && gridLayout.layout.value.length === 0" class="empty-state">
+      <p>No panels configured for this page. Use the Tools menu to add panels.</p>
     </div>
   </div>
 </template>
@@ -189,6 +266,28 @@ const removePanel = (id: string) => {
 
 @media (prefers-color-scheme: dark) {
   .empty-state {
+    color: #c6c6c6;
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.loading-state p {
+  color: #525252;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .loading-state p {
     color: #c6c6c6;
   }
 }
