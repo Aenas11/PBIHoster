@@ -20,6 +20,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/page/:id',
+      name: 'page',
+      component: () => import('../views/PageView.vue'),
+      meta: { requiresAuth: true, layout: 'page' }
+    },
+    {
       path: '/login',
       name: 'login',
       component: Login
