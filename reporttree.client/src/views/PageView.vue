@@ -7,6 +7,7 @@ import { TrashCan20, SettingsEdit20 } from '@carbon/icons-vue'
 import { onMounted, watch, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ErrorComponent from '../components/DashboardComponents/ErrorComponent.vue'
+import MetadataEditor from '../components/DashboardComponents/MetadataEditor.vue'
 import type { GridItemWithComponent } from '../composables/useGridLayout'
 
 const route = useRoute()
@@ -17,6 +18,12 @@ const { getComponent } = useComponentRegistry()
 const isConfigModalOpen = ref(false)
 const configModalItem = ref<GridItemWithComponent | null>(null)
 const configModalValue = ref<Record<string, unknown>>({})
+const configModalMetadata = ref<GridItemWithComponent['metadata']>({
+  title: '',
+  description: '',
+  createdAt: '',
+  updatedAt: ''
+})
 
 // Load layout when component mounts or route changes
 onMounted(async () => {
@@ -58,7 +65,8 @@ const resolveComponent = (item: GridItemWithComponent) => {
  */
 const openConfigModal = (item: GridItemWithComponent) => {
   configModalItem.value = item
-  configModalValue.value = { ...item.componentConfig }  
+  configModalValue.value = { ...item.componentConfig }
+  configModalMetadata.value = { ...item.metadata }
 
   isConfigModalOpen.value = true
 }
@@ -69,23 +77,26 @@ const openConfigModal = (item: GridItemWithComponent) => {
 const saveConfig = () => {
   if (configModalItem.value) {
     const itemId = configModalItem.value.i
-    gridLayout.updatePanelConfig(itemId, configModalValue.value)
-
-    // //re-render the item by updating the reference
-    // const layout = gridLayout.layout.value as GridItemWithComponent[]
-    // const itemIndex = layout.findIndex(i => i.i === itemId)
-    // if (itemIndex !== -1) {
-    //   layout[itemIndex] = {
-    //     ...layout[itemIndex],
-    //     componentConfig: { ...configModalValue.value }
-    //   }
-    //   gridLayout.layout.value = [...layout]
-    // }
+    
+    // Update timestamp
+    const updatedMetadata = {
+      ...configModalMetadata.value,
+      updatedAt: new Date().toISOString()
+    }
+    
+    // Update both config and metadata
+    gridLayout.updatePanelConfig(itemId, configModalValue.value, updatedMetadata)
     
     // Close modal and reset state
     isConfigModalOpen.value = false
     configModalItem.value = null
     configModalValue.value = {}
+    configModalMetadata.value = {
+      title: '',
+      description: '',
+      createdAt: '',
+      updatedAt: ''
+    }
   }
 }
 
@@ -96,6 +107,12 @@ const cancelConfig = () => {
   isConfigModalOpen.value = false
   configModalItem.value = null
   configModalValue.value = {}
+  configModalMetadata.value = {
+    title: '',
+    description: '',
+    createdAt: '',
+    updatedAt: ''
+  }
 }
 
 /**
@@ -144,7 +161,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
       >
         <div class="panel-content">
           <div class="panel-header">
-            <span class="panel-id">{{ item.i }}</span>
+            <span class="panel-title">{{ item.metadata.title || item.i }}</span>
             <div class="panel-actions">
               <cv-button
                 kind="ghost"
@@ -193,18 +210,34 @@ const getConfigComponent = (item: GridItemWithComponent) => {
       :primary-button-disabled="false"
       @primary-click="saveConfig"
       @secondary-click="cancelConfig"
+      class="config-modal"
     >
-      <template #label>Configure Component</template>
-      <template #title>{{ configModalItem?.componentType || 'Component' }} Settings</template>
+      <!-- <template #label>Configure Component</template> -->
+      <!-- <template #title>{{ configModalItem?.componentType || 'Component' }} Settings</template> -->
+       <template #title>Settings</template>
       <template #content>
-        <div v-if="configModalItem && getConfigComponent(configModalItem)" class="config-modal-content">
-          <component 
-            :is="getConfigComponent(configModalItem)"
-            v-model="configModalValue"
-          />
-        </div>
-        <div v-else class="no-config">
-          <p>No configuration available for this component.</p>
+        <div class="config-modal-wrapper">
+          <cv-tabs aria-label="Configuration tabs" class="config-tabs">
+            <!-- General Tab (Metadata) -->
+            <cv-tab label="General">
+              <div class="tab-content">
+                <MetadataEditor v-model="configModalMetadata" />
+              </div>
+            </cv-tab>
+            
+            <!-- Component Settings Tab (only if component has config) -->
+            <cv-tab 
+              v-if="configModalItem && getConfigComponent(configModalItem)" 
+              label="Component Settings"
+            >
+              <div class="tab-content">
+                <component 
+                  :is="getConfigComponent(configModalItem)"
+                  v-model="configModalValue"
+                />
+              </div>
+            </cv-tab>
+          </cv-tabs>
         </div>
       </template>
       <template #primary-button>Save</template>
@@ -293,8 +326,19 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   color: #161616;
 }
 
+.panel-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #161616;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (prefers-color-scheme: dark) {
-  .panel-id {
+  .panel-id,
+  .panel-title {
     color: #f4f4f4;
   }
 }
@@ -366,8 +410,27 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   }
 }
 
-.config-modal-content {
-  padding: 1rem 0;
+.config-modal :deep(.bx--modal-container) {
+  min-height: 500px;
+}
+
+.config-modal :deep(.bx--modal-content) {
+  min-height: 400px;
+  padding-bottom: 0;
+}
+
+.config-modal-wrapper {
+  height: 400px;
+  overflow-y: auto;
+}
+
+.config-tabs {
+  margin: 0;
+  height: 100%;
+}
+
+.tab-content {
+  padding: 1.5rem 0 0.5rem 0;
 }
 
 .no-config {

@@ -36,8 +36,10 @@ export function useGridLayout() {
             componentType,
             componentConfig: customConfig?.componentConfig ?? { ...componentDef.defaultConfig },
             metadata: {
-                ...customConfig?.metadata,
-                createdAt: new Date().toISOString()
+                title: customConfig?.metadata?.title ?? componentDef.name ?? componentType,
+                description: customConfig?.metadata?.description ?? componentDef.description ?? '',
+                createdAt: customConfig?.metadata?.createdAt ?? new Date().toISOString(),
+                updatedAt: customConfig?.metadata?.updatedAt ?? new Date().toISOString()
             }
         }
 
@@ -65,10 +67,10 @@ export function useGridLayout() {
     }
 
     /**
-     * Update panel configuration
+     * Update panel configuration and metadata
      * Forces re-render by replacing the item in the array
      */
-    const updatePanelConfig = (id: string, config: Record<string, unknown>) => {
+    const updatePanelConfig = (id: string, config: Record<string, unknown>, metadata?: GridItemWithComponent['metadata']) => {
         const index = layout.value.findIndex(item => item.i === id)
         if (index !== -1 && layout.value[index]) {
             const item = layout.value[index]
@@ -76,10 +78,7 @@ export function useGridLayout() {
             layout.value[index] = {
                 ...item,
                 componentConfig: { ...config },
-                metadata: {
-                    ...(item.metadata || {}),
-                    updatedAt: new Date().toISOString()
-                }
+                metadata: metadata ? { ...metadata } : item.metadata
             } as GridItemWithComponent
 
             //refresh method to force re-render

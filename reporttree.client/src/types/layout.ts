@@ -27,12 +27,12 @@ export interface GridItemWithComponent {
     componentType: string
     /** Component-specific configuration data */
     componentConfig: Record<string, unknown>
-    /** Optional metadata */
-    metadata?: {
-        title?: string
-        description?: string
-        createdAt?: string
-        updatedAt?: string
+    /** Metadata - always present with default values */
+    metadata: {
+        title: string
+        description: string
+        createdAt: string
+        updatedAt: string
     }
 
     //refresh method to force re-render
@@ -45,5 +45,5 @@ export interface GridItemWithComponent {
 export type CreateGridItemInput = Pick<GridItemWithComponent, 'x' | 'y' | 'w' | 'h' | 'componentType' | 'componentConfig'> & {
     minW?: number
     minH?: number
-    metadata?: GridItemWithComponent['metadata']
+    metadata?: Partial<GridItemWithComponent['metadata']>
 }
