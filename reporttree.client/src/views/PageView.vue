@@ -1,47 +1,17 @@
 <!-- page with dynamic layout -->
 <script setup lang="ts">
 import { GridLayout, GridItem } from 'grid-layout-plus'
-import type { Layout } from 'grid-layout-plus'
 import { useGridLayout } from '../composables/useGridLayout'
+import { useComponentRegistry } from '../composables/useComponentRegistry'
 import { TrashCan20 } from '@carbon/icons-vue'
-import type { ComponentPublicInstance } from 'vue'
-import { onMounted, watch, reactive, markRaw } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import SimpleHtmlComponent from '../components/DashboardComponents/SimpleHtmlComponent.vue'
-import SimpleHtmlComponentConfigure from '../components/DashboardComponents/SimpleHtmlComponentConfigure.vue'
-
-interface ReportComponentConfig {
-  type: string
-  name: string
-  description: string
-  componentElement: ComponentPublicInstance | object
-  componentConfigElement: ComponentPublicInstance | object
-}
+import ErrorComponent from '../components/DashboardComponents/ErrorComponent.vue'
+import type { GridItemWithComponent } from '../composables/useGridLayout'
 
 const route = useRoute()
 const gridLayout = useGridLayout()
-
-const reportType = reactive<{[key: string]: ReportComponentConfig | null}>({
-    'SimpleHtmlComponent': {
-        type: 'SimpleHtmlComponent',
-        name: 'Simple HTML Component',
-        description: 'A simple component that displays static HTML content.',
-        componentElement: markRaw(SimpleHtmlComponent),
-        componentConfigElement: markRaw(SimpleHtmlComponentConfigure),
-    },
-    'TestComponent': {
-        type: 'TestComponent',
-        name: 'Test Component',
-        description: 'A test component for demonstration purposes.',
-        componentElement: markRaw({
-            template: `<div><h3>Test Component</h3><p>This is a test component.</p></div>`
-        }),
-        componentConfigElement: markRaw({
-            template: `<div><p>No configuration available.</p></div>`
-        }),
-    },
-    
-});
+const { getComponent } = useComponentRegistry()
 
 // Load layout when component mounts or route changes
 onMounted(async () => {
@@ -58,28 +28,26 @@ watch(() => route.params.id, async (newId) => {
   }
 })
 
-const handleLayoutUpdated = (newLayout: Layout) => {
-  gridLayout.updateLayout(newLayout)
-}
-
 const removePanel = (id: string) => {
   gridLayout.removePanel(id)
 }
 
-const renderSelectedDashboardComponent = (item: unknown) => {
-    let componentType = reportType[item.type];
-    //TODO: for now we return only SimpleHtmlComponent, later we can expand this to support multiple component types
-    componentType = reportType['SimpleHtmlComponent'];
-
-
-    // Return the component element if found, else return a default message component
-    if (componentType) {
-        return componentType.componentElement;
-    }
-    return {
-        template: `<div><p>Component not found.</p></div>`
-    };
+/**
+ * Resolve component for a grid item
+ * Returns the registered component or ErrorComponent as fallback
+ */
+const resolveComponent = (item: GridItemWithComponent) => {
+  const componentDef = getComponent(item.componentType)
+  
+  if (componentDef) {
+    return componentDef.component
+  }
+  
+  // Return error component if not found
+  console.warn(`Component type "${item.componentType}" not found in registry`)
+  return ErrorComponent
 }
+
 
 </script>
 
@@ -98,14 +66,14 @@ const renderSelectedDashboardComponent = (item: unknown) => {
       :row-height="30"
       :is-draggable="true"
       :is-resizable="true"
-      :vertical-compact="true"
+      :vertical-compact="false"
       :use-css-transforms="true"
       :margin="[10, 10]"
-      @layout-updated="handleLayoutUpdated"
+      @layout-updated="gridLayout.onLayoutUpdated"
       class="grid-container"
     >
       <GridItem
-        v-for="item in gridLayout.layout.value"
+        v-for="item in (gridLayout.layout.value as GridItemWithComponent[])"
         :key="item.i"
         :x="item.x"
         :y="item.y"
@@ -129,17 +97,16 @@ const renderSelectedDashboardComponent = (item: unknown) => {
             </cv-button>
           </div>
           <div class="panel-body">
-            <!-- <p>Panel content goes here</p>
-            <p class="panel-info">Position: ({{ item.x }}, {{ item.y }})</p>
-            <p class="panel-info">Size: {{ item.w }} × {{ item.h }}</p> -->
-
-                              <component :id="'component' + item.i"
-                              :key="'component' + item.i"
-                                :is=renderSelectedDashboardComponent(item)
-                                :model="item"
-                             
-                             class="dynamic-component">
-                  </component>
+            <!-- Dynamic component with proper props -->
+            <component 
+              :is="resolveComponent(item)"
+              :id="`component-${item.i}`"
+              :key="`component-${item.i}`"
+              :config="item.componentConfig"
+              :dimensions="{ w: item.w, h: item.h }"
+              :component-type="item.componentType"
+              class="dynamic-component"
+            />
           </div>
         </div>
       </GridItem>
@@ -239,6 +206,11 @@ const renderSelectedDashboardComponent = (item: unknown) => {
 .panel-body {
   flex: 1;
   overflow: auto;
+}
+
+.dynamic-component {
+  width: 100%;
+  height: 100%;
 }
 
 .panel-body p {

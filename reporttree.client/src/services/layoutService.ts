@@ -1,8 +1,8 @@
-import type { GridItem } from '../composables/useGridLayout'
+import type { GridItemWithComponent } from '../types/layout'
 
 export interface SaveLayoutRequest {
     pageId: string
-    layout: GridItem[]
+    layout: GridItemWithComponent[]
     metadata?: {
         name?: string
         description?: string

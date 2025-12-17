@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { Add20, TrashCan20, Save20 } from '@carbon/icons-vue'
 import { useGridLayout } from '../composables/useGridLayout'
+import { useComponentRegistry } from '../composables/useComponentRegistry'
 import { layoutService } from '../services/layoutService'
 import { useRoute } from 'vue-router'
 
@@ -11,11 +12,15 @@ defineProps<{
 
 const route = useRoute()
 const gridLayout = useGridLayout()
+const { getAllComponents } = useComponentRegistry()
 const isSaving = ref(false)
 const saveStatus = ref<{ type: 'success' | 'error', message: string } | null>(null)
 
-const handleAddPanel = () => {
-  gridLayout.addPanel()
+// Get available component types
+const availableComponents = getAllComponents()
+
+const handleAddPanel = (componentType: string) => {
+  gridLayout.addPanel(componentType)
 }
 
 const handleClearLayout = () => {
@@ -61,17 +66,29 @@ const handleSaveLayout = async (pageId:string) => {
       <h3 class="tools-title">Tools Menu</h3>
       
       <div class="tools-section">
-        <h4 class="section-title">Layout Tools</h4>
+        <h4 class="section-title">Add Components</h4>
         
         <cv-button 
+          v-for="component in availableComponents"
+          :key="component.type"
           kind="primary" 
           size="sm" 
           class="tool-button"
-          @click="handleAddPanel"
+          @click="() => handleAddPanel(component.type)"
+          :title="component.description"
         >
           <Add20 class="button-icon" />
-          Add Panel
+          {{ component.name }}
         </cv-button>
+        
+        <p v-if="availableComponents.length === 0" class="no-components">
+          No components registered
+        </p>
+      </div>
+      
+      <div class="tools-section">
+        <h4 class="section-title">Layout Actions</h4>
+        
         
         <cv-button 
           kind="tertiary" 
@@ -147,6 +164,21 @@ const handleSaveLayout = async (pageId:string) => {
   width: 100%;
   margin-bottom: 0.5rem;
   justify-content: flex-start;
+}
+
+.no-components {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #525252;
+  font-style: italic;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .no-components {
+    color: #c6c6c6;
+  }
 }
 
 .button-icon {
