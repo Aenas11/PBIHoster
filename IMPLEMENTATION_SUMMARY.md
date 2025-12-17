@@ -3,6 +3,20 @@
 ## Overview
 Successfully refactored the dynamic layout system to be more extensible, type-safe, and maintainable.
 
+## ⚠️ Critical Fix: Layout Data Preservation
+
+### Issue
+Components would disappear or reset when moved/resized because `grid-layout-plus`'s v-model updates only include position/size data, losing the `componentType` and `componentConfig` properties needed to render components.
+
+### Solution
+Implemented `onLayoutUpdated()` handler that:
+1. Captures the layout state before grid-layout-plus updates it
+2. Preserves component-specific data (`componentType`, `componentConfig`, `metadata`)
+3. Merges position updates from grid-layout-plus with preserved component data
+4. Prevents infinite update loops by using `@layout-updated` event instead of computed setters
+
+This ensures components maintain their identity and configuration during drag/resize operations.
+
 ## Key Improvements Implemented
 
 ### 1. **Type System** (`src/types/`)
@@ -28,8 +42,13 @@ Successfully refactored the dynamic layout system to be more extensible, type-sa
   - `addPanel(componentType, customConfig)`: Now requires component type and uses registry
   - `updatePanelConfig()`: Update component config after creation
   - `getPanel()`: Retrieve specific panel by ID
-  - Enhanced `updateLayout()`: Preserves component data during position updates
+  - **`onLayoutUpdated(newLayout)`**: Critical handler that preserves component data during drag/resize
+    - Creates a map of existing component data before update
+    - Merges position changes with preserved `componentType`, `componentConfig`, and `metadata`
+    - Prevents data loss during grid layout operations
+  - `updateLayout()`: Legacy method kept for compatibility
   - Proper TypeScript types throughout
+  - Console logging for debugging data flow
 
 ### 4. **Component Updates**
 - **`SimpleHtmlComponent.vue`**: Updated to use `DashboardComponentProps`
@@ -61,7 +80,9 @@ Successfully refactored the dynamic layout system to be more extensible, type-sa
 - Uses `useComponentRegistry()` for dynamic component resolution
 - `resolveComponent()`: Type-safe component resolution with fallback
 - Proper prop passing to dynamic components
-- Type-safe template iteration
+- Type-safe template iteration with explicit type casting
+- **v-model + @layout-updated pattern**: Uses both v-model for two-way binding and event handler for data preservation
+- `:vertical-compact="false"`: Disabled to prevent automatic repositioning during drag operations
 
 ### 7. **ToolsPanel Enhancement** (`src/components/ToolsPanel.vue`)
 - Dynamic button generation from registry
@@ -97,6 +118,20 @@ Successfully refactored the dynamic layout system to be more extensible, type-sa
 - Component config is flexible (`Record<string, unknown>`)
 - Each component type defines its own config schema
 - Metadata tracking (created, updated timestamps)
+
+## Known Considerations
+
+### Grid Layout Data Preservation
+The system uses a specific pattern to handle `grid-layout-plus` updates:
+- **v-model:layout** enables two-way binding for grid operations
+- **@layout-updated** event handler preserves component-specific data
+- The handler runs AFTER grid-layout-plus updates positions but BEFORE Vue re-renders
+- This prevents component data loss during drag/resize operations
+
+### Debugging
+Console logs are included in:
+- `addPanel()`: Shows when components are added and their initial state
+- `onLayoutUpdated()`: Shows data preservation during layout updates (can be removed in production)
 
 ## How to Add a New Component Type
 
@@ -166,8 +201,36 @@ That's it! The component automatically appears in the Tools menu.
 - `src/components/DashboardComponents/SimpleHtmlComponent.vue`
 - `src/components/DashboardComponents/SimpleHtmlComponentConfigure.vue`
 
+## Technical Details
+
+### Layout Update Flow
+```
+User Action (drag/resize)
+    ↓
+grid-layout-plus updates v-model array (loses component data)
+    ↓
+@layout-updated event fires
+    ↓
+onLayoutUpdated() handler:
+  - Captures current component data (componentType, componentConfig, metadata)
+  - Creates map: item.i → component data
+  - Merges position updates with preserved data
+    ↓
+Vue reactivity triggers re-render
+    ↓
+Components render with preserved data ✅
+```
+
+### Why This Pattern Works
+1. **v-model is necessary** - grid-layout-plus needs to update the array for drag/resize to work
+2. **Event handler prevents data loss** - Runs synchronously after v-model update but before render
+3. **No infinite loops** - Handler only merges data, doesn't trigger new updates
+4. **Type safety maintained** - TypeScript ensures all required properties exist
+
 ## Build Status
 ✅ TypeScript compilation: **PASSED**
 ✅ Vite build: **SUCCESS**
 ✅ No type errors
 ✅ All components properly typed
+✅ Layout data preservation: **WORKING**
+✅ Drag and resize: **FUNCTIONAL**
