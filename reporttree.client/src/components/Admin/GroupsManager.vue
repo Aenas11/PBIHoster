@@ -27,7 +27,8 @@
                     <cds-table-cell>{{ g.description || 'No description' }}</cds-table-cell>
                     <cds-table-cell>
                         <cds-button size="sm" kind="ghost" @click="editGroup(g)" :disabled="loading">Edit</cds-button>
-                        <cds-button size="sm" kind="danger-ghost" @click="remove(g.id)" :disabled="loading">Delete</cds-button>
+                        <cds-button size="sm" kind="danger-ghost" @click="remove(g.id)"
+                            :disabled="loading">Delete</cds-button>
                     </cds-table-cell>
                 </cds-table-row>
             </cds-table-body>
@@ -43,12 +44,14 @@
             </cds-modal-header>
             <cds-modal-body>
                 <div v-if="error" class="error-message">{{ error }}</div>
-                <cds-text-input label="Name" :value="form.name" @input="onNameInput" :disabled="loading"></cds-text-input>
-                <cds-text-input label="Description" :value="form.description"
-                    @input="onDescriptionInput" :disabled="loading" placeholder="Optional description"></cds-text-input>
+                <cds-text-input label="Name" :value="form.name" @input="onNameInput"
+                    :disabled="loading"></cds-text-input>
+                <cds-text-input label="Description" :value="form.description" @input="onDescriptionInput"
+                    :disabled="loading" placeholder="Optional description"></cds-text-input>
             </cds-modal-body>
             <cds-modal-footer>
-                <cds-modal-footer-button kind="secondary" @click="showModal = false" :disabled="loading">Cancel</cds-modal-footer-button>
+                <cds-modal-footer-button kind="secondary" @click="showModal = false"
+                    :disabled="loading">Cancel</cds-modal-footer-button>
                 <cds-modal-footer-button kind="primary" @click="save" :disabled="loading || !form.name">
                     {{ loading ? 'Saving...' : 'Save' }}
                 </cds-modal-footer-button>
@@ -74,10 +77,10 @@ const editing = ref(false)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const form = reactive({ 
-    id: undefined as number | undefined, 
-    name: '', 
-    description: '' 
+const form = reactive({
+    id: undefined as number | undefined,
+    name: '',
+    description: ''
 })
 
 function onNameInput(e: Event) { form.name = (e.target as HTMLInputElement).value }
@@ -118,19 +121,19 @@ async function save() {
     try {
         loading.value = true
         error.value = null
-        
-        const payload: Group = { 
-            id: form.id, 
-            name: form.name, 
-            description: form.description 
+
+        const payload: Group = {
+            id: form.id,
+            name: form.name,
+            description: form.description
         }
-        
+
         if (editing.value && form.id) {
             await adminService.updateGroup(payload)
         } else {
             await adminService.createGroup(payload)
         }
-        
+
         showModal.value = false
         await search()
     } catch (err) {
@@ -143,10 +146,10 @@ async function save() {
 
 async function remove(id?: number) {
     if (!id) return
-    
+
     const groupToDelete = groups.value.find(g => g.id === id)
     if (!confirm(`Delete group "${groupToDelete?.name}"?`)) return
-    
+
     try {
         loading.value = true
         error.value = null

@@ -29,7 +29,8 @@
                     <cds-table-cell>{{ (u.groups || []).join(', ') || 'None' }}</cds-table-cell>
                     <cds-table-cell>
                         <cds-button size="sm" kind="ghost" @click="editUser(u)" :disabled="loading">Edit</cds-button>
-                        <cds-button size="sm" kind="danger-ghost" @click="deleteUser(u.username)" :disabled="loading">Delete</cds-button>
+                        <cds-button size="sm" kind="danger-ghost" @click="deleteUser(u.username)"
+                            :disabled="loading">Delete</cds-button>
                     </cds-table-cell>
                 </cds-table-row>
             </cds-table-body>
@@ -45,16 +46,19 @@
             </cds-modal-header>
             <cds-modal-body>
                 <div v-if="error" class="error-message">{{ error }}</div>
-                <cds-text-input label="Username" :value="form.username" @input="onUsernameInput" :disabled="loading || editing"></cds-text-input>
-                <cds-text-input label="Password" type="password" :value="form.password"
-                    @input="onPasswordInput" :disabled="loading" :helper-text="editing ? 'Leave blank to keep current password' : ''"></cds-text-input>
-                <cds-text-input label="Roles (comma separated)" :value="form.rolesText"
-                    @input="onRolesInput" :disabled="loading" placeholder="e.g., Admin, Editor, Viewer"></cds-text-input>
-                <cds-text-input label="Groups (comma separated)" :value="form.groupsText"
-                    @input="onGroupsInput" :disabled="loading" placeholder="e.g., Finance, IT, Sales"></cds-text-input>
+                <cds-text-input label="Username" :value="form.username" @input="onUsernameInput"
+                    :disabled="loading || editing"></cds-text-input>
+                <cds-text-input label="Password" type="password" :value="form.password" @input="onPasswordInput"
+                    :disabled="loading"
+                    :helper-text="editing ? 'Leave blank to keep current password' : ''"></cds-text-input>
+                <cds-text-input label="Roles (comma separated)" :value="form.rolesText" @input="onRolesInput"
+                    :disabled="loading" placeholder="e.g., Admin, Editor, Viewer"></cds-text-input>
+                <cds-text-input label="Groups (comma separated)" :value="form.groupsText" @input="onGroupsInput"
+                    :disabled="loading" placeholder="e.g., Finance, IT, Sales"></cds-text-input>
             </cds-modal-body>
             <cds-modal-footer>
-                <cds-modal-footer-button kind="secondary" @click="showModal = false" :disabled="loading">Cancel</cds-modal-footer-button>
+                <cds-modal-footer-button kind="secondary" @click="showModal = false"
+                    :disabled="loading">Cancel</cds-modal-footer-button>
                 <cds-modal-footer-button kind="primary" @click="save" :disabled="loading || !form.username">
                     {{ loading ? 'Saving...' : 'Save' }}
                 </cds-modal-footer-button>
@@ -80,11 +84,11 @@ const editing = ref(false)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const form = reactive({ 
-    username: '', 
-    password: '', 
-    rolesText: '', 
-    groupsText: '' 
+const form = reactive({
+    username: '',
+    password: '',
+    rolesText: '',
+    groupsText: ''
 })
 
 function onUsernameInput(e: Event) { form.username = (e.target as HTMLInputElement).value }
@@ -129,7 +133,7 @@ async function save() {
     try {
         loading.value = true
         error.value = null
-        
+
         const payload = {
             username: form.username,
             roles: form.rolesText ? form.rolesText.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
@@ -151,7 +155,7 @@ async function save() {
 async function deleteUser(username?: string) {
     if (!username) return
     if (!confirm(`Delete user "${username}"?`)) return
-    
+
     try {
         loading.value = true
         error.value = null
