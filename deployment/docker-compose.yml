@@ -48,6 +48,16 @@ services:
       - Security__CorsPolicy__AllowedOrigins__0=${CORS_ORIGIN_1:-}
       - Security__CorsPolicy__AllowedOrigins__1=${CORS_ORIGIN_2:-}
       - Security__CorsPolicy__AllowCredentials=${CORS_ALLOW_CREDENTIALS:-true}
+      # Power BI Configuration
+      - PowerBI__TenantId=${POWERBI_TENANT_ID:-}
+      - PowerBI__ClientId=${POWERBI_CLIENT_ID:-}
+      - PowerBI__ClientSecret=${POWERBI_CLIENT_SECRET:-}
+      - PowerBI__AuthType=${POWERBI_AUTH_TYPE:-ClientSecret}
+      - PowerBI__CertificateThumbprint=${POWERBI_CERTIFICATE_THUMBPRINT:-}
+      - PowerBI__CertificatePath=${POWERBI_CERTIFICATE_PATH:-}
+      - PowerBI__AuthorityUrl=${POWERBI_AUTHORITY_URL:-https://login.microsoftonline.com/{0}/}
+      - PowerBI__ResourceUrl=${POWERBI_RESOURCE_URL:-https://analysis.windows.net/powerbi/api}
+      - PowerBI__ApiUrl=${POWERBI_API_URL:-https://api.powerbi.com}
     volumes:
       - pbihoster_data:/data
 

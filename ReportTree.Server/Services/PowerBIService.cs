@@ -10,7 +10,7 @@ namespace ReportTree.Server.Services
 {
     public class PowerBIService : IPowerBIService
     {
-        private readonly ISettingsService _settingsService;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<PowerBIService> _logger;
         private IConfidentialClientApplication? _msalClient;
         private PowerBIConfiguration? _config;
@@ -18,30 +18,34 @@ namespace ReportTree.Server.Services
         private string _accessToken = string.Empty;
         private readonly SemaphoreSlim _tokenLock = new SemaphoreSlim(1, 1);
 
-        public PowerBIService(ISettingsService settingsService, ILogger<PowerBIService> logger)
+        public PowerBIService(IConfiguration configuration, ILogger<PowerBIService> logger)
         {
-            _settingsService = settingsService;
+            _configuration = configuration;
             _logger = logger;
         }
 
-        private async Task LoadConfigurationAsync()
+        private void LoadConfiguration()
         {
             _config = new PowerBIConfiguration
             {
-                TenantId = await _settingsService.GetValueAsync("PowerBI.TenantId") ?? string.Empty,
-                ClientId = await _settingsService.GetValueAsync("PowerBI.ClientId") ?? string.Empty,
-                ClientSecret = await _settingsService.GetValueAsync("PowerBI.ClientSecret") ?? string.Empty,
-                CertificateThumbprint = await _settingsService.GetValueAsync("PowerBI.CertificateThumbprint") ?? string.Empty,
-                CertificatePath = await _settingsService.GetValueAsync("PowerBI.CertificatePath") ?? string.Empty,
-                AuthorityUrl = await _settingsService.GetValueAsync("PowerBI.AuthorityUrl") ?? "https://login.microsoftonline.com/{0}/",
-                ResourceUrl = await _settingsService.GetValueAsync("PowerBI.ResourceUrl") ?? "https://analysis.windows.net/powerbi/api",
-                ApiUrl = await _settingsService.GetValueAsync("PowerBI.ApiUrl") ?? "https://api.powerbi.com"
+                TenantId = _configuration["PowerBI:TenantId"] ?? string.Empty,
+                ClientId = _configuration["PowerBI:ClientId"] ?? string.Empty,
+                ClientSecret = _configuration["PowerBI:ClientSecret"] ?? string.Empty,
+                CertificateThumbprint = _configuration["PowerBI:CertificateThumbprint"] ?? string.Empty,
+                CertificatePath = _configuration["PowerBI:CertificatePath"] ?? string.Empty,
+                AuthorityUrl = _configuration["PowerBI:AuthorityUrl"] ?? "https://login.microsoftonline.com/{0}/",
+                ResourceUrl = _configuration["PowerBI:ResourceUrl"] ?? "https://analysis.windows.net/powerbi/api",
+                ApiUrl = _configuration["PowerBI:ApiUrl"] ?? "https://api.powerbi.com"
             };
 
-            var authTypeStr = await _settingsService.GetValueAsync("PowerBI.AuthType");
+            var authTypeStr = _configuration["PowerBI:AuthType"];
             if (Enum.TryParse<AuthenticationType>(authTypeStr, out var authType))
             {
                 _config.AuthType = authType;
+            }
+            else
+            {
+                _config.AuthType = AuthenticationType.ClientSecret; // Default
             }
         }
 
@@ -57,7 +61,7 @@ namespace ReportTree.Server.Services
 
                 if (_config == null || string.IsNullOrEmpty(_config.ClientId))
                 {
-                    await LoadConfigurationAsync();
+                    LoadConfiguration();
                 }
 
                 if (string.IsNullOrEmpty(_config!.ClientId) || string.IsNullOrEmpty(_config.TenantId))

@@ -36,12 +36,15 @@ async function loadReports() {
 
         // Auto-select first report if none selected
         if (reports.value.length > 0 && !currentReportId.value) {
-            currentReportId.value = reports.value[0].id
-            await loadEmbedToken(reports.value[0].id)
+            const firstReport = reports.value[0]
+            if (firstReport) {
+                currentReportId.value = firstReport.id
+                await loadEmbedToken(firstReport.id)
+            }
         } else if (currentReportId.value) {
             await loadEmbedToken(currentReportId.value)
         }
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error('Failed to load reports:', e)
         error.value = 'Failed to load reports from workspace'
     } finally {
@@ -62,7 +65,7 @@ async function loadEmbedToken(reportId: string) {
             enableRLS as boolean | undefined,
             rlsRoles as string[] | undefined
         )
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error('Failed to load embed token:', e)
         error.value = 'Failed to load report'
     } finally {
@@ -121,7 +124,7 @@ onMounted(() => {
                     <cds-loading></cds-loading>
                 </div>
                 <PowerBIEmbed v-else-if="embedData" :embed-url="embedData.embedUrl"
-                    :access-token="embedData.accessToken" embed-type="report" />
+                    :access-token="embedData.accessToken" :report-id="currentReportId" embed-type="report" />
             </div>
         </div>
     </div>

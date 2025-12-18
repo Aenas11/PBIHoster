@@ -87,18 +87,27 @@ Endpoints:
 - Comprehensive audit logging via `AuditLogService`
 
 ### 1.7 Configuration Storage ✅
-**Implemented**: Settings stored via existing `SettingsService`
+**Implemented**: Configuration via environment variables
 
-Power BI settings (category "PowerBI"):
-- `PowerBI.TenantId`
-- `PowerBI.ClientId`
-- `PowerBI.ClientSecret` (encrypted)
-- `PowerBI.AuthType`
-- `PowerBI.AuthorityUrl`
-- `PowerBI.ResourceUrl`
-- `PowerBI.ApiUrl`
+Power BI settings configured via environment variables (not stored in database):
+- `PowerBI__TenantId`
+- `PowerBI__ClientId`
+- `PowerBI__ClientSecret`
+- `PowerBI__AuthType` (ClientSecret or Certificate)
+- `PowerBI__CertificateThumbprint` (optional)
+- `PowerBI__CertificatePath` (optional)
+- `PowerBI__AuthorityUrl` (default: `https://login.microsoftonline.com/{0}/`)
+- `PowerBI__ResourceUrl` (default: `https://analysis.windows.net/powerbi/api`)
+- `PowerBI__ApiUrl` (default: `https://api.powerbi.com`)
 
-**Service Registration**: `Program.cs` registers `IPowerBIService` as Singleton
+**Benefits**:
+- ✅ Follows twelve-factor app methodology
+- ✅ Infrastructure as code
+- ✅ No secrets in database
+- ✅ Easy deployment across environments
+- ✅ Consistent with other app configuration (JWT, CORS, etc.)
+
+**Service Registration**: `Program.cs` registers `IPowerBIService` as Singleton (for token caching)
 
 ---
 
@@ -206,14 +215,15 @@ interface PowerBIWorkspaceComponentConfig {
 - ✅ Dynamic report discovery
 - ✅ Clean URL-based navigation
 
-### 3.7 Admin Settings UI ✅
-**Implemented**: `reporttree.client/src/components/Admin/PowerBISettings.vue`
+### 3.7 Admin Settings UI ❌ REMOVED
+**Decision**: Power BI credentials managed via environment variables, not Admin UI.
 
-Features:
-- Authentication type selector (Service Principal / Master User)
-- Tenant ID, Client ID, Client Secret inputs
-- Authority URL configuration
-- Integrated into Admin View as "Power BI" tab
+**Rationale**:
+- Infrastructure configuration (not application data)
+- Follows twelve-factor app principles
+- More secure (no secrets in database)
+- Consistent with JWT, CORS, and other settings
+- Easier deployment and configuration management
 
 ---
 
@@ -469,11 +479,34 @@ Needs creation
 ### 6.3 Developer Documentation ✅ THIS FILE
 Updated with implementation status
 
-### 6.4 Environment Variables ⏳ TODO
-Needs update in deployment docs
+### 6.4 Environment Variables ✅
+**Implemented**: `.env.example` updated with Power BI variables
 
-### 6.5 Docker Configuration ⏳ TODO
-Needs update with Power BI env vars
+Added to deployment configuration:
+```bash
+# Power BI Configuration
+POWERBI_TENANT_ID=
+POWERBI_CLIENT_ID=
+POWERBI_CLIENT_SECRET=
+POWERBI_AUTH_TYPE=ClientSecret
+POWERBI_CERTIFICATE_THUMBPRINT=
+POWERBI_CERTIFICATE_PATH=
+POWERBI_AUTHORITY_URL=https://login.microsoftonline.com/{0}/
+POWERBI_RESOURCE_URL=https://analysis.windows.net/powerbi/api
+POWERBI_API_URL=https://api.powerbi.com
+```
+
+### 6.5 Docker Configuration ✅
+**Implemented**: `docker-compose.yml` updated with Power BI env vars
+
+Environment variables mapped to ASP.NET Core configuration:
+```yaml
+- PowerBI__TenantId=${POWERBI_TENANT_ID:-}
+- PowerBI__ClientId=${POWERBI_CLIENT_ID:-}
+- PowerBI__ClientSecret=${POWERBI_CLIENT_SECRET:-}
+- PowerBI__AuthType=${POWERBI_AUTH_TYPE:-ClientSecret}
+# ... and others
+```
 
 ### 6.6 Certificate Mounting ⏳ TODO
 Needs documentation
@@ -500,12 +533,13 @@ Needs documentation
 - ✅ Registered all components in component registry
 
 ### Week 4: Admin UI & Refactoring ✅
-- ✅ Created PowerBISettings component
-- ✅ Integrated into Admin View
+- ✅ ~~Created PowerBISettings component~~ - REMOVED (using env vars instead)
+- ✅ ~~Integrated into Admin View~~ - REMOVED
 - ✅ Removed SyncWorkspace approach
 - ✅ Refactored to component-based config architecture
 - ✅ Made report/dashboard endpoints accessible to all users
 - ✅ Added audit logging integration
+- ✅ **Refactored configuration to use environment variables**
 
 ### Remaining: Testing & Documentation ⏳
 - ⏳ Unit tests
@@ -716,13 +750,27 @@ Needs documentation
 
 ### 🎯 Quick Start Guide
 
-**For Developers**:
-1. Configure Azure AD app with Power BI API permissions
-2. Navigate to Admin > Power BI tab
-3. Enter Tenant ID, Client ID, and Client Secret
-4. Save configuration
-5. Add `PowerBIReportComponent`, `PowerBIDashboardComponent`, or `PowerBIWorkspaceComponent` to any page
-6. Configure workspace and report IDs in component settings
+**For Administrators**:
+1. **Configure Azure AD App** with Power BI API permissions:
+   - `Report.Read.All`
+   - `Workspace.Read.All`
+   - `Dataset.Read.All`
+2. **Set Environment Variables** in `.env` file or hosting environment:
+   ```bash
+   POWERBI_TENANT_ID=your-tenant-id
+   POWERBI_CLIENT_ID=your-client-id
+   POWERBI_CLIENT_SECRET=your-client-secret
+   POWERBI_AUTH_TYPE=ClientSecret
+   ```
+3. **Deploy Application** with updated environment variables
+4. **Add Components to Pages** using the page editor
+
+**For Page Editors**:
+1. Navigate to page in edit mode
+2. Add `PowerBIReportComponent`, `PowerBIDashboardComponent`, or `PowerBIWorkspaceComponent`
+3. Configure workspace and report IDs in component settings
+4. Optional: Configure RLS roles
+5. Save and publish
 
 **For Users**:
 1. Navigate to pages with embedded Power BI content
