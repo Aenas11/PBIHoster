@@ -234,3 +234,23 @@ Components render with preserved data ✅
 ✅ All components properly typed
 ✅ Layout data preservation: **WORKING**
 ✅ Drag and resize: **FUNCTIONAL**
+
+## Page Management System
+
+### Overview
+Implemented a dynamic page management system allowing users to create, update, and delete pages and folders directly from the UI.
+
+### Backend (`ReportTree.Server`)
+- **Model**: `Page` entity with hierarchy support (`ParentId`).
+- **Persistence**: `LiteDbPageRepository` for CRUD operations.
+- **API**: `PagesController` with secure endpoints.
+
+### Frontend (`reporttree.client`)
+- **Store**: `usePagesStore` (Pinia) for state management and tree construction.
+- **UI Components**:
+  - `TheSideMenu.vue`: Updated with "Edit Mode", recursive rendering, and management actions.
+  - `PageModal.vue`: Form for creating/editing pages.
+- **Features**:
+  - **Edit Mode**: Visual toggle to switch between navigation and management.
+  - **Hierarchy**: Support for nested pages (folders).
+  - **Pinning**: Collapsible side menu with rail mode.

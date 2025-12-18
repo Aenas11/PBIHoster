@@ -32,6 +32,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<LiteDB.LiteDatabase>(_ => new LiteDB.LiteDatabase(dbConnectionString));
             builder.Services.AddSingleton<IUserRepository, LiteDbUserRepository>();
             builder.Services.AddSingleton<IThemeRepository>(_ => new LiteDbThemeRepository(dbConnectionString));
+            builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
             builder.Services.AddScoped<AuthService>();
 
             // JWT Auth
