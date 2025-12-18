@@ -10,6 +10,7 @@ import {
 } from '@carbon/icons-vue'
 import '@carbon/web-components/es/components/ui-shell/index.js';
 import '@carbon/web-components/es/components/icon-button/index.js';
+import '@carbon/web-components/es/components/button/index.js';
 import PageModal from './PageModal.vue'
 import type { Page } from '../types/page'
 
@@ -158,17 +159,20 @@ function getIcon(iconName: string) {
 
     <div class="side-nav-footer">
       <div v-if="canEdit" class="side-nav-actions">
-        <cds-icon-button kind="ghost" size="sm" align="bottom" id="toggleEditButton"
-          :aria-label="isEditMode ? 'Exit Edit Mode' : 'Edit Pages'" @click="toggleEditMode">
-          <span slot="tooltip-content">{{ isEditMode ? 'Exit Edit Mode' : 'Edit' }} </span>
+        <cds-button kind="secondary" size="md" :has-icon-only="!expanded"
+          :aria-label="!expanded ? (isEditMode ? 'Exit Edit Mode' : 'Edit Pages') : ''" @click="toggleEditMode"
+          class="action-button">
+          <span v-if="expanded">{{ isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
+          <span v-if="!expanded" slot="tooltip-content">{{ isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
           <component :is="isEditMode ? Close20 : Edit20" slot="icon" />
-        </cds-icon-button>
+        </cds-button>
 
-        <cds-icon-button v-if="isEditMode" kind="ghost" size="sm" aria-label="New Top Level Page"
-          id="createNewPageModalButton" @click="openCreateModal(null)">
-          <span slot="tooltip-content">New Top Level Page</span>
+        <cds-button v-if="isEditMode" kind="primary" size="md" :has-icon-only="!expanded"
+          :aria-label="!expanded ? 'New Top Level Page' : ''" @click="openCreateModal(null)" class="action-button">
+          <span v-if="expanded">New Top Level Page</span>
+          <span v-if="!expanded" slot="tooltip-content">New Top Level Page</span>
           <Add20 slot="icon" />
-        </cds-icon-button>
+        </cds-button>
       </div>
 
       <cds-side-nav-items>
@@ -194,8 +198,28 @@ function getIcon(iconName: string) {
 
 .side-nav-actions {
   display: flex;
+  flex-direction: column;
   justify-content: flex-end;
   gap: 0.5rem;
-  padding: 0.5rem 0;
+  padding: 0.5rem;
+}
+
+.action-button {
+  width: 100%;
+  max-width: 100%;
+}
+
+.edit-folder-link,
+.add-child-link {
+  --cds-link-primary: var(--cds-text-secondary, #525252);
+  background-color: rgba(141, 141, 141, 0.08);
+  border-left: 3px solid var(--cds-border-strong, #8d8d8d);
+  font-style: italic;
+}
+
+.edit-badge {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary, #525252);
 }
 </style>
