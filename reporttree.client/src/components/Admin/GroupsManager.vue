@@ -53,25 +53,19 @@
                     <h3>Members</h3>
                     <div class="add-member-controls">
                         <div class="user-search-container">
-                            <cds-text-input 
-                                label="Add Member" 
-                                :value="userSearchTerm" 
-                                @input="onUserSearchInput"
-                                @focus="showUserSuggestions = true"
-                                :disabled="loading" 
-                                placeholder="Search users...">
+                            <cds-text-input label="Add Member" :value="userSearchTerm" @input="onUserSearchInput"
+                                @focus="showUserSuggestions = true" :disabled="loading" placeholder="Search users...">
                             </cds-text-input>
                             <div v-if="showUserSuggestions && filteredUsers.length > 0" class="user-suggestions">
-                                <div 
-                                    v-for="user in filteredUsers" 
-                                    :key="user.username" 
-                                    class="user-suggestion-item"
+                                <div v-for="user in filteredUsers" :key="user.username" class="user-suggestion-item"
                                     @click="selectUser(user.username)">
                                     <span class="username">{{ user.username }}</span>
-                                    <span v-if="user.roles && user.roles.length > 0" class="user-roles">{{ user.roles.join(', ') }}</span>
+                                    <span v-if="user.roles && user.roles.length > 0" class="user-roles">{{
+                                        user.roles.join(', ') }}</span>
                                 </div>
                             </div>
-                            <div v-else-if="showUserSuggestions && userSearchTerm && filteredUsers.length === 0" class="no-suggestions">
+                            <div v-else-if="showUserSuggestions && userSearchTerm && filteredUsers.length === 0"
+                                class="no-suggestions">
                                 No users found
                             </div>
                         </div>
@@ -135,7 +129,7 @@ const form = reactive({
 // Computed filtered users based on search term and excluding current members
 const filteredUsers = computed(() => {
     if (!userSearchTerm.value) return []
-    
+
     const searchLower = userSearchTerm.value.toLowerCase()
     return allUsers.value
         .filter(u => !form.members.includes(u.username)) // Exclude already added members
@@ -211,7 +205,7 @@ async function editGroup(g: Group) {
     showUserSuggestions.value = false
     error.value = null
     showModal.value = true
-    
+
     // Load all users for search
     try {
         allUsers.value = await adminService.searchUsers('')
@@ -278,7 +272,7 @@ async function addMember() {
         if (!form.members.includes(selectedUsername.value.trim())) {
             form.members.push(selectedUsername.value.trim())
         }
-        
+
         // Reset search
         userSearchTerm.value = ''
         selectedUsername.value = ''
