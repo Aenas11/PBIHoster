@@ -8,9 +8,9 @@ public class LiteDbThemeRepository : IThemeRepository
     private readonly LiteDatabase _db;
     private readonly ILiteCollection<CustomTheme> _themes;
 
-    public LiteDbThemeRepository(string connectionString)
+    public LiteDbThemeRepository(LiteDatabase db)
     {
-        _db = new LiteDatabase(connectionString);
+        _db = db;
         _themes = _db.GetCollection<CustomTheme>("themes");
         
         // Create indexes
@@ -63,10 +63,5 @@ public class LiteDbThemeRepository : IThemeRepository
     {
         var result = _themes.Delete(id);
         return Task.FromResult(result);
-    }
-
-    public void Dispose()
-    {
-        _db?.Dispose();
     }
 }

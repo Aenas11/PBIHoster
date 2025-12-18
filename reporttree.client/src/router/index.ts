@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import TheWelcome from '../components/TheWelcome.vue'
-import Login from '../views/LoginView.vue'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -17,7 +15,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: TheWelcome,
+      component: () => import('../components/TheWelcome.vue'),
       meta: { requiresAuth: true, keepAlive: true }
     },
     {
@@ -29,7 +27,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: Login
+      component: () => import('../views/LoginView.vue')
     },
     {
       path: '/admin',

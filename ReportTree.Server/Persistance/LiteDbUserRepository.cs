@@ -1,42 +1,48 @@
 ﻿using ReportTree.Server.Models;
+using LiteDB;
 
 namespace ReportTree.Server.Persistance
 {
     public class LiteDbUserRepository : IUserRepository
     {
-        private readonly LiteDB.LiteDatabase _db;
-        public LiteDbUserRepository(LiteDB.LiteDatabase db) { _db = db; }
+        private readonly LiteDatabase _db;
+        private readonly ILiteCollection<AppUser> _users;
+        
+        public LiteDbUserRepository(LiteDatabase db) 
+        { 
+            _db = db;
+            _users = _db.GetCollection<AppUser>("users");
+            
+            // Create indexes for performance
+            _users.EnsureIndex(x => x.Username);
+        }
 
         public Task UpsertAsync(AppUser user)
         {
-            var col = _db.GetCollection<AppUser>("users");
-            col.Upsert(user);
+            _users.Upsert(user);
             return Task.CompletedTask;
         }
 
         public Task<AppUser?> GetByUsernameAsync(string username)
         {
-            var col = _db.GetCollection<AppUser>("users");
-            var user = col.FindOne(x => x.Username == username);
+            var user = _users.FindOne(x => x.Username == username);
             return Task.FromResult<AppUser?>(user);
         }
 
         public Task<IEnumerable<AppUser>> SearchAsync(string term)
         {
-            var col = _db.GetCollection<AppUser>("users");
-            if (string.IsNullOrWhiteSpace(term)) return Task.FromResult(col.FindAll());
+            if (string.IsNullOrWhiteSpace(term)) return Task.FromResult(_users.FindAll());
             
-            var results = col.Find(x => x.Username.Contains(term));
+            var results = _users.Find(x => x.Username.Contains(term));
             return Task.FromResult(results);
         }
 
         public Task DeleteAsync(string username)
         {
-            var col = _db.GetCollection<AppUser>("users");
-            var user = col.FindOne(x => x.Username == username);
+            var user = _users.FindOne(x => x.Username == username);
             if (user != null)
             {
-                col.Delete(user.Id);
+                _users.Delete(user.Id);
             }
             return Task.CompletedTask;
         }

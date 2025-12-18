@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
-using System.Security.Claims;
+using ReportTree.Server.Services;
 
 namespace ReportTree.Server.Controllers
 {
@@ -12,71 +13,45 @@ namespace ReportTree.Server.Controllers
     public class PagesController : ControllerBase
     {
         private readonly IPageRepository _repo;
+        private readonly PageAuthorizationService _authService;
+        private readonly IMemoryCache _cache;
+        private const string PAGES_CACHE_KEY = "all_pages";
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-        public PagesController(IPageRepository repo)
+        public PagesController(IPageRepository repo, PageAuthorizationService authService, IMemoryCache cache)
         {
             _repo = repo;
+            _authService = authService;
+            _cache = cache;
         }
 
         [HttpGet]
         [AllowAnonymous]
+        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "*" })]
         public async Task<IEnumerable<Page>> Get()
         {
-            var allPages = await _repo.GetAllAsync();
-            
-            var userRoles = User.Claims
-                .Where(c => c.Type == ClaimTypes.Role)
-                .Select(c => c.Value)
-                .ToList();
-            var userGroups = User.Claims
-                .Where(c => c.Type == "Group")
-                .Select(c => c.Value)
-                .ToList();
-            var username = User.Identity?.Name;
-            
-            var isAdmin = userRoles.Contains("Admin");
+            // Try to get from cache first
+            if (!_cache.TryGetValue(PAGES_CACHE_KEY, out IEnumerable<Page>? allPages))
+            {
+                allPages = await _repo.GetAllAsync();
+                _cache.Set(PAGES_CACHE_KEY, allPages, CacheDuration);
+            }
 
-            return allPages.Where(p => 
-                p.IsPublic || 
-                (User.Identity?.IsAuthenticated == true && (
-                    isAdmin || 
-                    (username != null && (p.AllowedUsers ?? new List<string>()).Contains(username)) ||
-                    (p.AllowedGroups ?? new List<string>()).Any(g => userGroups.Contains(g))
-                ))
-            );
+            // Filter based on user permissions
+            return _authService.FilterAccessiblePages(allPages!, User);
         }
 
         [HttpGet("{id}")]
         [AllowAnonymous]
+        [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "id" })]
         public async Task<ActionResult<Page>> Get(int id)
         {
             var page = await _repo.GetByIdAsync(id);
             if (page == null) return NotFound();
 
-            var userRoles = User.Claims
-                .Where(c => c.Type == ClaimTypes.Role)
-                .Select(c => c.Value)
-                .ToList();
-            var userGroups = User.Claims
-                .Where(c => c.Type == "Group")
-                .Select(c => c.Value)
-                .ToList();
-            var username = User.Identity?.Name;
-            
-            var isAdmin = userRoles.Contains("Admin");
-
-            if (!page.IsPublic)
+            if (!_authService.CanAccessPage(page, User))
             {
-                if (User.Identity?.IsAuthenticated != true) return Unauthorized();
-                
-                var hasAccess = isAdmin || 
-                                (username != null && (page.AllowedUsers ?? new List<string>()).Contains(username)) ||
-                                (page.AllowedGroups ?? new List<string>()).Any(g => userGroups.Contains(g));
-
-                if (!hasAccess)
-                {
-                    return Forbid();
-                }
+                return User.Identity?.IsAuthenticated == true ? Forbid() : Unauthorized();
             }
 
             return page;
@@ -88,6 +63,10 @@ namespace ReportTree.Server.Controllers
         {
             var id = await _repo.CreateAsync(page);
             page.Id = id;
+            
+            // Invalidate cache
+            _cache.Remove(PAGES_CACHE_KEY);
+            
             return CreatedAtAction(nameof(Get), new { id = page.Id }, page);
         }
 
@@ -97,6 +76,10 @@ namespace ReportTree.Server.Controllers
         {
             if (id != page.Id) return BadRequest();
             await _repo.UpdateAsync(page);
+            
+            // Invalidate cache
+            _cache.Remove(PAGES_CACHE_KEY);
+            
             return NoContent();
         }
 
@@ -105,6 +88,10 @@ namespace ReportTree.Server.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             await _repo.DeleteAsync(id);
+            
+            // Invalidate cache
+            _cache.Remove(PAGES_CACHE_KEY);
+            
             return NoContent();
         }
 
@@ -114,16 +101,13 @@ namespace ReportTree.Server.Controllers
         {
             var page = await _repo.GetByIdAsync(id);
             if (page == null) return NotFound();
-
-            // Ensure user has permission to edit this page
-            var userRoles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
-            var isAdmin = userRoles.Contains("Admin");
-            // Assuming Editors can edit any page, or we might want to restrict to page owners if that concept existed.
-            // For now, Admin and Editor roles are checked by [Authorize].
             
             // Serialize the layout object to string for storage
             page.Layout = System.Text.Json.JsonSerializer.Serialize(layout);
             await _repo.UpdateAsync(page);
+            
+            // Invalidate cache
+            _cache.Remove(PAGES_CACHE_KEY);
             
             return Ok(new { success = true, message = "Layout saved successfully" });
         }

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { jwtDecode, type JwtPayload } from 'jwt-decode'
+import { api } from '../services/api'
 
 interface CustomJwtPayload extends JwtPayload {
   role?: string | string[]
@@ -54,15 +55,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(username: string, password: string) {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      })
-
-      if (!response.ok) throw new Error('Login failed')
-
-      const data = await response.json()
+      const data = await api.post<{ token: string }>('/auth/login',
+        { username, password },
+        { skipAuth: true }
+      )
       setToken(data.token)
       return true
     } catch (error) {

@@ -1,4 +1,5 @@
 ﻿using ReportTree.Server.Models;
+using ReportTree.Server.Persistance;
 
 namespace ReportTree.Server.Security
 {
@@ -6,7 +7,16 @@ namespace ReportTree.Server.Security
     {
         private readonly string _issuer;
         private readonly Microsoft.IdentityModel.Tokens.SymmetricSecurityKey _key;
-        public TokenService(string issuer, Microsoft.IdentityModel.Tokens.SymmetricSecurityKey key) { _issuer = issuer; _key = key; }
+        private readonly int _expiryHours;
+        private readonly IGroupRepository _groupRepo;
+        
+        public TokenService(string issuer, Microsoft.IdentityModel.Tokens.SymmetricSecurityKey key, IGroupRepository groupRepo, int expiryHours = 8) 
+        { 
+            _issuer = issuer; 
+            _key = key;
+            _groupRepo = groupRepo;
+            _expiryHours = expiryHours;
+        }
 
         public string Generate(AppUser user)
         {
@@ -16,13 +26,18 @@ namespace ReportTree.Server.Security
             new(System.Security.Claims.ClaimTypes.Name, user.Username)
         };
             claims.AddRange(user.Roles.Select(r => new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, r)));
-            claims.AddRange(user.Groups.Select(g => new System.Security.Claims.Claim("Group", g)));
+            
+            // Get groups from Group.Members (single source of truth)
+            var userGroups = _groupRepo.GetAllAsync().Result
+                .Where(g => g.Members.Contains(user.Username))
+                .Select(g => g.Name);
+            claims.AddRange(userGroups.Select(g => new System.Security.Claims.Claim("Group", g)));
 
             var jwt = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
                 issuer: _issuer,
                 audience: null,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(8),
+                expires: DateTime.UtcNow.AddHours(_expiryHours),
                 signingCredentials: creds
             );
             return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(jwt);

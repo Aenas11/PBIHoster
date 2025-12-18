@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
+using System.ComponentModel.DataAnnotations;
 
 namespace ReportTree.Server.Controllers;
 
@@ -22,14 +23,29 @@ public class AdminController : ControllerBase
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers([FromQuery] string? term)
     {
-        var results = await _userRepo.SearchAsync(term ?? string.Empty);
-        return Ok(results);
+        var users = await _userRepo.SearchAsync(term ?? string.Empty);
+        var groups = (await _groupRepo.GetAllAsync()).ToList();
+        
+        // Build response with computed groups from Group.Members
+        var response = users.Select(u => new
+        {
+            u.Id,
+            u.Username,
+            u.Roles,
+            Groups = groups.Where(g => g.Members.Contains(u.Username)).Select(g => g.Name).ToList()
+        });
+        
+        return Ok(response);
     }
 
     public class UpsertUserDto
     {
+        [Required, MinLength(3, ErrorMessage = "Username must be at least 3 characters long")]
         public string Username { get; set; } = string.Empty;
+        
+        [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
         public string? Password { get; set; }
+        
         public List<string>? Roles { get; set; }
         public List<string>? Groups { get; set; }
     }
@@ -44,7 +60,6 @@ public class AdminController : ControllerBase
 
         user.Username = dto.Username;
         if (dto.Roles != null) user.Roles = dto.Roles;
-        if (dto.Groups != null) user.Groups = dto.Groups;
 
         if (!string.IsNullOrEmpty(dto.Password))
         {
@@ -52,6 +67,13 @@ public class AdminController : ControllerBase
         }
 
         await _userRepo.UpsertAsync(user);
+
+        // Update group memberships (single source of truth: Group.Members)
+        if (dto.Groups != null)
+        {
+            await UpdateUserGroupMembershipsAsync(user.Username, dto.Groups);
+        }
+
         return Ok();
     }
 
@@ -81,6 +103,14 @@ public class AdminController : ControllerBase
     [HttpDelete("users/{username}")]
     public async Task<IActionResult> DeleteUser(string username)
     {
+        // Remove user from all groups (single source of truth)
+        var allGroups = (await _groupRepo.GetAllAsync()).ToList();
+        foreach (var group in allGroups.Where(g => g.Members.Contains(username)))
+        {
+            group.Members.Remove(username);
+            await _groupRepo.UpdateAsync(group);
+        }
+
         await _userRepo.DeleteAsync(username);
         return NoContent();
     }
@@ -88,7 +118,76 @@ public class AdminController : ControllerBase
     [HttpDelete("groups/{id:int}")]
     public async Task<IActionResult> DeleteGroup(int id)
     {
+        // Just delete the group - memberships are stored only in Group.Members
         await _groupRepo.DeleteAsync(id);
         return NoContent();
+    }
+
+    [HttpPost("groups/{id:int}/members")]
+    public async Task<IActionResult> AddGroupMember(int id, [FromBody] AddMemberDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Username)) return BadRequest("Username required");
+
+        var group = (await _groupRepo.GetAllAsync()).FirstOrDefault(g => g.Id == id);
+        if (group == null) return NotFound("Group not found");
+
+        var user = await _userRepo.GetByUsernameAsync(dto.Username);
+        if (user == null) return NotFound("User not found");
+
+        // Add member to group (single source of truth)
+        if (!group.Members.Contains(dto.Username))
+        {
+            group.Members.Add(dto.Username);
+            await _groupRepo.UpdateAsync(group);
+        }
+
+        return Ok();
+    }
+
+    [HttpDelete("groups/{id:int}/members/{username}")]
+    public async Task<IActionResult> RemoveGroupMember(int id, string username)
+    {
+        var group = (await _groupRepo.GetAllAsync()).FirstOrDefault(g => g.Id == id);
+        if (group == null) return NotFound("Group not found");
+
+        // Remove member from group (single source of truth)
+        group.Members.Remove(username);
+        await _groupRepo.UpdateAsync(group);
+
+        return NoContent();
+    }
+
+    public class AddMemberDto
+    {
+        public string Username { get; set; } = string.Empty;
+    }
+
+    private async Task UpdateUserGroupMembershipsAsync(string username, List<string> desiredGroups)
+    {
+        var allGroups = (await _groupRepo.GetAllAsync()).ToList();
+
+        foreach (var group in allGroups)
+        {
+            bool shouldBeInGroup = desiredGroups.Contains(group.Name);
+            bool isInGroup = group.Members.Contains(username);
+
+            if (shouldBeInGroup && !isInGroup)
+            {
+                // Add user to group
+                group.Members.Add(username);
+                await _groupRepo.UpdateAsync(group);
+            }
+            else if (!shouldBeInGroup && isInGroup)
+            {
+                // Remove user from group
+                group.Members.Remove(username);
+                await _groupRepo.UpdateAsync(group);
+            }
+        }
+    }
+
+    private List<string> GetUserGroups(string username, IEnumerable<Group> allGroups)
+    {
+        return allGroups.Where(g => g.Members.Contains(username)).Select(g => g.Name).ToList();
     }
 }

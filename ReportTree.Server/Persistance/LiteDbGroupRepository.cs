@@ -6,41 +6,45 @@ namespace ReportTree.Server.Persistance
     public class LiteDbGroupRepository : IGroupRepository
     {
         private readonly LiteDatabase _db;
-        public LiteDbGroupRepository(LiteDatabase db) { _db = db; }
+        private readonly ILiteCollection<Group> _groups;
+        
+        public LiteDbGroupRepository(LiteDatabase db) 
+        { 
+            _db = db;
+            _groups = _db.GetCollection<Group>("groups");
+            
+            // Create indexes for performance
+            _groups.EnsureIndex(x => x.Name);
+        }
 
         public Task<IEnumerable<Group>> GetAllAsync()
         {
-            var col = _db.GetCollection<Group>("groups");
-            return Task.FromResult(col.FindAll());
+            return Task.FromResult(_groups.FindAll());
         }
 
         public Task<IEnumerable<Group>> SearchAsync(string term)
         {
-            var col = _db.GetCollection<Group>("groups");
-            if (string.IsNullOrWhiteSpace(term)) return Task.FromResult(col.FindAll());
+            if (string.IsNullOrWhiteSpace(term)) return Task.FromResult(_groups.FindAll());
             
-            var results = col.Find(x => x.Name.Contains(term));
+            var results = _groups.Find(x => x.Name.Contains(term));
             return Task.FromResult(results);
         }
 
         public Task<int> CreateAsync(Group group)
         {
-            var col = _db.GetCollection<Group>("groups");
-            var id = col.Insert(group);
+            var id = _groups.Insert(group);
             return Task.FromResult(id.AsInt32);
         }
 
         public Task UpdateAsync(Group group)
         {
-            var col = _db.GetCollection<Group>("groups");
-            col.Update(group);
+            _groups.Update(group);
             return Task.CompletedTask;
         }
 
         public Task DeleteAsync(int id)
         {
-            var col = _db.GetCollection<Group>("groups");
-            col.Delete(id);
+            _groups.Delete(id);
             return Task.CompletedTask;
         }
     }

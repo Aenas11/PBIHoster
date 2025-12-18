@@ -5,8 +5,8 @@
         <div v-if="error" class="error-message">{{ error }}</div>
 
         <div class="controls">
-            <cds-text-input :value="term" @input="(e) => (term = (e.target as HTMLInputElement).value)" label="Search"
-                placeholder="Search users" :disabled="loading"></cds-text-input>
+            <cds-text-input :value="term" @input="(e: Event) => (term = (e.target as HTMLInputElement).value)"
+                label="Search" placeholder="Search users" :disabled="loading"></cds-text-input>
             <cds-button kind="primary" @click="search" :disabled="loading">
                 {{ loading ? 'Loading...' : 'Search' }}
             </cds-button>

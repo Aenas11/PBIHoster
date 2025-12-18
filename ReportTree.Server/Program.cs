@@ -32,13 +32,23 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<LiteDB.LiteDatabase>(_ => new LiteDB.LiteDatabase(dbConnectionString));
             builder.Services.AddSingleton<IUserRepository, LiteDbUserRepository>();
             builder.Services.AddSingleton<IGroupRepository, LiteDbGroupRepository>();
-            builder.Services.AddSingleton<IThemeRepository>(_ => new LiteDbThemeRepository(dbConnectionString));
+            builder.Services.AddSingleton<IThemeRepository, LiteDbThemeRepository>();
             builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
             builder.Services.AddScoped<AuthService>();
+            builder.Services.AddScoped<PageAuthorizationService>();
+            
+            // Add memory cache for performance
+            builder.Services.AddMemoryCache();
+            builder.Services.AddResponseCaching();
+            builder.Services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true;
+            });
 
             // JWT Auth
             var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev-super-secret-key-change-must-be-longer-than-256-bits";
             var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ReportTree";
+            var jwtExpiryHours = builder.Configuration.GetValue<int>("Jwt:ExpiryHours", 8);
             var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtKey));
 
             builder.Services.AddAuthentication(options =>
@@ -66,17 +76,30 @@ namespace ReportTree.Server
                 options.AddPolicy("CanManageUsers", policy => policy.RequireRole("Admin"));
             });
 
-            builder.Services.AddSingleton<ITokenService>(new TokenService(jwtIssuer, signingKey));
+            builder.Services.AddSingleton<ITokenService>(sp =>
+            {
+                var groupRepo = sp.GetRequiredService<IGroupRepository>();
+                return new TokenService(jwtIssuer, signingKey, groupRepo, jwtExpiryHours);
+            });
 
             var app = builder.Build();
 
             app.UseDefaultFiles();
             app.MapStaticAssets();
+            
+            // Add response caching and compression
+            app.UseResponseCaching();
+            app.UseResponseCompression();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
+            }
+            else
+            {
+                // Global error handling for production
+                app.UseExceptionHandler("/error");
             }
 
             // app.UseHttpsRedirection();
@@ -98,6 +121,19 @@ namespace ReportTree.Server
             {
                 var token = await auth.LoginAsync(req.Username, req.Password);
                 return token != null ? Results.Ok(new LoginResponse(token)) : Results.Unauthorized();
+            });
+            
+            // Global error handler
+            app.Map("/error", (HttpContext context) =>
+            {
+                var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+                var isDevelopment = app.Environment.IsDevelopment();
+                
+                return Results.Problem(
+                    title: "An error occurred",
+                    detail: isDevelopment ? exception?.Error.Message : "An unexpected error occurred. Please try again later.",
+                    statusCode: StatusCodes.Status500InternalServerError
+                );
             });
 
             // Serve the Vue.js frontend for all non-API routes

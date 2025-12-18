@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { themes as builtInThemes } from '../config/themes'
+import { api } from '../services/api'
 
 export interface CustomTheme {
     id: string
@@ -90,15 +91,7 @@ export const useThemeStore = defineStore('theme', () => {
     // Load custom themes for the organization
     async function loadCustomThemes() {
         try {
-            const response = await fetch('/api/themes', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-
-            if (response.ok) {
-                customThemes.value = await response.json()
-            }
+            customThemes.value = await api.get<CustomTheme[]>('/themes')
         } catch (error) {
             console.error('Failed to load custom themes', error)
         }
@@ -107,20 +100,9 @@ export const useThemeStore = defineStore('theme', () => {
     // Save custom theme to backend
     async function saveCustomTheme(theme: Omit<CustomTheme, 'id'>) {
         try {
-            const response = await fetch('/api/themes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(theme)
-            })
-
-            if (response.ok) {
-                const savedTheme = await response.json()
-                customThemes.value.push(savedTheme)
-                return savedTheme
-            }
+            const savedTheme = await api.post<CustomTheme>('/themes', theme)
+            customThemes.value.push(savedTheme)
+            return savedTheme
         } catch (error) {
             console.error('Failed to save custom theme', error)
             throw error
@@ -130,19 +112,11 @@ export const useThemeStore = defineStore('theme', () => {
     // Delete custom theme
     async function deleteCustomTheme(themeId: string) {
         try {
-            const response = await fetch(`/api/themes/${themeId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-
-            if (response.ok) {
-                customThemes.value = customThemes.value.filter(t => t.id !== themeId)
-                if (customTheme.value?.id === themeId) {
-                    customTheme.value = null
-                    setTheme('white')
-                }
+            await api.delete(`/themes/${themeId}`)
+            customThemes.value = customThemes.value.filter(t => t.id !== themeId)
+            if (customTheme.value?.id === themeId) {
+                customTheme.value = null
+                setTheme('white')
             }
         } catch (error) {
             console.error('Failed to delete custom theme', error)

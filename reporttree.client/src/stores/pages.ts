@@ -1,27 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Page } from '../types/page'
-import { useAuthStore } from './auth'
+import { api } from '../services/api'
 
 export const usePagesStore = defineStore('pages', () => {
     const pages = ref<Page[]>([])
     const isLoading = ref(false)
-    const auth = useAuthStore()
 
     const fetchPages = async () => {
         isLoading.value = true
         try {
-            const headers: HeadersInit = {}
-            if (auth.token) {
-                headers['Authorization'] = `Bearer ${auth.token}`
-            }
-            const res = await fetch('/api/pages', {
-                headers
-            })
-            if (res.ok) {
-                const allPages = await res.json() as Page[]
-                pages.value = buildTree(allPages)
-            }
+            const allPages = await api.get<Page[]>('/pages')
+            pages.value = buildTree(allPages)
         } catch (e) {
             console.error(e)
         } finally {
@@ -52,43 +42,18 @@ export const usePagesStore = defineStore('pages', () => {
     }
 
     const createPage = async (page: Omit<Page, 'id'>) => {
-        const res = await fetch('/api/pages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${auth.token}`
-            },
-            body: JSON.stringify(page)
-        })
-        if (res.ok) {
-            await fetchPages()
-        }
+        await api.post('/pages', page)
+        await fetchPages()
     }
 
     const updatePage = async (page: Page) => {
-        const res = await fetch(`/api/pages/${page.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${auth.token}`
-            },
-            body: JSON.stringify(page)
-        })
-        if (res.ok) {
-            await fetchPages()
-        }
+        await api.put(`/pages/${page.id}`, page)
+        await fetchPages()
     }
 
     const deletePage = async (id: number) => {
-        const res = await fetch(`/api/pages/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${auth.token}`
-            }
-        })
-        if (res.ok) {
-            await fetchPages()
-        }
+        await api.delete(`/pages/${id}`)
+        await fetchPages()
     }
 
     return {
