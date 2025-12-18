@@ -18,7 +18,10 @@ namespace ReportTree.Server.Controllers
         private const string PAGES_CACHE_KEY = "all_pages";
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-        public PagesController(IPageRepository repo, PageAuthorizationService authService, IMemoryCache cache)
+        public PagesController(
+            IPageRepository repo, 
+            PageAuthorizationService authService,
+            IMemoryCache cache)
         {
             _repo = repo;
             _authService = authService;

@@ -40,6 +40,13 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
             builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
             
+            // Services
+            builder.Services.AddSingleton<ISettingsService, SettingsService>();
+            builder.Services.AddScoped<AuditLogService>();
+            builder.Services.AddScoped<AuthService>();
+            builder.Services.AddScoped<PageAuthorizationService>();
+            builder.Services.AddSingleton<IPowerBIService, PowerBIService>();
+
             // Configure Security Policies from Configuration
             var passwordPolicy = new PasswordPolicy();
             builder.Configuration.Bind("Security:PasswordPolicy", passwordPolicy);

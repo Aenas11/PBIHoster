@@ -80,7 +80,10 @@ public class SettingsController : ControllerBase
         var username = User.Identity?.Name ?? "Unknown";
         
         // Check if this is a sensitive setting (like encryption keys)
-        var isEncrypted = dto.Category == "Security" || dto.Key.Contains("Key") || dto.Key.Contains("Secret");
+        var isEncrypted = dto.Category == "Security" || 
+                          dto.Key.Contains("Key") || 
+                          dto.Key.Contains("Secret") || 
+                          dto.Key.Contains("Password");
         
         await _settingsService.UpsertSettingAsync(
             dto.Key,

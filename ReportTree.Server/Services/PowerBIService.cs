@@ -1,0 +1,282 @@
+using Microsoft.Identity.Client;
+using Microsoft.PowerBI.Api;
+using Microsoft.PowerBI.Api.Models;
+using Microsoft.Rest;
+using ReportTree.Server.DTOs;
+using ReportTree.Server.Models;
+using System.Security.Cryptography.X509Certificates;
+
+namespace ReportTree.Server.Services
+{
+    public class PowerBIService : IPowerBIService
+    {
+        private readonly ISettingsService _settingsService;
+        private readonly ILogger<PowerBIService> _logger;
+        private IConfidentialClientApplication? _msalClient;
+        private PowerBIConfiguration? _config;
+        private DateTime _tokenExpiration;
+        private string _accessToken = string.Empty;
+        private readonly SemaphoreSlim _tokenLock = new SemaphoreSlim(1, 1);
+
+        public PowerBIService(ISettingsService settingsService, ILogger<PowerBIService> logger)
+        {
+            _settingsService = settingsService;
+            _logger = logger;
+        }
+
+        private async Task LoadConfigurationAsync()
+        {
+            _config = new PowerBIConfiguration
+            {
+                TenantId = await _settingsService.GetValueAsync("PowerBI.TenantId") ?? string.Empty,
+                ClientId = await _settingsService.GetValueAsync("PowerBI.ClientId") ?? string.Empty,
+                ClientSecret = await _settingsService.GetValueAsync("PowerBI.ClientSecret") ?? string.Empty,
+                CertificateThumbprint = await _settingsService.GetValueAsync("PowerBI.CertificateThumbprint") ?? string.Empty,
+                CertificatePath = await _settingsService.GetValueAsync("PowerBI.CertificatePath") ?? string.Empty,
+                AuthorityUrl = await _settingsService.GetValueAsync("PowerBI.AuthorityUrl") ?? "https://login.microsoftonline.com/{0}/",
+                ResourceUrl = await _settingsService.GetValueAsync("PowerBI.ResourceUrl") ?? "https://analysis.windows.net/powerbi/api",
+                ApiUrl = await _settingsService.GetValueAsync("PowerBI.ApiUrl") ?? "https://api.powerbi.com"
+            };
+
+            var authTypeStr = await _settingsService.GetValueAsync("PowerBI.AuthType");
+            if (Enum.TryParse<AuthenticationType>(authTypeStr, out var authType))
+            {
+                _config.AuthType = authType;
+            }
+        }
+
+        public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default)
+        {
+            await _tokenLock.WaitAsync(cancellationToken);
+            try
+            {
+                if (!string.IsNullOrEmpty(_accessToken) && _tokenExpiration > DateTime.UtcNow.AddMinutes(5))
+                {
+                    return _accessToken;
+                }
+
+                if (_config == null || string.IsNullOrEmpty(_config.ClientId))
+                {
+                    await LoadConfigurationAsync();
+                }
+
+                if (string.IsNullOrEmpty(_config!.ClientId) || string.IsNullOrEmpty(_config.TenantId))
+                {
+                    throw new InvalidOperationException("Power BI configuration is missing (ClientId or TenantId).");
+                }
+
+                if (_msalClient == null)
+                {
+                    var authority = string.Format(_config.AuthorityUrl, _config.TenantId);
+                    var builder = ConfidentialClientApplicationBuilder.Create(_config.ClientId)
+                        .WithAuthority(authority);
+
+                    if (_config.AuthType == AuthenticationType.ClientSecret)
+                    {
+                        if (string.IsNullOrEmpty(_config.ClientSecret))
+                            throw new InvalidOperationException("Power BI Client Secret is missing.");
+                        builder.WithClientSecret(_config.ClientSecret);
+                    }
+                    else if (_config.AuthType == AuthenticationType.Certificate)
+                    {
+                        X509Certificate2? certificate = null;
+                        if (!string.IsNullOrEmpty(_config.CertificatePath) && File.Exists(_config.CertificatePath))
+                        {
+                            certificate = X509CertificateLoader.LoadCertificateFromFile(_config.CertificatePath);
+                        }
+                        // Add logic for Thumbprint store lookup if needed
+                        if(!string.IsNullOrEmpty(_config.CertificateThumbprint))
+                        {
+                            using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                            store.Open(OpenFlags.ReadOnly);
+                            var certs = store.Certificates.Find(X509FindType.FindByThumbprint, _config.CertificateThumbprint, validOnly: false);
+                            if (certs.Count > 0)
+                            {
+                                certificate = certs[0];
+                            }
+                        }
+                        
+                        if (certificate == null)
+                            throw new InvalidOperationException("Power BI Certificate not found.");
+                            
+                        builder.WithCertificate(certificate);
+                    }
+
+                    _msalClient = builder.Build();
+                }
+
+                var scopes = new[] { $"{_config.ResourceUrl}/.default" };
+                var result = await _msalClient.AcquireTokenForClient(scopes).ExecuteAsync(cancellationToken);
+
+                _accessToken = result.AccessToken;
+                _tokenExpiration = result.ExpiresOn.DateTime;
+
+                return _accessToken;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to acquire Power BI access token.");
+                throw;
+            }
+            finally
+            {
+                _tokenLock.Release();
+            }
+        }
+
+        private PowerBIClient CreatePowerBIClient(string accessToken)
+        {
+            var tokenCredentials = new TokenCredentials(accessToken, "Bearer");
+            return new PowerBIClient(new Uri(_config?.ApiUrl ?? "https://api.powerbi.com"), tokenCredentials);
+        }
+
+        public async Task<IEnumerable<WorkspaceDto>> GetWorkspacesAsync(CancellationToken cancellationToken = default)
+        {
+            var token = await GetAccessTokenAsync(cancellationToken);
+            using var client = CreatePowerBIClient(token);
+            
+            // Get groups (workspaces)
+            var groups = await client.Groups.GetGroupsAsync(cancellationToken: cancellationToken);
+            
+            return groups.Value.Select(g => new WorkspaceDto
+            {
+                Id = g.Id,
+                Name = g.Name
+            });
+        }
+
+        public async Task<IEnumerable<ReportDto>> GetReportsAsync(Guid workspaceId, CancellationToken cancellationToken = default)
+        {
+            var token = await GetAccessTokenAsync(cancellationToken);
+            using var client = CreatePowerBIClient(token);
+
+            var reports = await client.Reports.GetReportsInGroupAsync(workspaceId, cancellationToken: cancellationToken);
+
+            return reports.Value.Select(r => new ReportDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                EmbedUrl = r.EmbedUrl,
+                DatasetId = r.DatasetId
+            });
+        }
+
+        public async Task<IEnumerable<DashboardDto>> GetDashboardsAsync(Guid workspaceId, CancellationToken cancellationToken = default)
+        {
+            var token = await GetAccessTokenAsync(cancellationToken);
+            using var client = CreatePowerBIClient(token);
+
+            var dashboards = await client.Dashboards.GetDashboardsInGroupAsync(workspaceId, cancellationToken: cancellationToken);
+
+            return dashboards.Value.Select(d => new DashboardDto
+            {
+                Id = d.Id,
+                Name = d.DisplayName,
+                EmbedUrl = d.EmbedUrl
+            });
+        }
+
+        public async Task<ReportDto?> GetReportAsync(Guid workspaceId, Guid reportId, CancellationToken cancellationToken = default)
+        {
+            var token = await GetAccessTokenAsync(cancellationToken);
+            using var client = CreatePowerBIClient(token);
+
+            try 
+            {
+                var report = await client.Reports.GetReportInGroupAsync(workspaceId, reportId, cancellationToken: cancellationToken);
+                return new ReportDto
+                {
+                    Id = report.Id,
+                    Name = report.Name,
+                    EmbedUrl = report.EmbedUrl,
+                    DatasetId = report.DatasetId
+                };
+            }
+            catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+        }
+
+        public async Task<DashboardDto?> GetDashboardAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default)
+        {
+            var token = await GetAccessTokenAsync(cancellationToken);
+            using var client = CreatePowerBIClient(token);
+
+            try
+            {
+                var dashboard = await client.Dashboards.GetDashboardInGroupAsync(workspaceId, dashboardId, cancellationToken: cancellationToken);
+                return new DashboardDto
+                {
+                    Id = dashboard.Id,
+                    Name = dashboard.DisplayName,
+                    EmbedUrl = dashboard.EmbedUrl
+                };
+            }
+            catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+        }
+
+        public async Task<EmbedTokenResponseDto> GetReportEmbedTokenAsync(Guid workspaceId, Guid reportId, List<RLSIdentityDto>? identities = null, CancellationToken cancellationToken = default)
+        {
+            var token = await GetAccessTokenAsync(cancellationToken);
+            using var client = CreatePowerBIClient(token);
+
+            var report = await client.Reports.GetReportInGroupAsync(workspaceId, reportId, cancellationToken: cancellationToken);
+            
+            GenerateTokenRequestV2 request;
+
+            if (identities != null && identities.Any())
+            {
+                var effectiveIdentities = identities.Select(i => new EffectiveIdentity(
+                    username: i.Username,
+                    roles: i.Roles,
+                    datasets: i.Datasets
+                )).ToList();
+
+                request = new GenerateTokenRequestV2(
+                    reports: new List<GenerateTokenRequestV2Report> { new GenerateTokenRequestV2Report(report.Id) },
+                    identities: effectiveIdentities
+                );
+            }
+            else
+            {
+                request = new GenerateTokenRequestV2(
+                    reports: new List<GenerateTokenRequestV2Report> { new GenerateTokenRequestV2Report(report.Id) }
+                );
+            }
+
+            var embedToken = await client.EmbedToken.GenerateTokenAsync(request, cancellationToken: cancellationToken);
+
+            return new EmbedTokenResponseDto
+            {
+                AccessToken = embedToken.Token,
+                EmbedUrl = report.EmbedUrl,
+                TokenId = embedToken.TokenId.ToString(),
+                Expiration = embedToken.Expiration
+            };
+        }
+
+        public async Task<EmbedTokenResponseDto> GetDashboardEmbedTokenAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default)
+        {
+            var token = await GetAccessTokenAsync(cancellationToken);
+            using var client = CreatePowerBIClient(token);
+
+            var dashboard = await client.Dashboards.GetDashboardInGroupAsync(workspaceId, dashboardId, cancellationToken: cancellationToken);
+
+            // Use V1 API for single dashboard
+            var request = new GenerateTokenRequest(accessLevel: TokenAccessLevel.View);
+            var embedToken = await client.Dashboards.GenerateTokenInGroupAsync(workspaceId, dashboardId, request, cancellationToken: cancellationToken);
+
+            return new EmbedTokenResponseDto
+            {
+                AccessToken = embedToken.Token,
+                EmbedUrl = dashboard.EmbedUrl,
+                TokenId = embedToken.TokenId.ToString(),
+                Expiration = embedToken.Expiration
+            };
+        }
+    }
+}

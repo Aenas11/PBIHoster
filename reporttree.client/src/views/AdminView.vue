@@ -3,6 +3,7 @@ import '@carbon/web-components/es/components/tabs/index.js'
 import UsersManager from '../components/Admin/UsersManager.vue'
 import GroupsManager from '../components/Admin/GroupsManager.vue'
 import SettingsManager from '../components/Admin/SettingsManager.vue'
+import PowerBISettings from '../components/Admin/PowerBISettings.vue'
 </script>
 
 <template>
@@ -12,6 +13,7 @@ import SettingsManager from '../components/Admin/SettingsManager.vue'
         <cds-tabs value="tab-users">
             <cds-tab id="tab-users" target="panel-users" value="tab-users">Users & Groups</cds-tab>
             <cds-tab id="tab-settings" target="panel-settings" value="tab-settings">Settings</cds-tab>
+            <cds-tab id="tab-powerbi" target="panel-powerbi" value="tab-powerbi">Power BI</cds-tab>
             <cds-tab id="tab-audit" target="panel-audit" value="tab-audit">Audit Logs</cds-tab>
         </cds-tabs>
 
@@ -24,6 +26,10 @@ import SettingsManager from '../components/Admin/SettingsManager.vue'
 
         <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
             <SettingsManager />
+        </div>
+
+        <div id="panel-powerbi" role="tabpanel" aria-labelledby="tab-powerbi" hidden>
+            <PowerBISettings />
         </div>
 
         <div id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>

@@ -46,6 +46,34 @@ export interface DashboardComponentProps {
 }
 
 /**
+ * Power BI Report Component Configuration
+ */
+export interface PowerBIReportComponentConfig {
+    workspaceId?: string
+    reportId?: string
+    enableRLS?: boolean
+    rlsRoles?: string[] // RLS roles to apply for the current user
+}
+
+/**
+ * Power BI Dashboard Component Configuration
+ */
+export interface PowerBIDashboardComponentConfig {
+    workspaceId?: string
+    dashboardId?: string
+}
+
+/**
+ * Power BI Workspace Component Configuration
+ * Displays all reports from a workspace with tabs
+ */
+export interface PowerBIWorkspaceComponentConfig {
+    workspaceId?: string
+    enableRLS?: boolean
+    rlsRoles?: string[]
+}
+
+/**
  * Props for configuration components
  */
 export interface ComponentConfigProps {

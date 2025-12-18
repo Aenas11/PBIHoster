@@ -9,6 +9,11 @@ import { markRaw } from 'vue'
 // Import components
 import SimpleHtmlComponent from '../components/DashboardComponents/SimpleHtmlComponent.vue'
 import SimpleHtmlComponentConfigure from '../components/DashboardComponents/SimpleHtmlComponentConfigure.vue'
+import PowerBIReportComponent from '../components/DashboardComponents/PowerBIReportComponent.vue'
+import PowerBIReportComponentConfigure from '../components/DashboardComponents/PowerBIReportComponentConfigure.vue'
+import PowerBIDashboardComponent from '../components/DashboardComponents/PowerBIDashboardComponent.vue'
+import PowerBIDashboardComponentConfigure from '../components/DashboardComponents/PowerBIDashboardComponentConfigure.vue'
+import PowerBIWorkspaceComponent from '../components/DashboardComponents/PowerBIWorkspaceComponent.vue'
 
 // Define component configurations
 const components: ComponentDefinition[] = [
@@ -24,20 +29,45 @@ const components: ComponentDefinition[] = [
         defaultDimensions: { w: 4, h: 4 },
         minDimensions: { w: 2, h: 2 }
     },
-    // Add more components here as they are developed
-    // {
-    //     type: 'power-bi-report',
-    //     name: 'Power BI Report',
-    //     description: 'Embed a Power BI report',
-    //     component: markRaw(PowerBIReportComponent),
-    //     configComponent: markRaw(PowerBIReportConfigure),
-    //     defaultConfig: {
-    //         reportId: '',
-    //         workspaceId: ''
-    //     },
-    //     defaultDimensions: { w: 6, h: 8 },
-    //     minDimensions: { w: 4, h: 4 }
-    // }
+    {
+        type: 'power-bi-report',
+        name: 'Power BI Report',
+        description: 'Embed a Power BI report',
+        component: markRaw(PowerBIReportComponent),
+        configComponent: markRaw(PowerBIReportComponentConfigure),
+        defaultConfig: {
+            workspaceId: '',
+            reportId: '',
+            viewOptions: 'FitToPage'
+        },
+        defaultDimensions: { w: 12, h: 10 },
+        minDimensions: { w: 4, h: 4 }
+    },
+    {
+        type: 'power-bi-dashboard',
+        name: 'Power BI Dashboard',
+        description: 'Embed a Power BI dashboard',
+        component: markRaw(PowerBIDashboardComponent),
+        configComponent: markRaw(PowerBIDashboardComponentConfigure),
+        defaultConfig: {
+            workspaceId: '',
+            dashboardId: '',
+            viewOptions: 'FitToPage'
+        },
+        defaultDimensions: { w: 12, h: 10 },
+        minDimensions: { w: 4, h: 4 }
+    },
+    {
+        type: 'power-bi-workspace',
+        name: 'Power BI Workspace Reports',
+        description: 'Display all reports from a Power BI workspace with tabs',
+        component: markRaw(PowerBIWorkspaceComponent),
+        defaultConfig: {
+            workspaceId: ''
+        },
+        defaultDimensions: { w: 12, h: 10 },
+        minDimensions: { w: 6, h: 6 }
+    }
 ]
 
 /**

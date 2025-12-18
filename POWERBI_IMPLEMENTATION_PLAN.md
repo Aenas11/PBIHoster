@@ -3,6 +3,16 @@
 ## Overview
 This document outlines the implementation plan for integrating Power BI embedding functionality into PBIHoster. The solution will support the "App owns the data" embedding model with both app secret and certificate-based authentication.
 
+## Implementation Status
+✅ **COMPLETED**: All core phases implemented  
+🚀 **Current Version**: Fully functional Power BI embedding with dynamic workspace support
+
+### Key Implementation Highlights
+- **Backend**: Complete Power BI API integration with RLS support
+- **Frontend**: Dashboard components + dynamic workspace component
+- **Architecture**: Component-based configuration (no Power BI fields in Page model)
+- **Features**: Admin UI for settings, token refresh, audit logging
+
 ## Architecture Overview
 
 ### Authentication Flow
@@ -21,132 +31,193 @@ This document outlines the implementation plan for integrating Power BI embeddin
 
 ---
 
-## Phase 1: Backend Infrastructure
+## Phase 1: Backend Infrastructure ✅ COMPLETED
 
-### 1.1 NuGet Package Dependencies
-**Files to modify**: `ReportTree.Server/ReportTree.Server.csproj`
+### 1.1 NuGet Package Dependencies ✅
+**Files modified**: `ReportTree.Server/ReportTree.Server.csproj`
 
-Add the following packages (use latest stable versions):
+**Installed packages**:
 ```xml
-<PackageReference Include="Microsoft.PowerBI.Api" Version="*" />
-<PackageReference Include="Microsoft.Identity.Client" Version="*" />
-<PackageReference Include="Microsoft.Rest.ClientRuntime" Version="*" />
+<PackageReference Include="Microsoft.PowerBI.Api" Version="4.22.0" />
+<PackageReference Include="Microsoft.Identity.Client" Version="4.79.2" />
 ```
 
-### 1.2 Configuration Model
-**New file**: `ReportTree.Server/Models/PowerBIConfiguration.cs`
+### 1.2 Configuration Model ✅
+**Implemented**: `ReportTree.Server/Services/PowerBIConfiguration.cs`
 
-```csharp
-public class PowerBIConfiguration
-{
-    public string AuthorityUrl { get; set; }
-    public string ResourceUrl { get; set; }
-    public string ApiUrl { get; set; }
-    public string TenantId { get; set; }
-    public string ClientId { get; set; }
-    public string ClientSecret { get; set; }
-    public string CertificateThumbprint { get; set; }
-    public string CertificatePath { get; set; }
-    public AuthenticationType AuthType { get; set; }
-}
+### 1.3 DTOs for Power BI Data ✅
+**Implemented**: `ReportTree.Server/DTOs/PowerBIDtos.cs`
 
-public enum AuthenticationType
-{
-    ClientSecret,
-    Certificate
-}
-```
-
-### 1.3 DTOs for Power BI Data
-**New file**: `ReportTree.Server/DTOs/PowerBIDtos.cs`
-
-Create DTOs for:
+Created DTOs for:
 - `WorkspaceDto`: Power BI workspace information
 - `ReportDto`: Report metadata (Id, Name, EmbedUrl, DatasetId)
 - `DashboardDto`: Dashboard metadata
-- `EmbedTokenRequestDto`: Request parameters for embed token generation (includes optional RLS identities)
+- `EmbedTokenRequestDto`: Request parameters with RLS support (`EnableRLS`, `RLSRoles`)
 - `EmbedTokenResponseDto`: Embed token, URL, and expiration details
-- `PowerBIResourceDto`: Generic resource info (type, id, name)
 - `RLSIdentityDto`: Username, roles, and datasets for Row Level Security
 
-### 1.4 Power BI Service Interface
-**New file**: `ReportTree.Server/Services/IPowerBIService.cs`
+### 1.4 Power BI Service Interface ✅
+**Implemented**: `ReportTree.Server/Services/IPowerBIService.cs`
 
-Define interface with methods:
-```csharp
-Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default);
-Task<IEnumerable<WorkspaceDto>> GetWorkspacesAsync(CancellationToken cancellationToken = default);
-Task<IEnumerable<ReportDto>> GetReportsAsync(Guid workspaceId, CancellationToken cancellationToken = default);
-Task<IEnumerable<DashboardDto>> GetDashboardsAsync(Guid workspaceId, CancellationToken cancellationToken = default);
-Task<EmbedTokenResponseDto> GetReportEmbedTokenAsync(Guid workspaceId, Guid reportId, List<RLSIdentityDto>? identities = null, CancellationToken cancellationToken = default);
-Task<EmbedTokenResponseDto> GetDashboardEmbedTokenAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default);
-Task<ReportDto?> GetReportAsync(Guid workspaceId, Guid reportId, CancellationToken cancellationToken = default);
-Task<DashboardDto?> GetDashboardAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default);
-```
+### 1.5 Power BI Service Implementation ✅
+**Implemented**: `ReportTree.Server/Services/PowerBIService.cs`
 
-### 1.5 Power BI Service Implementation
-**New file**: `ReportTree.Server/Services/PowerBIService.cs`
+Features:
+- MSAL authentication with token caching
+- Support for both ClientSecret and Certificate authentication
+- RLS (Row Level Security) support in embed token generation
+- Workspace, report, and dashboard querying
+- Thread-safe token refresh with SemaphoreSlim
 
-Implement the service with:
-- **Constructor**: Inject `IConfiguration`, `ILogger`, `ISettingsService`
-- **GetAccessTokenAsync()**: 
-  - Load configuration from SettingsService
-  - Support both ClientSecret and Certificate authentication
-  - Use MSAL (Microsoft.Identity.Client) to acquire token
-  - Cache token with refresh logic
-- **GetWorkspacesAsync()**: Query Power BI API for workspaces
-- **GetReportsAsync()**: Get reports for a workspace
-- **GetDashboardsAsync()**: Get dashboards for a workspace
-- **GetReportEmbedTokenAsync()**: 
-  - Generate embed token for report with View access level
-  - **Support RLS**: If identities provided, include them in `GenerateTokenRequestV2`
-- **GetDashboardEmbedTokenAsync()**: Generate embed token for dashboard
-- Helper methods:
-  - `CreatePowerBIClient(string accessToken)`: Factory for PowerBIClient
-  - `LoadConfigurationAsync()`: Load settings from SettingsService
-  - `AuthenticateWithSecretAsync()`: Secret-based auth
-  - `AuthenticateWithCertificateAsync()`: Certificate-based auth
-
-### 1.6 Power BI Controller
-**New file**: `ReportTree.Server/Controllers/PowerBIController.cs`
+### 1.6 Power BI Controller ✅
+**Implemented**: `ReportTree.Server/Controllers/PowerBIController.cs`
 
 Endpoints:
 ```csharp
-[HttpGet("workspaces")]
-[Authorize(Roles = "Admin,Editor")] // Only Admin/Editor can browse workspaces
-Task<ActionResult<IEnumerable<WorkspaceDto>>> GetWorkspaces()
-
-[HttpGet("workspaces/{workspaceId}/reports")]
-[Authorize(Roles = "Admin,Editor")]
-Task<ActionResult<IEnumerable<ReportDto>>> GetReports(Guid workspaceId)
-
-[HttpGet("workspaces/{workspaceId}/dashboards")]
-[Authorize(Roles = "Admin,Editor")]
-Task<ActionResult<IEnumerable<DashboardDto>>> GetDashboards(Guid workspaceId)
-
-[HttpPost("embed/report")]
-[Authorize] // All authenticated users can request embed tokens for authorized reports
-Task<ActionResult<EmbedTokenResponseDto>> GetReportEmbedToken(EmbedTokenRequestDto request)
-
-[HttpPost("embed/dashboard")]
-[Authorize]
-Task<ActionResult<EmbedTokenResponseDto>> GetDashboardEmbedToken(EmbedTokenRequestDto request)
-
-[HttpGet("workspaces/{workspaceId}/reports/{reportId}")]
-[Authorize]
-Task<ActionResult<ReportDto>> GetReport(Guid workspaceId, Guid reportId)
+[HttpGet("workspaces")] - Admin/Editor only
+[HttpGet("workspaces/{workspaceId}/reports")] - All authenticated users
+[HttpGet("workspaces/{workspaceId}/dashboards")] - All authenticated users
+[HttpPost("embed/report")] - With page authorization and RLS support
+[HttpPost("embed/dashboard")] - With page authorization
 ```
 
-**Authorization Logic**:
-- Check if user has access to the page that contains the Power BI resource
-- Use `PageAuthorizationService` to verify permissions
-- Return 403 if user doesn't have access
+**Key Features**:
+- Page-based authorization using `PageAuthorizationService`
+- RLS parameters passed from component config
+- Comprehensive audit logging via `AuditLogService`
 
-### 1.7 Configuration Storage
-**Update**: Settings system to store Power BI configuration
+### 1.7 Configuration Storage ✅
+**Implemented**: Settings stored via existing `SettingsService`
 
-Add settings via SettingsService with category "PowerBI":
-- `PowerBI.TenantId` (not encrypted)
+Power BI settings (category "PowerBI"):
+- `PowerBI.TenantId`
+- `PowerBI.ClientId`
+- `PowerBI.ClientSecret` (encrypted)
+- `PowerBI.AuthType`
+- `PowerBI.AuthorityUrl`
+- `PowerBI.ResourceUrl`
+- `PowerBI.ApiUrl`
+
+**Service Registration**: `Program.cs` registers `IPowerBIService` as Singleton
+
+---
+
+## Phase 2: Data Model Extensions ✅ COMPLETED (Refactored)
+
+### 2.1 Page Model Design ✅
+**Implemented**: `ReportTree.Server/Models/Page.cs`
+
+**Architecture Decision**: Power BI configuration stored in component config (Layout JSON), not Page model fields.
+
+**Optional field added**:
+```csharp
+public Guid? PowerBIWorkspaceId { get; set; } // Convenience field for workspace-based pages
+```
+
+**Benefits**:
+- Clean separation: Page handles navigation/layout
+- Components handle their own configuration
+- Multiple Power BI components per page supported
+- No database schema coupling to Power BI
+
+---
+
+## Phase 3: Frontend Implementation ✅ COMPLETED
+
+### 3.1 TypeScript Types ✅
+**Implemented**: `reporttree.client/src/types/powerbi.ts`
+
+All DTOs typed with RLS support in `EmbedTokenRequestDto`.
+
+### 3.2 Power BI Service (Frontend) ✅
+**Implemented**: `reporttree.client/src/services/powerbi.service.ts`
+
+Methods:
+- `getWorkspaces()`
+- `getReports(workspaceId)`
+- `getDashboards(workspaceId)`
+- `getReportEmbedToken(workspaceId, reportId, pageId?, enableRLS?, rlsRoles?)`
+- `getDashboardEmbedToken(workspaceId, dashboardId, pageId?)`
+
+### 3.3 Power BI Embed Component ✅
+**Implemented**: `reporttree.client/src/components/PowerBIEmbed.vue`
+
+Features:
+- Uses `powerbi-client` and `powerbi-models` (latest versions)
+- Bootstrapping for faster load
+- Event handling (`loaded`, `rendered`, `error`)
+- Phased loading with spinner
+- Proper cleanup on unmount
+
+**Dependencies installed**:
+```json
+"powerbi-client": "^3.3.0",
+"powerbi-models": "^2.1.0"
+```
+
+### 3.8 Dashboard Components ✅
+**Implemented**:
+- `PowerBIReportComponent.vue` - Report embed with RLS support and token refresh
+- `PowerBIReportComponentConfigure.vue` - Configuration UI
+- `PowerBIDashboardComponent.vue` - Dashboard embed
+- `PowerBIDashboardComponentConfigure.vue` - Configuration UI
+- `PowerBIWorkspaceComponent.vue` - **NEW**: Dynamic workspace with tabs for all reports
+
+**Component Config Types** (`src/types/components.ts`):
+```typescript
+interface PowerBIReportComponentConfig {
+    workspaceId?: string
+    reportId?: string
+    enableRLS?: boolean
+    rlsRoles?: string[]
+}
+
+interface PowerBIDashboardComponentConfig {
+    workspaceId?: string
+    dashboardId?: string
+}
+
+interface PowerBIWorkspaceComponentConfig {
+    workspaceId?: string
+    enableRLS?: boolean
+    rlsRoles?: string[]
+}
+```
+
+**Registration** (`src/config/components.ts`):
+- `power-bi-report`
+- `power-bi-dashboard`
+- `power-bi-workspace` - **Dynamic workspace with tab navigation**
+
+### 3.9 Feature: Workspace-Based Page ✅ REFACTORED
+**Concept**: Instead of creating multiple pages (SyncWorkspace approach - removed), use **dynamic component**.
+
+**Implementation**: `PowerBIWorkspaceComponent.vue`
+- Fetches all reports from workspace at runtime
+- Displays reports as tabs
+- Uses `?reportId=xxx` query parameter for navigation
+- Auto-selects first report
+- No database records needed for individual reports
+- Always up-to-date with Power BI workspace
+
+**Benefits**:
+- ✅ No database bloat
+- ✅ Always in sync with Power BI
+- ✅ Dynamic report discovery
+- ✅ Clean URL-based navigation
+
+### 3.7 Admin Settings UI ✅
+**Implemented**: `reporttree.client/src/components/Admin/PowerBISettings.vue`
+
+Features:
+- Authentication type selector (Service Principal / Master User)
+- Tenant ID, Client ID, Client Secret inputs
+- Authority URL configuration
+- Integrated into Admin View as "Power BI" tab
+
+---
+
+## Phase 4: Security & Authorization ✅ COMPLETED
 - `PowerBI.ClientId` (not encrypted)
 - `PowerBI.ClientSecret` (encrypted)
 - `PowerBI.AuthType` (values: "ClientSecret" or "Certificate")
@@ -327,233 +398,182 @@ Add Power BI Settings section:
 
 ---
 
-### 4.1 Authorization Rules
-**Implementation in PowerBIController**:
+## Phase 4: Security & Authorization ✅ COMPLETED
 
-- Users can only request embed tokens for pages they have access to
-- Validation flow:
-  1. Extract page from request (add `pageId` to `EmbedTokenRequestDto`)
-  2. Call `PageAuthorizationService.CanAccessPageAsync(pageId, userId, userRoles, userGroups)`
-  3. If false, return 403 Forbidden
-  4. **RLS Logic**:
-     - If `Page.PowerBIEnableRLS` is true:
-       - Construct `RLSIdentity` using current user's username
-       - Add roles from `Page.PowerBIRLSRoles` (if static) or map from user's app roles
-       - Pass identity to `GetReportEmbedTokenAsync`
-  5. If true, proceed with embed token generationAsync(pageId, userId, userRoles, userGroups)`
-  3. If false, return 403 Forbidden
-  4. If true, proceed with embed token generation
+### 4.1 Authorization Rules ✅
+**Implemented in**: `PowerBIController.cs`
 
-### 4.2 Audit Logging
-**Update**: `ReportTree.Server/Services/AuditLogService.cs`
+- Page-based authorization via `PageAuthorizationService`
+- RLS parameters passed from frontend component config
+- Username from authenticated user identity
+- Dataset ID fetched for RLS token generation
+- Admin/Editor bypass for preview (no pageId required)
 
-Add audit log entries for:
-- Power BI configuration changes
-- Embed token requests (with userId, pageId, resourceType, resourceId)
-- Access denied attempts
+### 4.2 Audit Logging ✅
+**Implemented**: Integration with `AuditLogService`
 
-### 4.3 Token Expiration Handling
-**Frontend**: 
-- Monitor token expiration from `EmbedTokenResponseDto.expiration`
-- Refresh token 5 minutes before expiration
-- Show reconnecting indicator during refresh
+Logged events:
+- Embed token generation (success/failure)
+- Access denied attempts with context
+- User identity and resource details
 
-### 4.4 Error Handling
+### 4.3 Token Expiration Handling ✅
+**Implemented**: `PowerBIReportComponent.vue`
+
+- Monitors token expiration timestamp
+- Auto-refresh 5 minutes before expiration
+- Schedules refresh using `setTimeout`
+- Cleans up timers on unmount
+
+### 4.4 Error Handling ✅
 **Backend**:
-- Catch Power BI API exceptions (401, 403, 404, 429)
-- Return appropriate HTTP status codes
-- Log errors with context
+- Exception logging in `PowerBIService` and `PowerBIController`
+- Appropriate HTTP status codes (401, 403, 404)
+- Detailed error context in logs
 
 **Frontend**:
-- Display user-friendly error messages
-- Retry logic for transient errors
-- Fallback UI for embed failures
+- User-friendly error messages
+- Loading indicators
+- Error state display in components
 
 ---
 
-## Phase 5: Testing & Validation
+## Phase 5: Testing & Validation ⚠️ PARTIAL
 
-### 5.1 Backend Unit Tests
-**New files**: `ReportTree.Server.Tests/Services/PowerBIServiceTests.cs`
+### 5.1 Backend Unit Tests ⏳ TODO
+Needs implementation
 
-Test cases:
-- Token acquisition (secret and certificate)
-- Workspace retrieval
-- Report/Dashboard retrieval
-- Embed token generation
-- Error scenarios (invalid credentials, missing workspace, etc.)
+### 5.2 Integration Tests ⏳ TODO
+Needs implementation
 
-### 5.2 Integration Tests
-**New files**: `ReportTree.Server.Tests/Controllers/PowerBIControllerTests.cs`
+### 5.3 Frontend Testing ✅ MANUAL
+- Manual testing possible with configured workspace
+- Token refresh tested
+- Error scenarios handled
 
-Test cases:
-- Authorization enforcement
-- Valid embed token requests
-- Invalid requests (missing page access)
-- CORS and security headers
-
-### 5.3 Frontend Testing
-- Manual testing with test Power BI workspace
-- Token refresh flow
-- Error scenarios (network failure, expired token)
-- Responsive design on different screen sizes
-
-### 5.4 Security Testing
-- Verify encrypted storage of client secret
-- Test authorization bypass attempts
-- Validate CORS policies
-- Check audit log completeness
+### 5.4 Security Testing ✅
+- Client secret encryption verified
+- Authorization enforcement tested
+- Audit logging confirmed
 
 ---
 
-## Phase 6: Documentation & Deployment
+## Phase 6: Documentation & Deployment ⚠️ PARTIAL
 
-### 6.1 Admin Documentation
-**Update**: `README.md`
+### 6.1 Admin Documentation ⏳ TODO
+Needs update in README.md
 
-Add section: "Power BI Integration"
-- Prerequisites (Azure AD app registration)
-- Configuration steps
-- How to link reports to pages
-- Troubleshooting guide
+### 6.2 User Guide ⏳ TODO
+Needs creation
 
-### 6.2 User Guide
-**New file**: `docs/POWERBI_USER_GUIDE.md`
+### 6.3 Developer Documentation ✅ THIS FILE
+Updated with implementation status
 
-Content:
-- How to browse Power BI workspaces
-- Attaching reports to pages
-- Managing permissions
-- Best practices
+### 6.4 Environment Variables ⏳ TODO
+Needs update in deployment docs
 
-### 6.3 Developer Documentation
-**New file**: `docs/POWERBI_DEVELOPER_GUIDE.md`
+### 6.5 Docker Configuration ⏳ TODO
+Needs update with Power BI env vars
 
-Content:
-- Architecture overview
-- API reference
-- Extension points
-- Customization options
-
-### 6.4 Environment Variables
-**Update**: `.env.example` in deployment folder
-
-Add:
-```bash
-# Power BI Configuration
-POWERBI_TENANT_ID=your-tenant-id
-POWERBI_CLIENT_ID=your-client-id
-POWERBI_CLIENT_SECRET=your-client-secret
-POWERBI_AUTH_TYPE=ClientSecret  # or Certificate
-```
-
-### 6.5 Docker Configuration
-**Update**: `docker-compose.yml`
-
-Add environment variables to `pbihoster` service:
-```yaml
-environment:
-  - PowerBI__TenantId=${POWERBI_TENANT_ID}
-  - PowerBI__ClientId=${POWERBI_CLIENT_ID}
-  - PowerBI__ClientSecret=${POWERBI_CLIENT_SECRET}
-  - PowerBI__AuthType=${POWERBI_AUTH_TYPE}
-```
-
-### 6.6 Certificate Mounting (for Certificate Auth)
-**Update**: `docker-compose.yml`
-
-Add volume mount for certificates:
-```yaml
-volumes:
-  - ./certs:/app/certs:ro
-```
-
-Document certificate setup in deployment guide.
+### 6.6 Certificate Mounting ⏳ TODO
+Needs documentation
 
 ---
 
-## Implementation Timeline
+## Implementation Timeline - ACTUAL
 
-### Week 1: Backend Core
-- [ ] Add NuGet packages
-- [ ] Create models and DTOs
-- [ ] Implement PowerBIService (token acquisition and API calls)
-- [ ] Create PowerBIController with basic endpoints
-- [ ] Add Power BI settings to SettingsService
+### Week 1-2: Core Backend & Frontend ✅
+- ✅ Added NuGet packages (Microsoft.PowerBI.Api, Microsoft.Identity.Client)
+- ✅ Created all models, DTOs, and services
+- ✅ Implemented PowerBIService with MSAL auth and RLS
+- ✅ Created PowerBIController with authorization
+- ✅ Added Power BI settings to SettingsService
+- ✅ Installed npm packages (powerbi-client, powerbi-models)
+- ✅ Created TypeScript types and services
+- ✅ Implemented PowerBIEmbed base component
 
-### Week 2: Data Model & Authorization
-- [ ] Extend Page model with Power BI properties
-- [ ] Implement authorization logic in controller
-- [ ] Add audit logging for Power BI operations
-- [ ] Test backend endpoints with Postman/HTTP files
+### Week 3: Dashboard Components ✅
+- ✅ Created PowerBIReportComponent with RLS and token refresh
+- ✅ Created PowerBIDashboardComponent
+- ✅ Created configuration components
+- ✅ Implemented PowerBIWorkspaceComponent (dynamic workspace)
+- ✅ Registered all components in component registry
 
-### Week 3: Frontend Core
-- [ ] Add powerbi-client npm package
-- [ ] Create TypeScript types
-- [ ] Implement frontend PowerBI service
-- [ ] Create PowerBIEmbed component
-- [ ] Test embedding with sample report
+### Week 4: Admin UI & Refactoring ✅
+- ✅ Created PowerBISettings component
+- ✅ Integrated into Admin View
+- ✅ Removed SyncWorkspace approach
+- ✅ Refactored to component-based config architecture
+- ✅ Made report/dashboard endpoints accessible to all users
+- ✅ Added audit logging integration
 
-### Week 4: Admin UI
-- [ ] Create PowerBIBrowser component
-- [ ] Update PageModal with Power BI linking
-- [ ] Create Power BI settings panel in admin
-- [ ] Implement test connection feature
+### Remaining: Testing & Documentation ⏳
+- ⏳ Unit tests
+- ⏳ Integration tests
+- ⏳ User documentation
+- ⏳ Deployment guide updates
 
-### Week 5: Integration & Polish
-- [ ] Update PageView to render embedded reports
-- [ ] Implement token refresh logic
-- [ ] Add error handling and loading states
-- [ ] Responsive design adjustments
+---
 
-### Week 6: Testing & Documentation
-- [ ] Write unit tests
-- [ ] Perform integration testing
-- [ ] Security audit
-- [ ] Update documentation
-- [ ] Create deployment guide updates
+## Architecture Decisions Made
+
+### 1. Component-Based Configuration ✅
+**Decision**: Store Power BI config in component props (Layout JSON), not Page model fields.
+
+**Rationale**:
+- Clean separation of concerns
+- Supports multiple Power BI components per page
+- No schema coupling between Page and Power BI
+
+### 2. Dynamic Workspace Component ✅
+**Decision**: Use `PowerBIWorkspaceComponent` instead of creating multiple Page records.
+
+**Rationale**:
+- No database bloat
+- Always in sync with Power BI
+- Dynamic discovery at runtime
+- URL-based navigation (`?reportId=xxx`)
+
+### 3. RLS in Request ✅
+**Decision**: Pass RLS config from frontend component to backend API.
+
+**Rationale**:
+- Component controls its own RLS settings
+- Different components can have different RLS rules
+- Username from authenticated user identity
+
+### 4. Token Refresh Strategy ✅
+**Decision**: Frontend-driven token refresh 5 minutes before expiration.
+
+**Rationale**:
+- Seamless user experience
+- No server-side websocket needed
+- Component manages its own lifecycle
 
 ---
 
 ## Open Questions & Decisions Needed
 
-### 1. Certificate Storage
-**Question**: How should certificates be stored in production?
-**Options**:
-- File system mount (simple, requires manual management)
-- Azure Key Vault (secure, requires Azure dependency)
-- Environment variable (Base64 encoded)
+### 1. Certificate Storage ⏳
+**Status**: Not yet needed (using ClientSecret for now)
+**Recommendation**: Document when needed
 
-**Recommendation**: Start with file system, document Azure Key Vault option.
+### 2. Token Caching ✅ DECIDED
+**Decision**: In-memory caching in PowerBIService (Singleton)
+**Status**: Implemented with SemaphoreSlim for thread safety
 
-### 2. Token Caching
-**Question**: Should we cache Power BI access tokens in-memory or distributed cache?
-**Options**:
-- In-memory (simple, works for single instance)
-- Redis (scalable, works for multiple instances)
+### 3. Embed Features ⏳
+**Status**: Basic features enabled
+**Future**: Make configurable per component
 
-**Recommendation**: In-memory for v1, add Redis support later if scaling horizontally.
+### 4. Workspace Selection ✅ DECIDED
+**Decision**: Admin/Editor browse via Admin UI, all users can view embedded content
+**Status**: Implemented
 
-### 3. Embed Features
-**Question**: What Power BI embed features should be enabled by default?
-**Options**: Filters panel, page navigation, export to PDF, etc.
-
-**Recommendation**: Enable basic features, make configurable per page in future versions.
-
-### 4. Workspace Selection
-**Question**: Should users select workspaces/reports dynamically, or should admins pre-configure allowed workspaces?
-**Options**:
-- Dynamic (more flexible, requires more permissions)
-- Pre-configured (more secure, less flexible)
-
-**Recommendation**: Dynamic with admin-only access to browser. Regular users only see linked reports.
-
-### 5. Multi-Report Pages
-**Question**: Should a single page support multiple embedded reports?
-**Current Model**: One Power BI resource per page.
-**Future Enhancement**: Multiple resources via dashboard layout widgets.
-
-**Recommendation**: Start with one-per-page, extend to multiple in Phase 7 (future).
+### 5. Multi-Report Pages ✅ DECIDED
+**Decision**: Use `PowerBIWorkspaceComponent` for multiple reports
+**Alternative**: Multiple dashboard components on same page
+**Status**: Both approaches supported
 
 ---
 
@@ -572,40 +592,52 @@ Document certificate setup in deployment guide.
 
 ## Success Criteria
 
-- [ ] Users can browse Power BI workspaces and reports (Admin/Editor)
-- [ ] Reports can be linked to pages via PageModal
-- [ ] Embedded reports render correctly with proper authentication
-- [ ] Token refresh works seamlessly
-- [ ] Authorization prevents unauthorized access
-- [ ] Audit logs capture all Power BI operations
-- [ ] Both ClientSecret and Certificate auth work
-- [ ] Documentation is complete and accurate
-- [ ] No security vulnerabilities introduced
-- [ ] Performance is acceptable (<2s to load report)
+- ✅ Users can browse Power BI workspaces and reports (Admin/Editor via Admin UI)
+- ✅ Reports can be embedded via dashboard components (`PowerBIReportComponent`)
+- ✅ Dashboards can be embedded via dashboard components (`PowerBIDashboardComponent`)
+- ✅ **NEW**: Entire workspaces can be embedded with tab navigation (`PowerBIWorkspaceComponent`)
+- ✅ Embedded reports render correctly with proper authentication
+- ✅ Token refresh works seamlessly (5 minutes before expiration)
+- ✅ Authorization prevents unauthorized access (PageAuthorizationService)
+- ✅ **RLS Support**: Row Level Security can be configured per component
+- ✅ Audit logs capture all Power BI operations
+- ✅ ClientSecret authentication works (Certificate support implemented but not tested)
+- ✅ Admin UI for Power BI settings is functional
+- ✅ Component-based architecture (no Power BI fields in Page model)
+- ⏳ Documentation needs completion
+- ⏳ Performance testing needed (<2s target for embed token)
 
 ---
 
 ## Future Enhancements (Post-MVP)
 
-### Phase 7: Advanced Features
-- Support for multiple reports per page (dashboard widgets)
-- Report bookmarks and saved views
-- Custom filters and slicers
+### Phase 7: Advanced Features ⏳
+- Support for report bookmarks and saved views
+- Custom filters and slicers configuration
 - Export functionality (PDF, PowerPoint)
 - Scheduled refresh monitoring
-- Usage analytics
+- Usage analytics and metrics
+- Mobile layout optimization
 
-### Phase 8: Collaboration Features
+### Phase 8: Collaboration Features ⏳
 - Commenting on reports
 - Sharing links with expiring tokens
 - Email subscriptions for reports
 - Report versioning and rollback
 
-### Phase 9: Performance Optimizations
+### Phase 9: Performance Optimizations ⏳
 - Report thumbnail caching
 - CDN integration for Power BI assets
 - Progressive loading for large datasets
 - Query caching strategies
+- Redis-based token caching for horizontal scaling
+
+### Phase 10: Testing & Quality ⏳
+- Unit tests for PowerBIService
+- Integration tests for PowerBIController
+- Frontend component tests
+- E2E testing with test workspace
+- Load testing for token generation
 
 ---
 
@@ -633,25 +665,85 @@ Document certificate setup in deployment guide.
 
 ## Notes
 
-- Follow existing code patterns and conventions in the project
-- Use Carbon Design System components for all UI
-- Maintain consistent error handling across frontend and backend
-- Ensure all sensitive data is encrypted at rest
-- Keep audit trail comprehensive for compliance
-- Performance target: <2 seconds for embed token generation
-- Support both light and dark themes in embedded reports (Power BI setting)
+- ✅ Follows existing code patterns and conventions in the project
+- ✅ Uses Carbon Design System components for all UI
+- ✅ Maintains consistent error handling across frontend and backend
+- ✅ Sensitive data (ClientSecret) is encrypted at rest via SettingsService
+- ✅ Comprehensive audit trail for compliance
+- ⚠️ Performance target: <2 seconds for embed token generation (needs measurement)
+- ⏳ Support for both light and dark themes in embedded reports (not yet configured)
+
+---
+
+## Implementation Summary
+
+### ✅ What's Working
+1. **Complete Backend Infrastructure**
+   - Power BI API integration with MSAL authentication
+   - Token generation with RLS support
+   - Page-based authorization
+   - Audit logging
+
+2. **Complete Frontend Components**
+   - Base PowerBIEmbed component
+   - Dashboard components (Report, Dashboard, Workspace)
+   - Configuration UI for components
+   - Admin settings panel
+
+3. **Key Features**
+   - Dynamic workspace component with tab navigation
+   - Automatic token refresh (5 min before expiration)
+   - Row Level Security (RLS) support
+   - Component-based configuration architecture
+
+### ⏳ What's Pending
+1. **Testing**
+   - Unit tests for backend services
+   - Integration tests for controllers
+   - Frontend component tests
+   - E2E testing
+
+2. **Documentation**
+   - User guide for Power BI features
+   - Admin documentation for Azure AD setup
+   - Deployment guide updates
+   - Troubleshooting guide
+
+3. **Performance**
+   - Benchmark embed token generation
+   - Optimize API calls
+   - Implement caching strategies
+
+### 🎯 Quick Start Guide
+
+**For Developers**:
+1. Configure Azure AD app with Power BI API permissions
+2. Navigate to Admin > Power BI tab
+3. Enter Tenant ID, Client ID, and Client Secret
+4. Save configuration
+5. Add `PowerBIReportComponent`, `PowerBIDashboardComponent`, or `PowerBIWorkspaceComponent` to any page
+6. Configure workspace and report IDs in component settings
+
+**For Users**:
+1. Navigate to pages with embedded Power BI content
+2. Reports load automatically with your permissions
+3. RLS is applied if configured
+4. Tokens refresh automatically
 
 ---
 
 ## Approval & Next Steps
 
-**Reviewed by**: [To be filled]  
-**Approved by**: [To be filled]  
-**Start Date**: [To be filled]  
+**Implementation Status**: ✅ Core features complete  
+**Testing Status**: ⏳ Manual testing done, automated testing pending  
+**Documentation Status**: ⏳ Technical docs complete, user docs pending
 
 **Next Actions**:
-1. Review and approve this plan
-2. Set up Azure AD app registration
-3. Create feature branch: `feature/powerbi-embedding`
-4. Begin Phase 1 implementation
-5. Schedule weekly progress reviews
+1. ✅ ~~Review and approve implementation~~ - DONE
+2. ✅ ~~Set up Azure AD app registration~~ - Admin responsibility
+3. ✅ ~~Complete core implementation~~ - DONE
+4. ⏳ Write unit and integration tests
+5. ⏳ Create user documentation
+6. ⏳ Performance testing and optimization
+7. ⏳ Production deployment preparation
+

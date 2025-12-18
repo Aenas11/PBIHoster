@@ -21,6 +21,8 @@
     "grid-layout-plus": "^1.1.1",
     "jwt-decode": "^4.0.0",
     "pinia": "^3.0.4",
+    "powerbi-client": "^2.23.9",
+    "powerbi-models": "^2.0.1",
     "vue": "^3.5.25",
     "vue-router": "^4.6.4"
   },

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ReportTree.Server.Services;
 
-public class SettingsService
+public class SettingsService : ISettingsService
 {
     private readonly ISettingsRepository _repo;
     private readonly string _encryptionKey;
