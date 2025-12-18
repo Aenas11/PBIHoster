@@ -222,7 +222,8 @@ async function save() {
         const payload: Group = {
             id: form.id,
             name: form.name,
-            description: form.description
+            description: form.description,
+            members: form.members // Include members to preserve them
         }
 
         if (editing.value && form.id) {

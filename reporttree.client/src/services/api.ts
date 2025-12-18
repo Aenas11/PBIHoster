@@ -51,7 +51,22 @@ class ApiClient {
             return undefined as T
         }
 
-        return response.json()
+        // Check if response has content
+        const contentLength = response.headers.get('content-length')
+        const contentType = response.headers.get('content-type')
+
+        // If no content or content-length is 0, return undefined
+        if (contentLength === '0' || (!contentType?.includes('application/json') && contentLength === null)) {
+            return undefined as T
+        }
+
+        // Try to parse JSON, but handle empty responses gracefully
+        const text = await response.text()
+        if (!text || text.trim() === '') {
+            return undefined as T
+        }
+
+        return JSON.parse(text)
     }
 
     /**
