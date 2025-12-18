@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, useAttrs } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useEditModeStore } from '../stores/editMode'
 import { usePagesStore } from '../stores/pages'
 import { useLayout } from '../composables/useLayout'
 import {
@@ -21,6 +22,7 @@ defineProps<{
 const expanded = defineModel<boolean>('expanded')
 
 const auth = useAuthStore()
+const editModeStore = useEditModeStore()
 const pagesStore = usePagesStore()
 const layout = useLayout()
 const router = useRouter()
@@ -28,9 +30,7 @@ const router = useRouter()
 const attrs = useAttrs()
 
 const isAdmin = computed(() => auth.roles.includes('Admin'))
-const canEdit = computed(() => auth.roles.includes('Admin') || auth.roles.includes('Editor'))
 
-const isEditMode = ref(false)
 const isModalOpen = ref(false)
 const selectedPage = ref<Page | null>(null)
 const parentIdForNewPage = ref<number | null>(null)
@@ -49,8 +49,8 @@ function togglePin() {
 }
 
 function toggleEditMode() {
-  isEditMode.value = !isEditMode.value
-  if (isEditMode.value && !expanded.value) {
+  editModeStore.toggleEditMode()
+  if (editModeStore.isEditMode && !expanded.value) {
     expanded.value = true // Expand when entering edit mode
   }
 }
@@ -61,13 +61,13 @@ function handleMobileNavigation() {
 
 function navigateTo(path: string, event: Event) {
   event.preventDefault();
-  if (isEditMode.value) return; // Disable navigation in edit mode
+  if (editModeStore.isEditMode) return; // Disable navigation in edit mode
   router.push(path);
   handleMobileNavigation();
 }
 
 function handleItemClick(page: Page, event: Event) {
-  if (isEditMode.value) {
+  if (editModeStore.isEditMode) {
     event.preventDefault()
     openEditModal(page)
   } else {
@@ -120,10 +120,10 @@ function getIcon(iconName: string) {
       <template v-for="page in pagesStore.pages" :key="page.id">
         <!-- Leaf Node -->
         <cds-side-nav-link v-if="!page.children || page.children.length === 0" :href="`/page/${page.id}`"
-          @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': isEditMode }">
+          @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
           <component :is="getIcon(page.icon)" slot="title-icon" />
           {{ page.title }}
-          <span v-if="isEditMode" class="edit-badge">✎</span>
+          <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
         </cds-side-nav-link>
 
         <!-- Submenu Node -->
@@ -131,21 +131,21 @@ function getIcon(iconName: string) {
           <component :is="getIcon(page.icon)" slot="title-icon" />
 
           <!-- Edit Parent Link (Only in Edit Mode) -->
-          <cds-side-nav-link v-if="isEditMode" href="javascript:void(0)" @click="openEditModal(page)"
+          <cds-side-nav-link v-if="editModeStore.isEditMode" href="javascript:void(0)" @click="openEditModal(page)"
             class="edit-folder-link">
             <SettingsEdit20 slot="title-icon" />
             Edit Folder Properties
           </cds-side-nav-link>
 
           <cds-side-nav-link v-for="child in page.children" :key="child.id" :href="`/page/${child.id}`"
-            @click="handleItemClick(child, $event)" :class="{ 'edit-mode-item': isEditMode }">
+            @click="handleItemClick(child, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
             <component :is="getIcon(child.icon)" slot="title-icon" />
             {{ child.title }}
-            <span v-if="isEditMode" class="edit-badge">✎</span>
+            <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
           </cds-side-nav-link>
 
           <!-- Add Child Button in Edit Mode -->
-          <cds-side-nav-link v-if="isEditMode" href="javascript:void(0)" @click="openCreateModal(page.id)"
+          <cds-side-nav-link v-if="editModeStore.isEditMode" href="javascript:void(0)" @click="openCreateModal(page.id)"
             class="add-child-link">
             <Add20 slot="title-icon" />
             Add Child Page
@@ -160,16 +160,17 @@ function getIcon(iconName: string) {
     </cds-side-nav-items>
 
     <div class="side-nav-footer">
-      <div v-if="canEdit" class="side-nav-actions">
+      <div v-if="editModeStore.canEdit" class="side-nav-actions">
         <cds-button kind="secondary" size="md" :has-icon-only="!expanded"
-          :aria-label="!expanded ? (isEditMode ? 'Exit Edit Mode' : 'Edit Pages') : ''" @click="toggleEditMode"
-          class="action-button">
-          <span v-if="expanded">{{ isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
-          <span v-if="!expanded" slot="tooltip-content">{{ isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
-          <component :is="isEditMode ? Close20 : Edit20" slot="icon" />
+          :aria-label="!expanded ? (editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages') : ''"
+          @click="toggleEditMode" class="action-button">
+          <span v-if="expanded">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
+          <span v-if="!expanded" slot="tooltip-content">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages'
+            }}</span>
+          <component :is="editModeStore.isEditMode ? Close20 : Edit20" slot="icon" />
         </cds-button>
 
-        <cds-button v-if="isEditMode" kind="primary" size="md" :has-icon-only="!expanded"
+        <cds-button v-if="editModeStore.isEditMode" kind="primary" size="md" :has-icon-only="!expanded"
           :aria-label="!expanded ? 'New Top Level Page' : ''" @click="openCreateModal(null)" class="action-button">
           <span v-if="expanded">New Top Level Page</span>
           <span v-if="!expanded" slot="tooltip-content">New Top Level Page</span>

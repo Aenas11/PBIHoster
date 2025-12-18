@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useEditModeStore } from '../stores/editMode'
 import { useLayout } from '../composables/useLayout'
 import AppHeader from '../components/AppHeader.vue'
 import TheSideMenu from '../components/TheSideMenu.vue'
@@ -9,12 +10,15 @@ import ToolsPanel from '../components/ToolsPanel.vue'
 import TheFooter from '../components/TheFooter.vue'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
+const editModeStore = useEditModeStore()
 const layout = useLayout()
 
 const isToolsPanelExpanded = ref(false)
 
 function handleLogout() {
+  editModeStore.forceExitEditMode()
   auth.logout()
   router.push('/login')
 }
@@ -22,6 +26,20 @@ function handleLogout() {
 function toggleToolsPanel() {
   isToolsPanelExpanded.value = !isToolsPanelExpanded.value
 }
+
+// Auto-close tools panel when exiting edit mode
+watch(() => editModeStore.isEditMode, (newValue) => {
+  if (!newValue && isToolsPanelExpanded.value) {
+    isToolsPanelExpanded.value = false
+  }
+})
+
+// Exit edit mode when navigating away from page views
+watch(() => route.path, (newPath) => {
+  if (!newPath.startsWith('/page/') && editModeStore.isEditMode) {
+    editModeStore.exitEditMode()
+  }
+})
 
 const contentStyle = computed(() => ({
   marginLeft: layout.contentMarginLeft.value,

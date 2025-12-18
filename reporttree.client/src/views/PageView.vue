@@ -7,6 +7,7 @@ import '@carbon/web-components/es/components/tabs/index.js';
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import { useGridLayout } from '../composables/useGridLayout'
 import { useComponentRegistry } from '../composables/useComponentRegistry'
+import { useEditModeStore } from '../stores/editMode'
 import { TrashCan20, SettingsEdit20 } from '@carbon/icons-vue'
 import { onMounted, watch, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -16,6 +17,7 @@ import type { GridItemWithComponent } from '../composables/useGridLayout'
 
 const route = useRoute()
 const gridLayout = useGridLayout()
+const editModeStore = useEditModeStore()
 const { getComponent } = useComponentRegistry()
 
 // Modal state
@@ -140,15 +142,15 @@ const getConfigComponent = (item: GridItemWithComponent) => {
       <p>Loading page layout...</p>
     </div>
 
-    <GridLayout v-else v-model:layout="gridLayout.layout.value" :col-num="12" :row-height="30" :is-draggable="true"
-      :is-resizable="true" :vertical-compact="false" :use-css-transforms="true" :margin="[10, 10]"
-      @layout-updated="gridLayout.onLayoutUpdated" class="grid-container">
+    <GridLayout v-else v-model:layout="gridLayout.layout.value" :col-num="12" :row-height="30"
+      :is-draggable="editModeStore.isEditMode" :is-resizable="editModeStore.isEditMode" :vertical-compact="false"
+      :use-css-transforms="true" :margin="[10, 10]" @layout-updated="gridLayout.onLayoutUpdated" class="grid-container">
       <GridItem v-for="item in (gridLayout.layout.value as GridItemWithComponent[])" :key="item.i" :x="item.x"
         :y="item.y" :w="item.w" :h="item.h" :i="item.i" :min-w="item.minW" :min-h="item.minH" class="grid-item">
         <div class="panel-content">
           <div class="panel-header">
             <span class="panel-title" v-if="item.metadata.title">{{ item.metadata.title }}</span>
-            <div class="panel-actions">
+            <div class="panel-actions" v-if="editModeStore.isEditMode">
               <cds-button kind="ghost" size="sm" @click="openConfigModal(item)" class="config-button"
                 :disabled="!getConfigComponent(item)">
                 <SettingsEdit20 slot="icon" />
@@ -218,9 +220,6 @@ const getConfigComponent = (item: GridItemWithComponent) => {
     color: #c6c6c6;
   }
 }
-
-.grid-container {}
-
 
 .grid-item {
   background: white;

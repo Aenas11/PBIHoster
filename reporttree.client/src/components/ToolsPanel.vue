@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { Add20, TrashCan20, Save20 } from '@carbon/icons-vue'
 import { useGridLayout } from '../composables/useGridLayout'
 import { useComponentRegistry } from '../composables/useComponentRegistry'
+import { useEditModeStore } from '../stores/editMode'
 import { layoutService } from '../services/layoutService'
 import { useRoute } from 'vue-router'
 
@@ -14,6 +15,7 @@ defineProps<{
 
 const route = useRoute()
 const gridLayout = useGridLayout()
+const editModeStore = useEditModeStore()
 const { getAllComponents } = useComponentRegistry()
 const isSaving = ref(false)
 const saveStatus = ref<{ type: 'success' | 'error', message: string } | null>(null)
@@ -22,10 +24,18 @@ const saveStatus = ref<{ type: 'success' | 'error', message: string } | null>(nu
 const availableComponents = getAllComponents()
 
 const handleAddPanel = (componentType: string) => {
+  if (!editModeStore.isEditMode) {
+    console.warn('Cannot add panel: Edit mode is not active')
+    return
+  }
   gridLayout.addPanel(componentType)
 }
 
 const handleClearLayout = () => {
+  if (!editModeStore.isEditMode) {
+    console.warn('Cannot clear layout: Edit mode is not active')
+    return
+  }
   gridLayout.clearLayout()
 }
 
@@ -67,11 +77,16 @@ const handleSaveLayout = async (pageId: string) => {
     <div class="tools-panel-content">
       <h3 class="tools-title">Tools Menu</h3>
 
+      <div v-if="!editModeStore.isEditMode" class="edit-mode-notice">
+        <p>Enable Edit Mode in the side menu to use these tools.</p>
+      </div>
+
       <div class="tools-section">
         <h4 class="section-title">Add Components</h4>
 
         <cds-button v-for="component in availableComponents" :key="component.type" kind="primary" size="sm"
-          class="tool-button" @click="() => handleAddPanel(component.type)" :title="component.description">
+          class="tool-button" @click="() => handleAddPanel(component.type)" :title="component.description"
+          :disabled="!editModeStore.isEditMode">
           <Add20 slot="icon" class="button-icon" />
           {{ component.name }}
         </cds-button>
@@ -87,13 +102,14 @@ const handleSaveLayout = async (pageId: string) => {
 
         <cds-button kind="tertiary" size="sm" class="tool-button"
           @click="() => handleSaveLayout(route.params.id as string)"
-          :disabled="isSaving || gridLayout.layout.value.length === 0">
+          :disabled="isSaving || gridLayout.layout.value.length === 0 || !editModeStore.isEditMode">
           <Save20 slot="icon" class="button-icon" />
 
           {{ isSaving ? 'Saving...' : 'Save Layout' }}
         </cds-button>
 
-        <cds-button kind="danger" size="sm" class="tool-button" @click="handleClearLayout">
+        <cds-button kind="danger" size="sm" class="tool-button" @click="handleClearLayout"
+          :disabled="!editModeStore.isEditMode">
           <TrashCan20 slot="icon" class="button-icon" />
           Clear Layout
         </cds-button>
@@ -124,6 +140,31 @@ const handleSaveLayout = async (pageId: string) => {
   margin: 0 0 1.5rem 0;
   font-size: 1.125rem;
   font-weight: 600;
+}
+
+.edit-mode-notice {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.5);
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.edit-mode-notice p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #525252;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .edit-mode-notice {
+    background: rgba(255, 193, 7, 0.2);
+  }
+
+  .edit-mode-notice p {
+    color: #f1c21b;
+  }
 }
 
 .tools-section {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import '@carbon/web-components/es/components/ui-shell/index.js';
 import { Logout20, Switcher20 } from '@carbon/icons-vue'
+import { useAuthStore } from '@/stores/auth'
+import { useEditModeStore } from '@/stores/editMode'
 // import ThemeSwitcher from './ThemeSwitcher.vue'
 
 defineProps<{
@@ -14,6 +16,9 @@ const emit = defineEmits<{
   logout: []
 }>()
 
+const authStore = useAuthStore()
+const editModeStore = useEditModeStore()
+
 </script>
 
 <template>
@@ -24,12 +29,12 @@ const emit = defineEmits<{
     <cds-header-name href="javascript:void 0" prefix="Report">Tree</cds-header-name>
 
 
-    <div class="cds--header__global">
+    <div class="cds--header__global" v-if="authStore.isAuthenticated">
       <!-- Theme Switcher -->
       <!-- <ThemeSwitcher /> -->
 
-      <cds-header-global-action aria-label="App Switcher" tooltip-text="App Switcher" tooltip-alignment="right"
-        @click="emit('toggleToolsPanel')">
+      <cds-header-global-action aria-label="App Switcher" tooltip-text="Tools Panel" tooltip-alignment="right"
+        @click="emit('toggleToolsPanel')" :disabled="!editModeStore.isEditMode">
         <Switcher20 slot="icon" />
       </cds-header-global-action>
 
