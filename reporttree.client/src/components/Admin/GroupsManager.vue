@@ -43,7 +43,6 @@
                 <cds-modal-heading>{{ editing ? 'Edit' : 'Create' }} Group</cds-modal-heading>
             </cds-modal-header>
             <cds-modal-body>
-                <div v-if="error" class="error-message">{{ error }}</div>
                 <cds-text-input label="Name" :value="form.name" @input="onNameInput"
                     :disabled="loading"></cds-text-input>
                 <cds-text-input label="Description" :value="form.description" @input="onDescriptionInput"

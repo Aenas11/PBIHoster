@@ -82,11 +82,11 @@ public class ProfileController : ControllerBase
             return Unauthorized();
         }
 
-        var success = await _authService.ChangePasswordAsync(username, request.CurrentPassword, request.NewPassword);
+        var (success, errors) = await _authService.ChangePasswordAsync(username, request.CurrentPassword, request.NewPassword);
         if (!success)
         {
             await _auditLogService.LogAsync("CHANGE_PASSWORD", $"User:{username}", "Failed to change password", false);
-            return BadRequest(new { message = "Current password is incorrect" });
+            return BadRequest(new { Errors = errors });
         }
 
         await _auditLogService.LogAsync("CHANGE_PASSWORD", $"User:{username}", "Successfully changed password");

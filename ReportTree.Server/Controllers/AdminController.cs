@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
+using ReportTree.Server.Security;
 using System.ComponentModel.DataAnnotations;
 
 namespace ReportTree.Server.Controllers;
@@ -13,11 +14,13 @@ public class AdminController : ControllerBase
 {
     private readonly IUserRepository _userRepo;
     private readonly IGroupRepository _groupRepo;
+    private readonly PasswordValidator _passwordValidator;
 
-    public AdminController(IUserRepository userRepo, IGroupRepository groupRepo)
+    public AdminController(IUserRepository userRepo, IGroupRepository groupRepo, PasswordValidator passwordValidator)
     {
         _userRepo = userRepo;
         _groupRepo = groupRepo;
+        _passwordValidator = passwordValidator;
     }
 
     [HttpGet("users")]
@@ -63,6 +66,13 @@ public class AdminController : ControllerBase
 
         if (!string.IsNullOrEmpty(dto.Password))
         {
+            // Validate password policy
+            var (isValid, errors) = _passwordValidator.Validate(dto.Password);
+            if (!isValid)
+            {
+                return BadRequest(new { Errors = errors });
+            }
+            
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         }
 

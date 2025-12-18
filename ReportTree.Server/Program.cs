@@ -3,6 +3,8 @@ using ReportTree.Server.Persistance;
 using ReportTree.Server.Security;
 using ReportTree.Server.DTOs;
 using ReportTree.Server.Services;
+using AspNetCoreRateLimit;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace ReportTree.Server
 {
@@ -36,6 +38,20 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
             builder.Services.AddSingleton<ISettingsRepository, LiteDbSettingsRepository>();
             builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
+            builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
+            
+            // Configure Security Policies from Configuration
+            var passwordPolicy = new PasswordPolicy();
+            builder.Configuration.Bind("Security:PasswordPolicy", passwordPolicy);
+            builder.Services.AddSingleton(passwordPolicy);
+            builder.Services.AddSingleton<PasswordValidator>();
+            
+            var rateLimitPolicy = new AppRateLimitPolicy();
+            builder.Configuration.Bind("Security:RateLimitPolicy", rateLimitPolicy);
+            
+            var corsPolicy = new CorsPolicy();
+            builder.Configuration.Bind("Security:CorsPolicy", corsPolicy);
+            
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<PageAuthorizationService>();
             builder.Services.AddScoped<SettingsService>();
@@ -43,6 +59,57 @@ namespace ReportTree.Server
             
             // Add HttpContextAccessor for audit logging
             builder.Services.AddHttpContextAccessor();
+            
+            // Configure rate limiting
+            if (rateLimitPolicy.Enabled)
+            {
+                builder.Services.AddMemoryCache();
+                builder.Services.Configure<IpRateLimitOptions>(options =>
+                {
+                    options.EnableEndpointRateLimiting = true;
+                    options.StackBlockedRequests = false;
+                    options.HttpStatusCode = 429;
+                    options.RealIpHeader = "X-Real-IP";
+                    options.GeneralRules = new List<RateLimitRule>
+                    {
+                        new RateLimitRule
+                        {
+                            Endpoint = "*",
+                            Period = rateLimitPolicy.GeneralPeriod,
+                            Limit = rateLimitPolicy.GeneralLimit
+                        },
+                        new RateLimitRule
+                        {
+                            Endpoint = "*/api/auth/*",
+                            Period = rateLimitPolicy.AuthPeriod,
+                            Limit = rateLimitPolicy.AuthLimit
+                        }
+                    };
+                });
+                builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+                builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+                builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+                builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+            }
+            
+            // Configure CORS
+            if (corsPolicy.AllowedOrigins?.Any() == true)
+            {
+                builder.Services.AddCors(options =>
+                {
+                    options.AddPolicy("CorsPolicy", policy =>
+                    {
+                        policy.WithOrigins(corsPolicy.AllowedOrigins.ToArray())
+                              .AllowAnyMethod()
+                              .AllowAnyHeader();
+                        
+                        if (corsPolicy.AllowCredentials)
+                        {
+                            policy.AllowCredentials();
+                        }
+                    });
+                });
+            }
             
             // Add memory cache for performance
             builder.Services.AddMemoryCache();
@@ -88,11 +155,45 @@ namespace ReportTree.Server
                 var groupRepo = sp.GetRequiredService<IGroupRepository>();
                 return new TokenService(jwtIssuer, signingKey, groupRepo, jwtExpiryHours);
             });
+            
+            // Configure forwarded headers for reverse proxy (Caddy)
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.KnownIPNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
 
             var app = builder.Build();
+            
+            // Use forwarded headers
+            app.UseForwardedHeaders();
+            
+            // Add security headers middleware
+            app.Use(async (context, next) =>
+            {
+                context.Response.Headers.Append("X-Frame-Options", "DENY");
+                context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+                context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+                context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+                context.Response.Headers.Append("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+                await next();
+            });
 
             app.UseDefaultFiles();
             app.MapStaticAssets();
+            
+            // Use rate limiting
+            if (rateLimitPolicy.Enabled)
+            {
+                app.UseIpRateLimiting();
+            }
+            
+            // Use CORS
+            if (corsPolicy.AllowedOrigins?.Any() == true)
+            {
+                app.UseCors("CorsPolicy");
+            }
             
             // Add response caching and compression
             app.UseResponseCaching();
@@ -120,13 +221,13 @@ namespace ReportTree.Server
             // Minimal auth endpoints
             app.MapPost("/api/auth/register", async (RegisterRequest req, AuthService auth) =>
             {
-                await auth.RegisterAsync(req.Username, req.Password, req.Roles?.ToList() ?? new List<string>());
-                return Results.Ok();
+                var (success, errors) = await auth.RegisterAsync(req.Username, req.Password, req.Roles?.ToList() ?? new List<string>());
+                return success ? Results.Ok() : Results.BadRequest(new { Errors = errors });
             });
 
             app.MapPost("/api/auth/login", async (LoginRequest req, AuthService auth) =>
             {
-                var token = await auth.LoginAsync(req.Username, req.Password);
+                var (token, errorMessage) = await auth.LoginAsync(req.Username, req.Password);
                 return token != null ? Results.Ok(new LoginResponse(token)) : Results.Unauthorized();
             });
             

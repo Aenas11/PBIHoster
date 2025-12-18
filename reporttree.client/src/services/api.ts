@@ -50,38 +50,33 @@ class ApiClient {
 
                 // Try to get error message from response
                 let errorMessage = `${response.status} ${response.statusText}`
+                let errors: string[] | undefined
                 try {
                     const errorData = await response.json()
-                    if (errorData.message) {
-                        errorMessage = errorData.message
-                    } else if (errorData.title) {
-                        errorMessage = errorData.title
+                    
+                    // Handle custom error format with Errors array (password validation, etc.)
+                    if (errorData.errors && Array.isArray(errorData.errors)) {
+                        errors = errorData.errors
+                        errorMessage = errors.join('; ')
                     }
-                } catch {
-                    // Ignore JSON parse errors
-                }
-
-                if (!skipErrorToast) {
-                    const toastStore = useToastStore()
-                    toastStore.error('Request Failed', errorMessage)
-                }
-
-                throw new Error(errorMessage)
-            }
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    // Unauthorized - potentially redirect to login
-                    window.dispatchEvent(new CustomEvent('auth:unauthorized'))
-                }
-
-                // Try to get error message from response
-                let errorMessage = `${response.status} ${response.statusText}`
-                try {
-                    const errorData = await response.json()
-                    if (errorData.message) {
+                    // Handle ASP.NET Core validation errors format
+                    else if (errorData.errors && typeof errorData.errors === 'object') {
+                        // ASP.NET returns { errors: { field: ["error1", "error2"] } }
+                        const allErrors: string[] = []
+                        for (const field in errorData.errors) {
+                            const fieldErrors = errorData.errors[field]
+                            if (Array.isArray(fieldErrors)) {
+                                allErrors.push(...fieldErrors)
+                            }
+                        }
+                        if (allErrors.length > 0) {
+                            errorMessage = allErrors.join('; ')
+                        }
+                    }
+                    // Handle simple message or title
+                    else if (errorData.message) {
                         errorMessage = errorData.message
-                    } else if (errorData.title) {
+                    } else if (errorData.title && errorData.title !== 'One or more validation errors occurred.') {
                         errorMessage = errorData.title
                     }
                 } catch {

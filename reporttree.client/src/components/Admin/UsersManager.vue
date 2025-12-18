@@ -1,9 +1,6 @@
 <template>
     <div class="panel users-manager">
         <h2>Users</h2>
-
-        <div v-if="error" class="error-message">{{ error }}</div>
-
         <div class="controls">
             <cds-text-input :value="term" @input="(e: Event) => (term = (e.target as HTMLInputElement).value)"
                 label="Search" placeholder="Search users" :disabled="loading"></cds-text-input>
