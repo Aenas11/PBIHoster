@@ -25,7 +25,6 @@ function toggleToolsPanel() {
 
 const contentStyle = computed(() => ({
   marginLeft: layout.contentMarginLeft.value,
-  marginTop: '3rem',
   transition: 'margin-left 0.11s cubic-bezier(0.2, 0, 1, 0.9)',
   padding: '0'
 }))
