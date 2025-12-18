@@ -244,6 +244,13 @@ namespace ReportTree.Server
                 );
             });
 
+            // Initialize default settings
+            using (var scope = app.Services.CreateScope())
+            {
+                var settingsService = scope.ServiceProvider.GetRequiredService<SettingsService>();
+                settingsService.InitializeDefaultSettingsAsync().Wait();
+            }
+
             // Serve the Vue.js frontend for all non-API routes
             app.MapFallbackToFile("/index.html");
 

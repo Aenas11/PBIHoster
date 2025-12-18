@@ -113,4 +113,21 @@ public class SettingsService
         using var sha256 = SHA256.Create();
         return sha256.ComputeHash(Encoding.UTF8.GetBytes(key));
     }
+
+    public async Task InitializeDefaultSettingsAsync()
+    {
+        // Initialize default static app settings if they don't exist
+        var homePageId = await GetSettingAsync("App.HomePageId");
+        if (homePageId == null)
+        {
+            await UpsertSettingAsync(
+                "App.HomePageId",
+                "",
+                "Application",
+                "The page ID to display on the home route (/)",
+                false,
+                "System"
+            );
+        }
+    }
 }

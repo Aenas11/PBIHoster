@@ -111,10 +111,10 @@ function getIcon(iconName: string) {
 
     <cds-side-nav-items>
       <!-- Static Items -->
-      <cds-side-nav-link href="/" @click="navigateTo('/', $event)">
+      <!-- <cds-side-nav-link href="/" @click="navigateTo('/', $event)">
         <Dashboard20 slot="title-icon" />
         Dashboard
-      </cds-side-nav-link>
+      </cds-side-nav-link> -->
 
       <!-- Dynamic Pages -->
       <template v-for="page in pagesStore.pages" :key="page.id">
@@ -166,7 +166,7 @@ function getIcon(iconName: string) {
           @click="toggleEditMode" class="action-button">
           <span v-if="expanded">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
           <span v-if="!expanded" slot="tooltip-content">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages'
-            }}</span>
+          }}</span>
           <component :is="editModeStore.isEditMode ? Close20 : Edit20" slot="icon" />
         </cds-button>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { api } from '../../services/api'
 import { useToastStore } from '../../stores/toast'
 import { Add20, Edit20, TrashCan20 } from '@carbon/icons-vue'
@@ -18,11 +18,22 @@ interface Setting {
     isEncrypted: boolean
 }
 
+interface Page {
+    id: number
+    title: string
+    icon?: string
+    parentId?: number
+}
+
 const toastStore = useToastStore()
 const settings = ref<Setting[]>([])
+const pages = ref<Page[]>([])
 const loading = ref(false)
 const showModal = ref(false)
 const isEditing = ref(false)
+
+// Static app settings
+const homePageId = ref<string>('')
 
 const formData = ref<Setting>({
     key: '',
@@ -32,16 +43,53 @@ const formData = ref<Setting>({
     isEncrypted: false
 })
 
-const categories = ['General', 'Security', 'PowerBI', 'Email', 'Authentication']
+const categories = ['General', 'Security', 'PowerBI', 'Email', 'Authentication', 'Application']
+
+// Filter out static app settings from regular settings
+const regularSettings = computed(() =>
+    settings.value.filter(s => !s.key.startsWith('App.'))
+)
 
 async function loadSettings() {
     loading.value = true
     try {
         settings.value = await api.get<Setting[]>('/settings')
+        // Load static app settings
+        const homePageSetting = settings.value.find(s => s.key === 'App.HomePageId')
+        if (homePageSetting) {
+            homePageId.value = homePageSetting.value || ''
+        } else {
+            homePageId.value = ''
+        }
     } catch (error) {
         console.error('Failed to load settings:', error)
     } finally {
         loading.value = false
+    }
+}
+
+async function loadPages() {
+    try {
+        pages.value = await api.get<Page[]>('/pages')
+    } catch (error) {
+        console.error('Failed to load pages:', error)
+    }
+}
+
+async function saveStaticSettings() {
+    try {
+        const payload = {
+            key: 'App.HomePageId',
+            value: homePageId.value || '',
+            category: 'Application',
+            description: 'The page ID to display on the home route (/)'
+        }
+        await api.put('/settings', payload)
+        toastStore.success('Success', 'Static settings saved successfully')
+        await loadSettings()
+    } catch (error) {
+        console.error('Failed to save static settings:', error)
+        toastStore.error('Error', 'Failed to save static settings')
     }
 }
 
@@ -92,9 +140,14 @@ function onKeyInput(e: Event) { formData.value.key = (e.target as HTMLInputEleme
 function onValueInput(e: Event) { formData.value.value = (e.target as HTMLInputElement).value }
 function onCategoryChange(e: Event) { formData.value.category = (e.target as HTMLSelectElement).value }
 function onDescriptionInput(e: Event) { formData.value.description = (e.target as HTMLTextAreaElement).value }
+function onHomePageChange(e: any) {
+    // Carbon web components use detail.value or target.value
+    homePageId.value = e.detail?.value || e.target?.value || ''
+}
 
 onMounted(() => {
     loadSettings()
+    loadPages()
 })
 </script>
 
@@ -102,46 +155,77 @@ onMounted(() => {
     <div class="settings-manager">
         <div class="header">
             <h2>Application Settings</h2>
-            <cds-button @click="openCreateModal">
-                <Add20 slot="icon" />
-                Add Setting
-            </cds-button>
         </div>
 
-        <cds-table v-if="settings.length > 0">
-            <cds-table-head>
-                <cds-table-header-row>
-                    <cds-table-header-cell>Key</cds-table-header-cell>
-                    <cds-table-header-cell>Value</cds-table-header-cell>
-                    <cds-table-header-cell>Category</cds-table-header-cell>
-                    <cds-table-header-cell>Description</cds-table-header-cell>
-                    <cds-table-header-cell>Actions</cds-table-header-cell>
-                </cds-table-header-row>
-            </cds-table-head>
-            <cds-table-body>
-                <cds-table-row v-for="setting in settings" :key="setting.key">
-                    <cds-table-cell><strong>{{ setting.key }}</strong></cds-table-cell>
-                    <cds-table-cell>
-                        <code class="value">{{ setting.value }}</code>
-                    </cds-table-cell>
-                    <cds-table-cell>
-                        <span class="category-badge">{{ setting.category }}</span>
-                    </cds-table-cell>
-                    <cds-table-cell>{{ setting.description || '-' }}</cds-table-cell>
-                    <cds-table-cell>
-                        <div class="actions">
-                            <button class="action-btn" @click="openEditModal(setting)" title="Edit setting">
-                                <Edit20 />
-                            </button>
-                            <button class="action-btn danger" @click="deleteSetting(setting.key)"
-                                title="Delete setting">
-                                <TrashCan20 />
-                            </button>
-                        </div>
-                    </cds-table-cell>
-                </cds-table-row>
-            </cds-table-body>
-        </cds-table>
+        <!-- Static App Settings Section -->
+        <section class="static-settings-section">
+            <h3>Static Application Settings</h3>
+            <p class="section-description">Configure core application behavior and defaults</p>
+
+            <div class="static-settings-form">
+                <div class="setting-row">
+                    <label for="home-page-select">Home Page</label>
+                    <div class="setting-input">
+                        <cds-select id="home-page-select" label-text="Select the page to display on the home route (/)"
+                            :value="homePageId" @cds-select-selected="onHomePageChange">
+                            <cds-select-item value="">No home page (default)</cds-select-item>
+                            <cds-select-item v-for="page in pages" :key="page.id" :value="page.id.toString()">
+                                {{ page.title }}
+                            </cds-select-item>
+                        </cds-select>
+                        <cds-button size="sm" @click="saveStaticSettings" style="margin-top: 1rem;">
+                            Save Static Settings
+                        </cds-button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Regular Settings Section -->
+        <section class="regular-settings-section">
+            <div class="header">
+                <h3>Advanced Settings</h3>
+                <cds-button @click="openCreateModal">
+                    <Add20 slot="icon" />
+                    Add Setting
+                </cds-button>
+            </div>
+
+            <cds-table v-if="regularSettings.length > 0">
+                <cds-table-head>
+                    <cds-table-header-row>
+                        <cds-table-header-cell>Key</cds-table-header-cell>
+                        <cds-table-header-cell>Value</cds-table-header-cell>
+                        <cds-table-header-cell>Category</cds-table-header-cell>
+                        <cds-table-header-cell>Description</cds-table-header-cell>
+                        <cds-table-header-cell>Actions</cds-table-header-cell>
+                    </cds-table-header-row>
+                </cds-table-head>
+                <cds-table-body>
+                    <cds-table-row v-for="setting in regularSettings" :key="setting.key">
+                        <cds-table-cell><strong>{{ setting.key }}</strong></cds-table-cell>
+                        <cds-table-cell>
+                            <code class="value">{{ setting.value }}</code>
+                        </cds-table-cell>
+                        <cds-table-cell>
+                            <span class="category-badge">{{ setting.category }}</span>
+                        </cds-table-cell>
+                        <cds-table-cell>{{ setting.description || '-' }}</cds-table-cell>
+                        <cds-table-cell>
+                            <div class="actions">
+                                <button class="action-btn" @click="openEditModal(setting)" title="Edit setting">
+                                    <Edit20 />
+                                </button>
+                                <button class="action-btn danger" @click="deleteSetting(setting.key)"
+                                    title="Delete setting">
+                                    <TrashCan20 />
+                                </button>
+                            </div>
+                        </cds-table-cell>
+                    </cds-table-row>
+                </cds-table-body>
+            </cds-table>
+        </section>
 
         <cds-modal :open="showModal" @cds-modal-closed="showModal = false">
             <cds-modal-header>
@@ -182,11 +266,64 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 2rem;
 
-    h2 {
+    h2,
+    h3 {
         margin: 0;
         font-size: 1.5rem;
         color: var(--cds-text-primary);
     }
+
+    h3 {
+        font-size: 1.25rem;
+    }
+}
+
+.static-settings-section {
+    background: var(--cds-layer-01);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--cds-border-subtle-01);
+
+    h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.25rem;
+        color: var(--cds-text-primary);
+    }
+
+    .section-description {
+        margin: 0 0 1.5rem 0;
+        color: var(--cds-text-secondary);
+        font-size: 0.875rem;
+    }
+}
+
+.static-settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.setting-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1rem;
+    align-items: start;
+
+    label {
+        font-weight: 500;
+        color: var(--cds-text-primary);
+        padding-top: 0.5rem;
+    }
+
+    .setting-input {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.regular-settings-section {
+    margin-top: 2rem;
 }
 
 .value {

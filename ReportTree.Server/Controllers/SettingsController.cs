@@ -33,6 +33,15 @@ public class SettingsController : ControllerBase
         return Ok(dtos);
     }
 
+    [HttpGet("static")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetStaticSettings()
+    {
+        var staticSettings = new Dictionary<string, string?>();
+        staticSettings["HomePageId"] = await _settingsService.GetValueAsync("App.HomePageId");
+        return Ok(staticSettings);
+    }
+
     [HttpGet("category/{category}")]
     public async Task<IActionResult> GetByCategory(string category)
     {

@@ -15,8 +15,8 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../components/TheWelcome.vue'),
-      meta: { requiresAuth: true, keepAlive: true }
+      component: () => import('../views/HomeView.vue'),
+      meta: { keepAlive: true } // Dynamic home page, auth checked in component
     },
     {
       path: '/page/:id',
@@ -46,6 +46,12 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
+
+  // Home route handles its own logic in the component
+  if (to.name === 'home') {
+    next()
+    return
+  }
 
   // For page routes, check if page is public before requiring auth
   if (to.name === 'page' && to.params.id) {
