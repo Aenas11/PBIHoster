@@ -64,9 +64,10 @@ Create DTOs for:
 - `WorkspaceDto`: Power BI workspace information
 - `ReportDto`: Report metadata (Id, Name, EmbedUrl, DatasetId)
 - `DashboardDto`: Dashboard metadata
-- `EmbedTokenRequestDto`: Request parameters for embed token generation
+- `EmbedTokenRequestDto`: Request parameters for embed token generation (includes optional RLS identities)
 - `EmbedTokenResponseDto`: Embed token, URL, and expiration details
 - `PowerBIResourceDto`: Generic resource info (type, id, name)
+- `RLSIdentityDto`: Username, roles, and datasets for Row Level Security
 
 ### 1.4 Power BI Service Interface
 **New file**: `ReportTree.Server/Services/IPowerBIService.cs`
@@ -77,7 +78,7 @@ Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default);
 Task<IEnumerable<WorkspaceDto>> GetWorkspacesAsync(CancellationToken cancellationToken = default);
 Task<IEnumerable<ReportDto>> GetReportsAsync(Guid workspaceId, CancellationToken cancellationToken = default);
 Task<IEnumerable<DashboardDto>> GetDashboardsAsync(Guid workspaceId, CancellationToken cancellationToken = default);
-Task<EmbedTokenResponseDto> GetReportEmbedTokenAsync(Guid workspaceId, Guid reportId, CancellationToken cancellationToken = default);
+Task<EmbedTokenResponseDto> GetReportEmbedTokenAsync(Guid workspaceId, Guid reportId, List<RLSIdentityDto>? identities = null, CancellationToken cancellationToken = default);
 Task<EmbedTokenResponseDto> GetDashboardEmbedTokenAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default);
 Task<ReportDto?> GetReportAsync(Guid workspaceId, Guid reportId, CancellationToken cancellationToken = default);
 Task<DashboardDto?> GetDashboardAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default);
@@ -96,7 +97,9 @@ Implement the service with:
 - **GetWorkspacesAsync()**: Query Power BI API for workspaces
 - **GetReportsAsync()**: Get reports for a workspace
 - **GetDashboardsAsync()**: Get dashboards for a workspace
-- **GetReportEmbedTokenAsync()**: Generate embed token for report with View access level
+- **GetReportEmbedTokenAsync()**: 
+  - Generate embed token for report with View access level
+  - **Support RLS**: If identities provided, include them in `GenerateTokenRequestV2`
 - **GetDashboardEmbedTokenAsync()**: Generate embed token for dashboard
 - Helper methods:
   - `CreatePowerBIClient(string accessToken)`: Factory for PowerBIClient
@@ -170,6 +173,8 @@ public string? PowerBIResourceType { get; set; } // "Report", "Dashboard", or nu
 public Guid? PowerBIWorkspaceId { get; set; }
 public Guid? PowerBIResourceId { get; set; }
 public string? PowerBIResourceName { get; set; } // Cache the name for display
+public bool PowerBIEnableRLS { get; set; } // Enable Row Level Security for this page
+public string? PowerBIRLSRoles { get; set; } // Comma-separated list of RLS roles to apply
 ```
 
 ### 2.2 Database Migration
@@ -216,15 +221,60 @@ Include error handling and auth token injection from authStore.
 **New file**: `reporttree.client/src/components/PowerBIEmbed.vue`
 
 Component using `powerbi-client` library:
-- **Props**: `embedUrl`, `accessToken`, `embedType` (report/dashboard), `reportId`
+- **Props**: `embedUrl`, `accessToken`, `embedType` (report/dashboard), `reportId`, `mobileLayout`, `viewOptions`
 - **Features**:
+  - **Bootstrapping**: Use `powerbi.bootstrap()` for faster initial load
+  - **Event Handling**: Listen for `loaded`, `rendered`, `error` events
+  - **Phased Loading**: Show loading spinner until `loaded` event fires
+  - **Mobile Layout**: Support mobile layout configuration
+  - **View Options**: Support `FitToPage`, `ActualSize`, `FitToWidth` using `powerbi-models`
   - Initialize Power BI embed on mount
   - Handle token refresh before expiration
   - Responsive container
-  - Loading state
   - Error handling
   - Cleanup on unmount
-- **Dependencies**: Install `powerbi-client` npm package
+- **Dependencies**: Install `powerbi-client` and `powerbi-models` npm packages
+
+### 3.8 Dashboard Components
+**New Files**: 
+- `reporttree.client/src/components/DashboardComponents/PowerBIReportComponent.vue`
+- `reporttree.client/src/components/DashboardComponents/PowerBIReportComponentConfigure.vue`
+- `reporttree.client/src/components/DashboardComponents/PowerBIDashboardComponent.vue`
+- `reporttree.client/src/components/DashboardComponents/PowerBIDashboardComponentConfigure.vue`
+
+**Functionality**:
+- **PowerBIReportComponent**: Wrapper around `PowerBIEmbed.vue` for use in the dashboard grid.
+- **PowerBIDashboardComponent**: Wrapper around `PowerBIEmbed.vue` for dashboards.
+- **Config Components**:
+  - Allow user to select **Workspace** (dropdown).
+  - Allow user to select **Report** or **Dashboard** (dropdown, filtered by workspace).
+  - **View Options**: Dropdown for `FitToPage`, `ActualSize`, `FitToWidth`.
+  - **Save Config**: Stores `workspaceId`, `resourceId`, `viewOptions` in the component config.
+
+**Registration**:
+- Update `reporttree.client/src/config/components.ts` to register the new components:
+  - `power-bi-report`: Power BI Report component
+  - `power-bi-dashboard`: Power BI Dashboard component
+
+### 3.9 Feature: Workspace-Based Page Generation
+**Concept**: 
+Allow users to create a "Workspace Page" that automatically generates subpages for all reports in a selected Power BI Workspace.
+
+**Changes**:
+1.  **Page Model**: Add `PageType` enum (`Standard`, `PowerBIWorkspace`).
+2.  **Page Modal**: 
+    - If `PageType` is `PowerBIWorkspace`, show "Sync Reports" button.
+    - Allow selecting the target Workspace.
+3.  **Sync Logic (Backend/Frontend)**:
+    - Fetch all reports from the selected workspace.
+    - For each report, create (or update) a child `Page`.
+    - **Auto-Configuration**:
+        - Set child page Title to Report Name.
+        - Set child page Layout to contain a single `PowerBIReportComponent` configured for that report.
+        - Set View Options to `FitToPage` by default.
+4.  **Navigation**:
+    - User navigates to the parent page (can show a list of reports or a summary).
+    - User navigates to child pages -> Renders the report using the standard `PageView` and the auto-generated layout.
 
 ### 3.4 Power BI Browser Component (Admin/Editor)
 **New file**: `reporttree.client/src/components/Admin/PowerBIBrowser.vue`
@@ -277,8 +327,6 @@ Add Power BI Settings section:
 
 ---
 
-## Phase 4: Security & Authorization
-
 ### 4.1 Authorization Rules
 **Implementation in PowerBIController**:
 
@@ -286,6 +334,13 @@ Add Power BI Settings section:
 - Validation flow:
   1. Extract page from request (add `pageId` to `EmbedTokenRequestDto`)
   2. Call `PageAuthorizationService.CanAccessPageAsync(pageId, userId, userRoles, userGroups)`
+  3. If false, return 403 Forbidden
+  4. **RLS Logic**:
+     - If `Page.PowerBIEnableRLS` is true:
+       - Construct `RLSIdentity` using current user's username
+       - Add roles from `Page.PowerBIRLSRoles` (if static) or map from user's app roles
+       - Pass identity to `GetReportEmbedTokenAsync`
+  5. If true, proceed with embed token generationAsync(pageId, userId, userRoles, userGroups)`
   3. If false, return 403 Forbidden
   4. If true, proceed with embed token generation
 
