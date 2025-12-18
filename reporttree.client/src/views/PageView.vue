@@ -148,7 +148,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
       <GridItem v-for="item in (gridLayout.layout.value as GridItemWithComponent[])" :key="item.i" :x="item.x"
         :y="item.y" :w="item.w" :h="item.h" :i="item.i" :min-w="item.minW" :min-h="item.minH" class="grid-item">
         <div class="panel-content">
-          <div class="panel-header">
+          <div class="panel-header" v-if="item.metadata.title && !editModeStore.isEditMode || editModeStore.isEditMode">
             <span class="panel-title" v-if="item.metadata.title">{{ item.metadata.title }}</span>
             <div class="panel-actions" v-if="editModeStore.isEditMode">
               <cds-button kind="ghost" size="sm" @click="openConfigModal(item)" class="config-button"
