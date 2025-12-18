@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, useAttrs } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { usePagesStore } from '../stores/pages'
@@ -24,6 +24,8 @@ const auth = useAuthStore()
 const pagesStore = usePagesStore()
 const layout = useLayout()
 const router = useRouter()
+
+const attrs = useAttrs()
 
 const isAdmin = computed(() => auth.roles.includes('Admin'))
 const canEdit = computed(() => auth.roles.includes('Admin') || auth.roles.includes('Editor'))
@@ -104,7 +106,7 @@ function getIcon(iconName: string) {
 </script>
 
 <template>
-  <cds-side-nav id="side-nav" :fixed="fixed" :expanded="expanded" :collapse-mode="collapseMode"
+  <cds-side-nav v-bind="attrs" id="side-nav" :fixed="fixed" :expanded="expanded" :collapse-mode="collapseMode"
     aria-label="Side navigation" class="side-nav-container">
 
     <cds-side-nav-items>
