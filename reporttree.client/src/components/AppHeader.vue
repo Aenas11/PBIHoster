@@ -32,7 +32,7 @@ function goToProfile() {
     <cds-skip-to-content></cds-skip-to-content>
     <cds-header-menu-button button-label-active="Close menu" button-label-inactive="Open menu"
       @click="emit('toggleMenu')" :active="isSideNavExpanded" />
-    <cds-header-name href="javascript:void 0" prefix="Report">Tree</cds-header-name>
+    <cds-header-name href="/" prefix="Report">Tree</cds-header-name>
 
 
     <div class="cds--header__global" v-if="authStore.isAuthenticated">

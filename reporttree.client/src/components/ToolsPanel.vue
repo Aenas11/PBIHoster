@@ -55,6 +55,7 @@ const handleSaveLayout = async (pageId: string) => {
     })
 
     if (response.success) {
+      gridLayout.markClean()
       saveStatus.value = { type: 'success', message: 'Layout saved successfully!' }
       // Clear success message after 3 seconds
       setTimeout(() => {

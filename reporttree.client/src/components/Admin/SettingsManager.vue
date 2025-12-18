@@ -50,6 +50,16 @@ const regularSettings = computed(() =>
     settings.value.filter(s => !s.key.startsWith('App.'))
 )
 
+// Filter pages to only show bottom-level pages (no parent) or pages without children. this is currently not working properly
+const topLevelPages = computed(() =>
+    pages.value.filter(page => {
+        const hasNoParent = !page.parentId
+        const hasNoChildren = !pages.value.some(p => p.parentId === page.id)
+        return hasNoParent || hasNoChildren
+    })
+
+)
+
 async function loadSettings() {
     loading.value = true
     try {
@@ -140,9 +150,9 @@ function onKeyInput(e: Event) { formData.value.key = (e.target as HTMLInputEleme
 function onValueInput(e: Event) { formData.value.value = (e.target as HTMLInputElement).value }
 function onCategoryChange(e: Event) { formData.value.category = (e.target as HTMLSelectElement).value }
 function onDescriptionInput(e: Event) { formData.value.description = (e.target as HTMLTextAreaElement).value }
-function onHomePageChange(e: any) {
+function onHomePageChange(e: CustomEvent<{ value: string }> | Event) {
     // Carbon web components use detail.value or target.value
-    homePageId.value = e.detail?.value || e.target?.value || ''
+    homePageId.value = (e as CustomEvent<{ value: string }>).detail?.value || (e.target as HTMLSelectElement)?.value || ''
 }
 
 onMounted(() => {
@@ -169,7 +179,7 @@ onMounted(() => {
                         <cds-select id="home-page-select" label-text="Select the page to display on the home route (/)"
                             :value="homePageId" @cds-select-selected="onHomePageChange">
                             <cds-select-item value="">No home page (default)</cds-select-item>
-                            <cds-select-item v-for="page in pages" :key="page.id" :value="page.id.toString()">
+                            <cds-select-item v-for="page in topLevelPages" :key="page.id" :value="page.id.toString()">
                                 {{ page.title }}
                             </cds-select-item>
                         </cds-select>

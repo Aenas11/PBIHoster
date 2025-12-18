@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { useEditModeStore } from '../stores/editMode'
 import { usePagesStore } from '../stores/pages'
 import { useLayout } from '../composables/useLayout'
+import { useGridLayout } from '../composables/useGridLayout'
 import {
   Add20, Dashboard20, Document20, UserAdmin20, Pin20, PinFilled20,
   Edit20, Folder20, ChartBar20, Table20, SettingsEdit20, Close20
@@ -12,6 +13,7 @@ import {
 import '@carbon/web-components/es/components/ui-shell/index.js';
 import '@carbon/web-components/es/components/icon-button/index.js';
 import '@carbon/web-components/es/components/button/index.js';
+import '@carbon/web-components/es/components/modal/index.js';
 import PageModal from './PageModal.vue'
 import type { Page } from '../types/page'
 
@@ -25,9 +27,13 @@ const auth = useAuthStore()
 const editModeStore = useEditModeStore()
 const pagesStore = usePagesStore()
 const layout = useLayout()
+const gridLayout = useGridLayout()
 const router = useRouter()
 
 const attrs = useAttrs()
+
+// Confirmation modal state
+const isConfirmModalOpen = ref(false)
 
 const isAdmin = computed(() => auth.roles.includes('Admin'))
 
@@ -49,10 +55,29 @@ function togglePin() {
 }
 
 function toggleEditMode() {
+  console.log('toggleEditMode called. isEditMode:', editModeStore.isEditMode, 'isDirty:', gridLayout.isDirty.value)
+  
+  // If exiting edit mode and there are unsaved changes, show confirmation
+  if (editModeStore.isEditMode && gridLayout.isDirty.value) {
+    console.log('⚠️ Showing confirmation modal for unsaved changes')
+    isConfirmModalOpen.value = true
+    return
+  }
+
+  // Otherwise proceed normally
   editModeStore.toggleEditMode()
   if (editModeStore.isEditMode && !expanded.value) {
     expanded.value = true // Expand when entering edit mode
   }
+}
+
+function confirmExitEditMode() {
+  isConfirmModalOpen.value = false
+  editModeStore.exitEditMode()
+}
+
+function cancelExitEditMode() {
+  isConfirmModalOpen.value = false
 }
 
 function handleMobileNavigation() {
@@ -166,7 +191,7 @@ function getIcon(iconName: string) {
           @click="toggleEditMode" class="action-button">
           <span v-if="expanded">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
           <span v-if="!expanded" slot="tooltip-content">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages'
-          }}</span>
+            }}</span>
           <component :is="editModeStore.isEditMode ? Close20 : Edit20" slot="icon" />
         </cds-button>
 
@@ -190,6 +215,22 @@ function getIcon(iconName: string) {
 
   <PageModal :open="isModalOpen" :page="selectedPage" :parent-id="parentIdForNewPage" @close="isModalOpen = false"
     @create-child="handleCreateChild" />
+
+  <!-- Unsaved Changes Confirmation Modal -->
+  <cds-modal :open="isConfirmModalOpen" @cds-modal-closed="cancelExitEditMode" size="sm" danger>
+    <cds-modal-header>
+      <cds-modal-close-button></cds-modal-close-button>
+      <cds-modal-heading>Unsaved Changes</cds-modal-heading>
+    </cds-modal-header>
+    <cds-modal-body>
+      <p>You have unsaved layout changes. If you exit edit mode without saving, your changes will be lost.</p>
+      <p><strong>Do you want to exit without saving?</strong></p>
+    </cds-modal-body>
+    <cds-modal-footer>
+      <cds-modal-footer-button kind="secondary" @click="cancelExitEditMode">Cancel</cds-modal-footer-button>
+      <cds-modal-footer-button kind="danger" @click="confirmExitEditMode">Exit Without Saving</cds-modal-footer-button>
+    </cds-modal-footer>
+  </cds-modal>
 </template>
 
 <style scoped>

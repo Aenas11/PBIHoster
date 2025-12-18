@@ -7,6 +7,7 @@ import { useComponentRegistry } from './useComponentRegistry'
 const layout = ref<GridItemWithComponent[]>([])
 const nextId = ref(0)
 const isLoading = ref(false)
+const isDirty = ref(false)
 
 export function useGridLayout() {
     const { getComponent } = useComponentRegistry()
@@ -52,6 +53,8 @@ export function useGridLayout() {
         })
 
         layout.value.push(newItem)
+        isDirty.value = true
+        console.log('🔴 Layout marked as DIRTY (addPanel). isDirty:', isDirty.value)
         console.log('Total panels after add:', layout.value.length)
         return newItem
     }
@@ -63,6 +66,8 @@ export function useGridLayout() {
         const index = layout.value.findIndex(item => item.i === id)
         if (index !== -1) {
             layout.value.splice(index, 1)
+            isDirty.value = true
+            console.log('🔴 Layout marked as DIRTY (removePanel). isDirty:', isDirty.value)
         }
     }
 
@@ -86,6 +91,8 @@ export function useGridLayout() {
                 layout.value[index].refresh!()
             }
 
+            isDirty.value = true
+            console.log('🔴 Layout marked as DIRTY (updatePanelConfig). isDirty:', isDirty.value)
         }
     }
 
@@ -124,6 +131,9 @@ export function useGridLayout() {
                 })
             }
         })
+        
+        isDirty.value = true
+        console.log('🔴 Layout marked as DIRTY (onLayoutUpdated). isDirty:', isDirty.value)
     }
 
     /**
@@ -158,13 +168,23 @@ export function useGridLayout() {
     const clearLayout = () => {
         layout.value = []
         nextId.value = 0
+        isDirty.value = true
+    }
+
+    /**
+     * Mark layout as clean (after successful save)
+     */
+    const markClean = () => {
+        isDirty.value = false
+        console.log('🟢 Layout marked as CLEAN. isDirty:', isDirty.value)
     }
 
     // Load layout from API using layoutService
     const loadLayout = async (pageId: string) => {
         isLoading.value = true
         // Clear current layout first to force re-render
-        clearLayout()
+        layout.value = []
+        nextId.value = 0
 
         try {
             // Get all layouts for this page
@@ -194,12 +214,17 @@ export function useGridLayout() {
             } else {
                 // No saved layout found, start with empty layout
                 console.log(`No saved layout found for page ${pageId}`)
-                clearLayout()
+                layout.value = []
+                nextId.value = 0
             }
+            // Reset dirty flag after loading
+            isDirty.value = false
         } catch (error) {
             console.error('Failed to load page layout:', error)
             // Fall back to empty layout on error
-            clearLayout()
+            layout.value = []
+            nextId.value = 0
+            isDirty.value = false
         } finally {
             isLoading.value = false
         }
@@ -208,6 +233,7 @@ export function useGridLayout() {
     return {
         layout: computed(() => layout.value),
         isLoading: computed(() => isLoading.value),
+        isDirty: computed(() => isDirty.value),
         addPanel,
         removePanel,
         updatePanelConfig,
@@ -215,7 +241,8 @@ export function useGridLayout() {
         updateLayout,
         onLayoutUpdated,
         clearLayout,
-        loadLayout
+        loadLayout,
+        markClean
     }
 }
 
