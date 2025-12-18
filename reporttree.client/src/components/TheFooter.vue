@@ -21,7 +21,7 @@
   background-color: #f4f4f4;
   margin-top: auto;
   position: relative;
-  z-index: 1000;
+  z-index: 9000;
   /* Ensure footer is always above side nav */
 }
 

@@ -184,35 +184,7 @@ function getIcon(iconName: string) {
 
 <style scoped>
 .side-nav-container {
-  top: 3rem;
-  /* Ensure it sits below the header */
-}
-
-.side-nav-container :deep(.cds--side-nav__navigation) {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.side-nav-spacer {
-  flex-grow: 1;
-}
-
-.edit-mode-item {
-  border-left: 4px solid var(--cds-support-warning, #f1c21b);
-}
-
-.edit-badge {
-  margin-left: auto;
-  font-size: 0.8rem;
-  color: var(--cds-text-secondary);
-}
-
-.add-child-link {
-  color: var(--cds-link-primary);
-}
-
-.edit-folder-link {
-  font-style: italic;
+  padding-bottom: 4rem;
+  /* Ensure bottom items are not covered by footer */
 }
 </style>

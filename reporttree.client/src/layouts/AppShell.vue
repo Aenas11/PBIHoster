@@ -6,6 +6,7 @@ import { useLayout } from '../composables/useLayout'
 import AppHeader from '../components/AppHeader.vue'
 import TheSideMenu from '../components/TheSideMenu.vue'
 import ToolsPanel from '../components/ToolsPanel.vue'
+import TheFooter from '../components/TheFooter.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -26,8 +27,7 @@ const contentStyle = computed(() => ({
   marginLeft: layout.contentMarginLeft.value,
   marginTop: '3rem',
   transition: 'margin-left 0.11s cubic-bezier(0.2, 0, 1, 0.9)',
-  padding: '0',
-  minHeight: 'calc(100vh - 3rem)' // Account for header height
+  padding: '0'
 }))
 </script>
 
@@ -44,12 +44,15 @@ const contentStyle = computed(() => ({
       class="app-side-nav" />
 
     <div id="main-content" class="cds--content" :style="contentStyle">
-      <router-view v-slot="{ Component }">
-        <keep-alive :max="5">
-          <component :is="Component" />
-        </keep-alive>
-      </router-view>
+      <div class="content-wrapper">
+        <router-view v-slot="{ Component }">
+          <keep-alive :max="5">
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
+      </div>
     </div>
+    <TheFooter />
   </div>
 </template>
 
@@ -59,8 +62,7 @@ const contentStyle = computed(() => ({
   display: flex;
   flex-direction: column;
   position: relative;
-  min-height: calc(100vh - 3rem);
-  /* Account for header */
+  min-height: 100vh;
 }
 
 :deep(.app-side-nav) {
@@ -76,6 +78,12 @@ const contentStyle = computed(() => ({
   flex: 1;
   overflow-y: auto;
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-wrapper {
+  flex: 1;
   padding-bottom: 2rem;
 }
 </style>

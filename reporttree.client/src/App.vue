@@ -5,7 +5,6 @@ import { useThemeStore } from './stores/theme'
 import { useAuthStore } from './stores/auth'
 import AppShell from './layouts/AppShell.vue'
 import LoginLayout from './layouts/LoginLayout.vue'
-import TheFooter from './components/TheFooter.vue'
 
 const route = useRoute()
 const themeStore = useThemeStore()
@@ -29,7 +28,6 @@ onMounted(async () => {
 <template>
   <div class="app-wrapper">
     <component :is="currentLayout" />
-    <TheFooter />
   </div>
 </template>
 
