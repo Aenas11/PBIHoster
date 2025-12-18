@@ -10,4 +10,8 @@ declare module '@carbon/icons-vue' {
     export const SettingsEdit20: DefineComponent
     // export const ColorPalette: DefineComponent
     export const ColorSwitch20: DefineComponent
+    export const Dashboard20: DefineComponent
+    export const Document20: DefineComponent
+    export const UserAdmin20: DefineComponent
+    export const Equalizer20: DefineComponent
 }

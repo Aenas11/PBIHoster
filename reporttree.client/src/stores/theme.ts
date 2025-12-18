@@ -57,15 +57,12 @@ export const useThemeStore = defineStore('theme', () => {
             })
             root.classList.add('cds--white') // Use white as base for custom themes
         } else if (theme !== 'custom') {
-            // Apply built-in theme
-            const themeTokens = builtInThemes[theme]
-            Object.entries(themeTokens).forEach(([key, value]) => {
-                if (typeof value === 'string') {
-                    const cssKey = toKebabCase(key);
-                    root.style.setProperty(`--cds-${cssKey}`, value)
-                }
-            })
+            // Apply built-in theme by just adding the class
+            // The CSS variables are handled by the Carbon styles included in styles.scss
             root.classList.add(`cds--${theme}`)
+
+            // We don't need to manually set properties for built-in themes anymore
+            // as we are using @include themes.all() in styles.scss
         }
     }
 

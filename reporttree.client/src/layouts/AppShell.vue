@@ -24,8 +24,10 @@ function toggleToolsPanel() {
 
 const contentStyle = computed(() => ({
   marginLeft: layout.contentMarginLeft.value,
+  marginTop: '3rem',
   transition: 'margin-left 0.11s cubic-bezier(0.2, 0, 1, 0.9)',
-  padding: '0'
+  padding: '0',
+  minHeight: 'calc(100vh - 3rem)' // Account for header height
 }))
 </script>
 
@@ -57,18 +59,23 @@ const contentStyle = computed(() => ({
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
+  min-height: calc(100vh - 3rem);
+  /* Account for header */
 }
 
 :deep(.app-side-nav) {
-  position: absolute !important;
+  position: fixed !important;
   top: 3rem !important;
-  height: calc(100% - 3rem) !important;
+  height: calc(100vh - 3rem) !important;
+  max-height: calc(100vh - 3rem) !important;
   z-index: 900;
+  overflow-y: auto;
 }
 
 #main-content {
   flex: 1;
   overflow-y: auto;
+  position: relative;
+  padding-bottom: 2rem;
 }
 </style>

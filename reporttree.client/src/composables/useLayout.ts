@@ -16,13 +16,17 @@ export function useLayout() {
         windowWidth.value <= LAYOUT_CONFIG.BREAKPOINTS.TABLET
     )
 
-    const isSideNavFixed = computed(() => isDesktop.value)
+    // Fix: Side nav should be fixed on Tablet and Desktop to avoid overlaying content
+    const isSideNavFixed = computed(() => windowWidth.value > LAYOUT_CONFIG.BREAKPOINTS.MOBILE)
 
-    const contentMarginLeft = computed(() =>
-        isSideNavFixed.value && isSideNavExpanded.value
+    const contentMarginLeft = computed(() => {
+        if (!isSideNavFixed.value) {
+            return '0'
+        }
+        return isSideNavExpanded.value
             ? LAYOUT_CONFIG.SIDE_NAV.WIDTH_EXPANDED
             : LAYOUT_CONFIG.SIDE_NAV.WIDTH_COLLAPSED
-    )
+    })
 
     // Debounced resize handler
     let resizeTimeout: ReturnType<typeof setTimeout> | null = null

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useLayout } from '../composables/useLayout'
-import { Add20 } from '@carbon/icons-vue'
+import { Add20, Dashboard20, Document20, UserAdmin20, Equalizer20 } from '@carbon/icons-vue'
 import '@carbon/web-components/es/components/ui-shell/index.js';
 
 defineProps<{
@@ -40,11 +40,28 @@ function createPage() {
   <cds-side-nav id="side-nav" :fixed="fixed" :expanded="expanded" aria-label="Side navigation"
     class="side-nav-container">
     <cds-side-nav-items>
-      <cds-side-nav-link href="/" @click="navigateTo('/', $event)">Dashboard</cds-side-nav-link>
-      <cds-side-nav-link href="/reports" @click="navigateTo('/reports', $event)">Reports</cds-side-nav-link>
+      <cds-side-nav-link href="/" @click="navigateTo('/', $event)">
+        <Dashboard20 slot="title-icon" />
+        Dashboard
+      </cds-side-nav-link>
+      <cds-side-nav-link href="/reports" @click="navigateTo('/reports', $event)">
+        <Document20 slot="title-icon" />
+        Reports
+      </cds-side-nav-link>
       <cds-side-nav-link v-if="isAdmin" href="/admin" @click="navigateTo('/admin', $event)">
+        <UserAdmin20 slot="title-icon" />
         Admin
       </cds-side-nav-link>
+      <!-- example of tree like structure -->
+      <cds-side-nav-menu title="Management">
+        <Equalizer20 slot="title-icon" />
+        <cds-side-nav-link href="/users" @click="navigateTo('/users', $event)">
+          Users
+        </cds-side-nav-link>
+        <cds-side-nav-link href="/settings" @click="navigateTo('/settings', $event)">
+          Settings
+        </cds-side-nav-link>
+      </cds-side-nav-menu>
     </cds-side-nav-items>
 
     <div class="side-nav-spacer"></div>
@@ -59,8 +76,13 @@ function createPage() {
   </cds-side-nav>
 </template>
 
-<!-- <style scoped>
-.side-nav-container :deep(.bx--side-nav__navigation) {
+<style scoped>
+.side-nav-container {
+  top: 3rem;
+  /* Ensure it sits below the header */
+}
+
+.side-nav-container :deep(.cds--side-nav__navigation) {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -69,4 +91,4 @@ function createPage() {
 .side-nav-spacer {
   flex-grow: 1;
 }
-</style> -->
+</style>

@@ -24,7 +24,7 @@
 - **Framework**: Vue 3 (Composition API) + TypeScript.
 - **Build Tool**: Vite.
 - **State Management**: Pinia (`stores/auth.ts`).
-- **UI Library**: Carbon Design System (`@carbon/vue`). Source code for UI library is here : UI shell = "https://web-components.carbondesignsystem.com/?path=/docs/components-ui-shell--overview". Other components = "https://web-components.carbondesignsystem.com/?path=/docs/introduction-welcome--overview". For icons use this https://www.npmjs.com/package/@carbon/icons-vue 
+- **UI Library**: Carbon Design System (`@carbon/vue`). Source code for UI library is here : UI shell = "https://web-components.carbondesignsystem.com/?path=/docs/components-ui-shell--overview". Other components = "https://web-components.carbondesignsystem.com/?path=/docs/introduction-welcome--overview". For icons use this https://www.npmjs.com/package/@carbon/icons-vue list of available icons can be found here: "https://carbon-elements.netlify.app/icons/examples/preview/"
 - **Routing**: Vue Router (`router/index.ts`).
 
 ## Developer Workflows

@@ -3,9 +3,9 @@
 
 <template>
   <footer class="app-footer">
-    <div class="bx--grid bx--grid--full-width">
-      <div class="bx--row">
-        <div class="bx--col-lg-16">
+    <div class="cds--grid cds--grid--full-width">
+      <div class="cds--row">
+        <div class="cds--col-lg-16">
           <p class="footer-text">ReportTree &copy; {{ new Date().getFullYear() }}</p>
         </div>
       </div>
@@ -20,6 +20,9 @@
   border-top: 1px solid #e0e0e0;
   background-color: #f4f4f4;
   margin-top: auto;
+  position: relative;
+  z-index: 1000;
+  /* Ensure footer is always above side nav */
 }
 
 .footer-text {
@@ -34,7 +37,7 @@
     border-top-color: #393939;
     background-color: #262626;
   }
-  
+
   .footer-text {
     color: #c6c6c6;
   }
