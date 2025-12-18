@@ -29,5 +29,16 @@ namespace ReportTree.Server.Persistance
             var results = col.Find(x => x.Username.Contains(term));
             return Task.FromResult(results);
         }
+
+        public Task DeleteAsync(string username)
+        {
+            var col = _db.GetCollection<AppUser>("users");
+            var user = col.FindOne(x => x.Username == username);
+            if (user != null)
+            {
+                col.Delete(user.Id);
+            }
+            return Task.CompletedTask;
+        }
     }
 }

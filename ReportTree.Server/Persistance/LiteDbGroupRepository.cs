@@ -30,6 +30,13 @@ namespace ReportTree.Server.Persistance
             return Task.FromResult(id.AsInt32);
         }
 
+        public Task UpdateAsync(Group group)
+        {
+            var col = _db.GetCollection<Group>("groups");
+            col.Update(group);
+            return Task.CompletedTask;
+        }
+
         public Task DeleteAsync(int id)
         {
             var col = _db.GetCollection<Group>("groups");

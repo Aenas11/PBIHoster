@@ -34,7 +34,7 @@ const router = createRouter({
     {
       path: '/admin',
       name: 'admin',
-      component: () => import('../components/HelloWorld.vue'), // Placeholder for Admin
+      component: () => import('../views/AdminView.vue'),
       meta: { requiresAuth: true, roles: ['Admin'], keepAlive: false }
     }
   ]

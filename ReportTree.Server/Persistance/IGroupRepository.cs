@@ -8,5 +8,6 @@ namespace ReportTree.Server.Persistance
         Task<IEnumerable<Group>> SearchAsync(string term);
         Task<int> CreateAsync(Group group);
         Task DeleteAsync(int id);
+        Task UpdateAsync(Group group);
     }
 }
