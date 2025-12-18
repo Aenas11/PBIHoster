@@ -5,6 +5,7 @@ import { useThemeStore } from './stores/theme'
 import { useAuthStore } from './stores/auth'
 import AppShell from './layouts/AppShell.vue'
 import LoginLayout from './layouts/LoginLayout.vue'
+import ToastNotification from './components/ToastNotification.vue'
 
 const route = useRoute()
 const themeStore = useThemeStore()
@@ -28,6 +29,7 @@ onMounted(async () => {
 <template>
   <div class="app-wrapper">
     <component :is="currentLayout" />
+    <ToastNotification />
   </div>
 </template>
 

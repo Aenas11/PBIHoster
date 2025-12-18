@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import '@carbon/web-components/es/components/ui-shell/index.js';
-import { Logout20, Switcher20 } from '@carbon/icons-vue'
+import { useRouter } from 'vue-router'
+import { Logout20, Switcher20, User20 } from '@carbon/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEditModeStore } from '@/stores/editMode'
 // import ThemeSwitcher from './ThemeSwitcher.vue'
@@ -16,8 +17,13 @@ const emit = defineEmits<{
   logout: []
 }>()
 
+const router = useRouter()
 const authStore = useAuthStore()
 const editModeStore = useEditModeStore()
+
+function goToProfile() {
+  router.push('/profile')
+}
 
 </script>
 
@@ -36,6 +42,11 @@ const editModeStore = useEditModeStore()
       <cds-header-global-action aria-label="App Switcher" tooltip-text="Tools Panel" tooltip-alignment="right"
         @click="emit('toggleToolsPanel')" :disabled="!editModeStore.isEditMode">
         <Switcher20 slot="icon" />
+      </cds-header-global-action>
+
+      <cds-header-global-action aria-label="User Profile" tooltip-text="User Profile" tooltip-alignment="right"
+        @click="goToProfile">
+        <User20 slot="icon" />
       </cds-header-global-action>
 
       <cds-header-global-action aria-label="Logout" tooltip-text="Logout" @click="emit('logout')"

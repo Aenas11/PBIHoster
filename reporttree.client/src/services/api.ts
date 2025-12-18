@@ -3,8 +3,11 @@
  * Automatically handles authentication headers and common error handling
  */
 
+import { useToastStore } from '../stores/toast'
+
 interface RequestOptions extends RequestInit {
     skipAuth?: boolean
+    skipErrorToast?: boolean
 }
 
 class ApiClient {
@@ -25,7 +28,7 @@ class ApiClient {
         url: string,
         options: RequestOptions = {}
     ): Promise<T> {
-        const { skipAuth, headers, ...restOptions } = options
+        const { skipAuth, skipErrorToast, headers, ...restOptions } = options
 
         const requestHeaders: HeadersInit = {
             'Content-Type': 'application/json',
@@ -33,40 +36,97 @@ class ApiClient {
             ...(skipAuth ? {} : this.getAuthHeader())
         }
 
-        const response = await fetch(`${this.baseUrl}${url}`, {
-            ...restOptions,
-            headers: requestHeaders
-        })
+        try {
+            const response = await fetch(`${this.baseUrl}${url}`, {
+                ...restOptions,
+                headers: requestHeaders
+            })
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                // Unauthorized - potentially redirect to login
-                window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Unauthorized - potentially redirect to login
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+                }
+
+                // Try to get error message from response
+                let errorMessage = `${response.status} ${response.statusText}`
+                try {
+                    const errorData = await response.json()
+                    if (errorData.message) {
+                        errorMessage = errorData.message
+                    } else if (errorData.title) {
+                        errorMessage = errorData.title
+                    }
+                } catch {
+                    // Ignore JSON parse errors
+                }
+
+                if (!skipErrorToast) {
+                    const toastStore = useToastStore()
+                    toastStore.error('Request Failed', errorMessage)
+                }
+
+                throw new Error(errorMessage)
             }
-            throw new Error(`API Error: ${response.status} ${response.statusText}`)
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Unauthorized - potentially redirect to login
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+                }
+
+                // Try to get error message from response
+                let errorMessage = `${response.status} ${response.statusText}`
+                try {
+                    const errorData = await response.json()
+                    if (errorData.message) {
+                        errorMessage = errorData.message
+                    } else if (errorData.title) {
+                        errorMessage = errorData.title
+                    }
+                } catch {
+                    // Ignore JSON parse errors
+                }
+
+                if (!skipErrorToast) {
+                    const toastStore = useToastStore()
+                    toastStore.error('Request Failed', errorMessage)
+                }
+
+                throw new Error(errorMessage)
+            }
+
+            // Handle no content responses
+            if (response.status === 204) {
+                return undefined as T
+            }
+
+            // Check if response has content
+            const contentLength = response.headers.get('content-length')
+            const contentType = response.headers.get('content-type')
+
+            // If no content or content-length is 0, return undefined
+            if (contentLength === '0' || (!contentType?.includes('application/json') && contentLength === null)) {
+                return undefined as T
+            }
+
+            // Try to parse JSON, but handle empty responses gracefully
+            const text = await response.text()
+            if (!text || text.trim() === '') {
+                return undefined as T
+            }
+
+            return JSON.parse(text)
+        } catch (error) {
+            // Handle network errors
+            if (error instanceof Error && error.message.includes('fetch')) {
+                if (!skipErrorToast) {
+                    const toastStore = useToastStore()
+                    toastStore.error('Network Error', 'Unable to connect to the server')
+                }
+            }
+            throw error
         }
-
-        // Handle no content responses
-        if (response.status === 204) {
-            return undefined as T
-        }
-
-        // Check if response has content
-        const contentLength = response.headers.get('content-length')
-        const contentType = response.headers.get('content-type')
-
-        // If no content or content-length is 0, return undefined
-        if (contentLength === '0' || (!contentType?.includes('application/json') && contentLength === null)) {
-            return undefined as T
-        }
-
-        // Try to parse JSON, but handle empty responses gracefully
-        const text = await response.text()
-        if (!text || text.trim() === '') {
-            return undefined as T
-        }
-
-        return JSON.parse(text)
     }
 
     /**

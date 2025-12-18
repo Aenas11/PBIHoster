@@ -163,6 +163,9 @@ export function useGridLayout() {
     // Load layout from API using layoutService
     const loadLayout = async (pageId: string) => {
         isLoading.value = true
+        // Clear current layout first to force re-render
+        clearLayout()
+
         try {
             // Get all layouts for this page
             const layouts = await layoutService.getLayoutsByPage(pageId)
@@ -171,7 +174,9 @@ export function useGridLayout() {
                 // Use the most recent layout (last one in the array)
                 const mostRecentLayout = layouts[layouts.length - 1]
                 if (mostRecentLayout?.layout) {
-                    layout.value = mostRecentLayout.layout
+                    // Create a deep copy to force Vue reactivity and avoid cache issues
+                    layout.value = JSON.parse(JSON.stringify(mostRecentLayout.layout))
+                    console.log('Layout loaded:', layout.value.length, 'panels')
 
                     // Update nextId to avoid conflicts
                     const layoutToProcess = mostRecentLayout.layout

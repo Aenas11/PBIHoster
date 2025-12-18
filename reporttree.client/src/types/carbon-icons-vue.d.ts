@@ -22,4 +22,10 @@ declare module '@carbon/icons-vue' {
     export const Table20: DefineComponent
     export const SettingsEdit20: DefineComponent
     export const Close20: DefineComponent
+    export const User20: DefineComponent
+    export const Password20: DefineComponent
+    export const CheckmarkFilled20: DefineComponent
+    export const ErrorFilled20: DefineComponent
+    export const WarningAltFilled20: DefineComponent
+    export const InformationFilled20: DefineComponent
 }

@@ -9,7 +9,7 @@ import { useGridLayout } from '../composables/useGridLayout'
 import { useComponentRegistry } from '../composables/useComponentRegistry'
 import { useEditModeStore } from '../stores/editMode'
 import { TrashCan20, SettingsEdit20 } from '@carbon/icons-vue'
-import { onMounted, watch, ref } from 'vue'
+import { onMounted, watch, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import ErrorComponent from '../components/DashboardComponents/ErrorComponent.vue'
 import MetadataEditor from '../components/DashboardComponents/MetadataEditor.vue'
@@ -33,11 +33,15 @@ const configModalMetadata = ref<GridItemWithComponent['metadata']>({
 
 const activeTab = ref('general')
 
+// Force refresh key to bust cache
+const layoutKey = ref(0)
+
 // Load layout when component mounts or route changes
 onMounted(async () => {
   const pageId = route.params.id as string
   if (pageId) {
     await gridLayout.loadLayout(pageId)
+    layoutKey.value++
   }
 })
 
@@ -45,6 +49,7 @@ onMounted(async () => {
 watch(() => route.params.id, async (newId) => {
   if (newId) {
     await gridLayout.loadLayout(newId as string)
+    layoutKey.value++
   }
 })
 
@@ -142,11 +147,13 @@ const getConfigComponent = (item: GridItemWithComponent) => {
       <p>Loading page layout...</p>
     </div>
 
-    <GridLayout v-else v-model:layout="gridLayout.layout.value" :col-num="12" :row-height="30"
-      :is-draggable="editModeStore.isEditMode" :is-resizable="editModeStore.isEditMode" :vertical-compact="false"
-      :use-css-transforms="true" :margin="[10, 10]" @layout-updated="gridLayout.onLayoutUpdated" class="grid-container">
-      <GridItem v-for="item in (gridLayout.layout.value as GridItemWithComponent[])" :key="item.i" :x="item.x"
-        :y="item.y" :w="item.w" :h="item.h" :i="item.i" :min-w="item.minW" :min-h="item.minH" class="grid-item">
+    <GridLayout v-else v-model:layout="gridLayout.layout.value" :key="`layout-${layoutKey}`" :col-num="12"
+      :row-height="30" :is-draggable="editModeStore.isEditMode" :is-resizable="editModeStore.isEditMode"
+      :vertical-compact="false" :use-css-transforms="true" :margin="[10, 10]"
+      @layout-updated="gridLayout.onLayoutUpdated" class="grid-container">
+      <GridItem v-for="item in (gridLayout.layout.value as GridItemWithComponent[])" :key="`${item.i}-${layoutKey}`"
+        :x="item.x" :y="item.y" :w="item.w" :h="item.h" :i="item.i" :min-w="item.minW" :min-h="item.minH"
+        class="grid-item">
         <div class="panel-content">
           <div class="panel-header" v-if="item.metadata.title && !editModeStore.isEditMode || editModeStore.isEditMode">
             <span class="panel-title" v-if="item.metadata.title">{{ item.metadata.title }}</span>
@@ -162,9 +169,9 @@ const getConfigComponent = (item: GridItemWithComponent) => {
           </div>
           <div class="panel-body">
             <!-- Dynamic component with proper props -->
-            <component :is="resolveComponent(item)" :id="`component-${item.i}`" :key="`component-${item.i}`"
-              :config="item.componentConfig" :dimensions="{ w: item.w, h: item.h }" :component-type="item.componentType"
-              class="dynamic-component" />
+            <component :is="resolveComponent(item)" :id="`component-${item.i}`"
+              :key="`component-${item.i}-${layoutKey}`" :config="item.componentConfig"
+              :dimensions="{ w: item.w, h: item.h }" :component-type="item.componentType" class="dynamic-component" />
           </div>
         </div>
       </GridItem>

@@ -65,12 +65,21 @@ export const layoutService = {
     async getLayoutsByPage(pageId: string): Promise<SaveLayoutRequest[]> {
         const auth = useAuthStore()
         try {
-            const headers: HeadersInit = {}
+            const headers: HeadersInit = {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
             if (auth.token) {
                 headers['Authorization'] = `Bearer ${auth.token}`
             }
 
-            const res = await fetch(`/api/pages/${pageId}`, { headers })
+            // Add timestamp to prevent caching
+            const timestamp = new Date().getTime()
+            const res = await fetch(`/api/pages/${pageId}?_t=${timestamp}`, {
+                headers,
+                cache: 'no-store'
+            })
             if (!res.ok) throw new Error('Failed to fetch page')
 
             const page = await res.json()

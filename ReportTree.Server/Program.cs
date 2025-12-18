@@ -34,8 +34,15 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IGroupRepository, LiteDbGroupRepository>();
             builder.Services.AddSingleton<IThemeRepository, LiteDbThemeRepository>();
             builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
+            builder.Services.AddSingleton<ISettingsRepository, LiteDbSettingsRepository>();
+            builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<PageAuthorizationService>();
+            builder.Services.AddScoped<SettingsService>();
+            builder.Services.AddScoped<AuditLogService>();
+            
+            // Add HttpContextAccessor for audit logging
+            builder.Services.AddHttpContextAccessor();
             
             // Add memory cache for performance
             builder.Services.AddMemoryCache();
