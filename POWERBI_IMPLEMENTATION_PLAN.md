@@ -26,11 +26,11 @@ This document outlines the implementation plan for integrating Power BI embeddin
 ### 1.1 NuGet Package Dependencies
 **Files to modify**: `ReportTree.Server/ReportTree.Server.csproj`
 
-Add the following packages:
+Add the following packages (use latest stable versions):
 ```xml
-<PackageReference Include="Microsoft.PowerBI.Api" Version="4.18.0" />
-<PackageReference Include="Microsoft.Identity.Client" Version="4.61.0" />
-<PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
+<PackageReference Include="Microsoft.PowerBI.Api" Version="*" />
+<PackageReference Include="Microsoft.Identity.Client" Version="*" />
+<PackageReference Include="Microsoft.Rest.ClientRuntime" Version="*" />
 ```
 
 ### 1.2 Configuration Model
@@ -233,7 +233,7 @@ Component using `powerbi-client` library:
   - Responsive container
   - Error handling
   - Cleanup on unmount
-- **Dependencies**: Install `powerbi-client` and `powerbi-models` npm packages
+- **Dependencies**: Install `powerbi-client` and `powerbi-models` npm packages (use latest versions)
 
 ### 3.8 Dashboard Components
 **New Files**: 
