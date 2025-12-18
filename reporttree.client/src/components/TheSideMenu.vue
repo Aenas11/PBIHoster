@@ -92,7 +92,7 @@ function handleCreateChild(parentId: number) {
 }
 
 // Icon mapping
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, typeof Dashboard20> = {
   Dashboard20, Document20, Folder20, ChartBar20, Table20
 }
 

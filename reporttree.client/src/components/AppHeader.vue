@@ -13,14 +13,16 @@ const emit = defineEmits<{
   toggleToolsPanel: []
   logout: []
 }>()
+
 </script>
 
 <template>
   <cds-header aria-label="ReportTree">
     <cds-skip-to-content></cds-skip-to-content>
-    <cds-header-name href="javascript:void 0" prefix="Report">Tree</cds-header-name>
     <cds-header-menu-button button-label-active="Close menu" button-label-inactive="Open menu"
       @click="emit('toggleMenu')" :active="isSideNavExpanded" />
+    <cds-header-name href="javascript:void 0" prefix="Report">Tree</cds-header-name>
+
 
     <div class="cds--header__global">
       <!-- Theme Switcher -->
@@ -51,5 +53,11 @@ const emit = defineEmits<{
 
 cds-header-global-action {
   flex-shrink: 0;
+}
+
+@media (min-width: 769px) {
+  cds-header-menu-button {
+    display: none;
+  }
 }
 </style>
