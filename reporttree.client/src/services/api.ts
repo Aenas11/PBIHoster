@@ -53,7 +53,7 @@ class ApiClient {
                 let errors: string[] | undefined
                 try {
                     const errorData = await response.json()
-                    
+
                     // Handle custom error format with Errors array (password validation, etc.)
                     if (errorData.errors && Array.isArray(errorData.errors)) {
                         errors = errorData.errors
