@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useLayout } from '../composables/useLayout'
-import { Add20, Dashboard20, Document20, UserAdmin20, Equalizer20 } from '@carbon/icons-vue'
+import { Add20, Dashboard20, Document20, UserAdmin20, Equalizer20, Pin20, PinFilled20 } from '@carbon/icons-vue'
 import '@carbon/web-components/es/components/ui-shell/index.js';
 
 defineProps<{
@@ -18,6 +18,17 @@ const router = useRouter()
 
 const isAdmin = computed(() => auth.roles.includes('Admin'))
 const canCreate = computed(() => auth.roles.includes('Admin') || auth.roles.includes('Editor'))
+
+const collapseMode = computed(() => {
+  // On mobile (not fixed), use responsive mode
+  if (!layout.isSideNavFixed.value) return 'responsive'
+  // On desktop/tablet, use fixed if expanded (pinned), rail if collapsed (unpinned)
+  return expanded.value ? 'fixed' : 'rail'
+})
+
+function togglePin() {
+  expanded.value = !expanded.value
+}
 
 function handleMobileNavigation() {
   // Use the composable's method
@@ -37,8 +48,8 @@ function createPage() {
 </script>
 
 <template>
-  <cds-side-nav id="side-nav" :fixed="fixed" :expanded="expanded" aria-label="Side navigation"
-    class="side-nav-container">
+  <cds-side-nav id="side-nav" :fixed="fixed" :expanded="expanded" :collapse-mode="collapseMode"
+    aria-label="Side navigation" class="side-nav-container">
     <cds-side-nav-items>
       <cds-side-nav-link href="/" @click="navigateTo('/', $event)">
         <Dashboard20 slot="title-icon" />
@@ -66,11 +77,17 @@ function createPage() {
 
     <div class="side-nav-spacer"></div>
 
-    <cds-side-nav-items v-if="canCreate">
-      <cds-side-nav-divider></cds-side-nav-divider>
-      <cds-side-nav-link href="javascript:void(0)" @click="createPage">
+    <cds-side-nav-items>
+      <cds-side-nav-link v-if="canCreate" href="javascript:void(0)" @click="createPage">
         <Add20 slot="title-icon" />
         Create Page
+      </cds-side-nav-link>
+
+      <cds-side-nav-divider></cds-side-nav-divider>
+
+      <cds-side-nav-link href="javascript:void(0)" @click="togglePin">
+        <component :is="expanded ? PinFilled20 : Pin20" slot="title-icon" />
+        {{ expanded ? 'Unpin Menu' : 'Pin Menu' }}
       </cds-side-nav-link>
     </cds-side-nav-items>
   </cds-side-nav>

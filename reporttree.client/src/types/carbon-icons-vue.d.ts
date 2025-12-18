@@ -14,4 +14,6 @@ declare module '@carbon/icons-vue' {
     export const Document20: DefineComponent
     export const UserAdmin20: DefineComponent
     export const Equalizer20: DefineComponent
+    export const Pin20: DefineComponent
+    export const PinFilled20: DefineComponent
 }

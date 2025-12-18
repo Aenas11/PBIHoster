@@ -40,14 +40,9 @@ export function useLayout() {
             windowWidth.value = window.innerWidth
 
             // Auto-adjust side nav based on screen size
-            if (isDesktop.value) {
-                if (!isSideNavExpanded.value) {
-                    isSideNavExpanded.value = true
-                }
-            } else {
-                if (isSideNavExpanded.value) {
-                    isSideNavExpanded.value = false
-                }
+            // When switching to mobile, ensure the nav is closed (collapsed)
+            if (isMobile.value && isSideNavExpanded.value) {
+                isSideNavExpanded.value = false
             }
         }, LAYOUT_CONFIG.DEBOUNCE.RESIZE_MS)
     }
