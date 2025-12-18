@@ -46,7 +46,7 @@ const formatDate = (dateStr: string) => {
   if (!dateStr) return 'N/A'
   try {
     const date = new Date(dateStr)
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -84,4 +84,45 @@ const formatDate = (dateStr: string) => {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.metadata-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.metadata-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.timestamps {
+  display: flex;
+  gap: 1.5rem;
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--cds-border-subtle-01);
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+  opacity: 0.7;
+}
+
+.timestamp-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.timestamp-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--cds-text-secondary);
+}
+
+.timestamp-value {
+  color: var(--cds-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+</style>
