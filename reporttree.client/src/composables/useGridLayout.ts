@@ -44,18 +44,10 @@ export function useGridLayout() {
             }
         }
 
-        console.log('Adding new panel:', {
-            id: newItem.i,
-            type: newItem.componentType,
-            position: { x: newItem.x, y: newItem.y },
-            size: { w: newItem.w, h: newItem.h },
-            hasConfig: !!newItem.componentConfig
-        })
 
         layout.value.push(newItem)
         isDirty.value = true
-        console.log('🔴 Layout marked as DIRTY (addPanel). isDirty:', isDirty.value)
-        console.log('Total panels after add:', layout.value.length)
+
         return newItem
     }
 
@@ -67,7 +59,7 @@ export function useGridLayout() {
         if (index !== -1) {
             layout.value.splice(index, 1)
             isDirty.value = true
-            console.log('🔴 Layout marked as DIRTY (removePanel). isDirty:', isDirty.value)
+
         }
     }
 
@@ -92,7 +84,7 @@ export function useGridLayout() {
             }
 
             isDirty.value = true
-            console.log('🔴 Layout marked as DIRTY (updatePanelConfig). isDirty:', isDirty.value)
+
         }
     }
 
@@ -131,9 +123,8 @@ export function useGridLayout() {
                 })
             }
         })
-        
+
         isDirty.value = true
-        console.log('🔴 Layout marked as DIRTY (onLayoutUpdated). isDirty:', isDirty.value)
     }
 
     /**
@@ -176,7 +167,6 @@ export function useGridLayout() {
      */
     const markClean = () => {
         isDirty.value = false
-        console.log('🟢 Layout marked as CLEAN. isDirty:', isDirty.value)
     }
 
     // Load layout from API using layoutService
@@ -196,7 +186,6 @@ export function useGridLayout() {
                 if (mostRecentLayout?.layout) {
                     // Create a deep copy to force Vue reactivity and avoid cache issues
                     layout.value = JSON.parse(JSON.stringify(mostRecentLayout.layout))
-                    console.log('Layout loaded:', layout.value.length, 'panels')
 
                     // Update nextId to avoid conflicts
                     const layoutToProcess = mostRecentLayout.layout
@@ -212,8 +201,7 @@ export function useGridLayout() {
                     nextId.value = maxId + 1
                 }
             } else {
-                // No saved layout found, start with empty layout
-                console.log(`No saved layout found for page ${pageId}`)
+                // No saved layout found, start with empty layout                
                 layout.value = []
                 nextId.value = 0
             }

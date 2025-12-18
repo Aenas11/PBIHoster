@@ -55,11 +55,10 @@ function togglePin() {
 }
 
 function toggleEditMode() {
-  console.log('toggleEditMode called. isEditMode:', editModeStore.isEditMode, 'isDirty:', gridLayout.isDirty.value)
-  
+
+
   // If exiting edit mode and there are unsaved changes, show confirmation
   if (editModeStore.isEditMode && gridLayout.isDirty.value) {
-    console.log('⚠️ Showing confirmation modal for unsaved changes')
     isConfirmModalOpen.value = true
     return
   }

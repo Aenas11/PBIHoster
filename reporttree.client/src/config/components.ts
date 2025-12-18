@@ -45,5 +45,4 @@ const components: ComponentDefinition[] = [
  */
 export function registerDashboardComponents() {
     componentRegistry.registerAll(components)
-    console.log(`✓ Registered ${components.length} dashboard component(s)`)
 }

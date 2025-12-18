@@ -14,7 +14,6 @@ export class ComponentRegistry {
             console.warn(`Component type "${definition.type}" is already registered. Overwriting.`)
         }
         this.components.set(definition.type, definition)
-        console.log(`✓ Registered component: ${definition.name} (${definition.type})`)
     }
 
     /**
