@@ -31,6 +31,7 @@ namespace ReportTree.Server
             var dbConnectionString = builder.Configuration["LiteDb:ConnectionString"] ?? "Filename=reporttree.db;Connection=shared";
             builder.Services.AddSingleton<LiteDB.LiteDatabase>(_ => new LiteDB.LiteDatabase(dbConnectionString));
             builder.Services.AddSingleton<IUserRepository, LiteDbUserRepository>();
+            builder.Services.AddSingleton<IGroupRepository, LiteDbGroupRepository>();
             builder.Services.AddSingleton<IThemeRepository>(_ => new LiteDbThemeRepository(dbConnectionString));
             builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
             builder.Services.AddScoped<AuthService>();

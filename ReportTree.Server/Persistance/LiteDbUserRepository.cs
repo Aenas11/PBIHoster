@@ -20,5 +20,14 @@ namespace ReportTree.Server.Persistance
             var user = col.FindOne(x => x.Username == username);
             return Task.FromResult<AppUser?>(user);
         }
+
+        public Task<IEnumerable<AppUser>> SearchAsync(string term)
+        {
+            var col = _db.GetCollection<AppUser>("users");
+            if (string.IsNullOrWhiteSpace(term)) return Task.FromResult(col.FindAll());
+            
+            var results = col.Find(x => x.Username.Contains(term));
+            return Task.FromResult(results);
+        }
     }
 }

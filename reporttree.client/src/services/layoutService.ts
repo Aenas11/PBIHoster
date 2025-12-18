@@ -1,4 +1,5 @@
 import type { GridItemWithComponent } from '../types/layout'
+import { useAuthStore } from '../stores/auth'
 
 export interface SaveLayoutRequest {
     pageId: string
@@ -23,7 +24,6 @@ interface SavedLayout extends SaveLayoutRequest {
 
 /**
  * API service for saving and loading page layouts
- * Currently uses stub implementation - will be replaced with actual API calls
  */
 export const layoutService = {
     /**
@@ -32,65 +32,30 @@ export const layoutService = {
      * @returns Promise with save result
      */
     async saveLayout(request: SaveLayoutRequest): Promise<SaveLayoutResponse> {
-        // Stub implementation - simulates API call with delay
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // Simulate successful save
-                const layoutId = `layout-${Date.now()}`
+        const auth = useAuthStore()
+        try {
+            const res = await fetch(`/api/pages/${request.pageId}/layout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${auth.token}`
+                },
+                body: JSON.stringify(request.layout)
+            })
 
-                // Log to console for debugging
-                console.log('📦 Layout saved (stub):', {
-                    layoutId,
-                    pageId: request.pageId,
-                    panelCount: request.layout.length,
-                    layout: request.layout,
-                    metadata: request.metadata
-                })
+            if (!res.ok) throw new Error('Failed to save layout')
 
-                // Store in localStorage as temporary persistence
-                try {
-                    const savedLayouts = JSON.parse(localStorage.getItem('savedLayouts') || '[]')
-                    savedLayouts.push({
-                        id: layoutId,
-                        ...request,
-                        savedAt: new Date().toISOString()
-                    })
-                    localStorage.setItem('savedLayouts', JSON.stringify(savedLayouts))
-                } catch (error) {
-                    console.warn('Failed to store layout in localStorage:', error)
-                }
-
-                resolve({
-                    success: true,
-                    layoutId,
-                    message: 'Layout saved successfully'
-                })
-            }, 500) // Simulate network delay
-        })
+            return {
+                success: true,
+                layoutId: 'current',
+                message: 'Layout saved successfully'
+            }
+        } catch (e) {
+            console.error(e)
+            return { success: false, layoutId: '', message: 'Error saving layout' }
+        }
     },
 
-    /**
-     * Load a saved layout from the server
-     * @param layoutId The ID of the layout to load
-     * @returns Promise with layout data
-     */
-    async loadLayout(layoutId: string): Promise<SaveLayoutRequest | null> {
-        // Stub implementation
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                try {
-                    const savedLayouts: SavedLayout[] = JSON.parse(localStorage.getItem('savedLayouts') || '[]')
-                    const layout = savedLayouts.find((l: SavedLayout) => l.id === layoutId)
-
-                    console.log('📦 Layout loaded (stub):', layout)
-                    resolve(layout || null)
-                } catch (error) {
-                    console.warn('Failed to load layout from localStorage:', error)
-                    resolve(null)
-                }
-            }, 300)
-        })
-    },
 
     /**
      * Get all saved layouts for a page
@@ -98,20 +63,36 @@ export const layoutService = {
      * @returns Promise with array of layouts
      */
     async getLayoutsByPage(pageId: string): Promise<SaveLayoutRequest[]> {
-        // Stub implementation
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                try {
-                    const savedLayouts: SavedLayout[] = JSON.parse(localStorage.getItem('savedLayouts') || '[]')
-                    const pageLayouts = savedLayouts.filter((l: SavedLayout) => l.pageId === pageId)
+        const auth = useAuthStore()
+        try {
+            const headers: HeadersInit = {}
+            if (auth.token) {
+                headers['Authorization'] = `Bearer ${auth.token}`
+            }
 
-                    console.log('📦 Layouts for page (stub):', pageId, pageLayouts)
-                    resolve(pageLayouts)
-                } catch (error) {
-                    console.warn('Failed to load layouts from localStorage:', error)
-                    resolve([])
+            const res = await fetch(`/api/pages/${pageId}`, { headers })
+            if (!res.ok) throw new Error('Failed to fetch page')
+
+            const page = await res.json()
+            let layout: GridItemWithComponent[] = []
+            if (page.layout) {
+                try {
+                    layout = JSON.parse(page.layout)
+                } catch {
+                    console.warn('Failed to parse layout JSON')
                 }
-            }, 300)
-        })
+            }
+
+            // Return in the format expected by useGridLayout (array of "saved layouts")
+            // We wrap the current layout in an object that matches SaveLayoutRequest structure
+            return [{
+                pageId,
+                layout,
+                metadata: { createdAt: new Date().toISOString() }
+            }]
+        } catch (e) {
+            console.error(e)
+            return []
+        }
     }
 }

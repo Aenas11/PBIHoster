@@ -5,6 +5,7 @@ import { jwtDecode, type JwtPayload } from 'jwt-decode'
 interface CustomJwtPayload extends JwtPayload {
   role?: string | string[]
   'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'?: string | string[]
+  Group?: string | string[]
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -21,6 +22,19 @@ export const useAuthStore = defineStore('auth', () => {
       const roleClaim = decoded.role || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
       if (Array.isArray(roleClaim)) return roleClaim
       if (roleClaim) return [roleClaim]
+      return []
+    } catch {
+      return []
+    }
+  })
+
+  const groups = computed<string[]>(() => {
+    if (!token.value) return []
+    try {
+      const decoded = jwtDecode<CustomJwtPayload>(token.value)
+      const groupClaim = decoded.Group
+      if (Array.isArray(groupClaim)) return groupClaim
+      if (groupClaim) return [groupClaim]
       return []
     } catch {
       return []
@@ -57,5 +71,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, user, isAuthenticated, roles, setToken, logout, login }
+  return { token, user, isAuthenticated, roles, groups, setToken, logout, login }
 })

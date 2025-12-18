@@ -11,10 +11,12 @@ export const usePagesStore = defineStore('pages', () => {
     const fetchPages = async () => {
         isLoading.value = true
         try {
+            const headers: HeadersInit = {}
+            if (auth.token) {
+                headers['Authorization'] = `Bearer ${auth.token}`
+            }
             const res = await fetch('/api/pages', {
-                headers: {
-                    'Authorization': `Bearer ${auth.token}`
-                }
+                headers
             })
             if (res.ok) {
                 const allPages = await res.json() as Page[]

@@ -7,6 +7,9 @@ namespace ReportTree.Server.Models
         public string Icon { get; set; } = string.Empty;
         public int? ParentId { get; set; }
         public int Order { get; set; }
-        public List<string> Roles { get; set; } = new();
+        public bool IsPublic { get; set; }
+        public string Layout { get; set; } = "[]";
+        public List<string> AllowedUsers { get; set; } = new();
+        public List<string> AllowedGroups { get; set; } = new();
     }
 }

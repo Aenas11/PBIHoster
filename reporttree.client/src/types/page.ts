@@ -4,6 +4,9 @@ export interface Page {
     icon: string
     parentId?: number
     order: number
-    roles: string[]
+    isPublic: boolean
+    allowedUsers: string[]
+    allowedGroups: string[]
+    layout?: string
     children?: Page[]
 }

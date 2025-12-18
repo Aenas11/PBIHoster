@@ -6,5 +6,6 @@ namespace ReportTree.Server.Persistance
     {
         Task UpsertAsync(AppUser user);
         Task<AppUser?> GetByUsernameAsync(string username);
+        Task<IEnumerable<AppUser>> SearchAsync(string term);
     }
 }

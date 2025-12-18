@@ -16,6 +16,7 @@ namespace ReportTree.Server.Security
             new(System.Security.Claims.ClaimTypes.Name, user.Username)
         };
             claims.AddRange(user.Roles.Select(r => new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, r)));
+            claims.AddRange(user.Groups.Select(g => new System.Security.Claims.Claim("Group", g)));
 
             var jwt = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
                 issuer: _issuer,
