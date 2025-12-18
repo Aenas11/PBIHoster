@@ -83,6 +83,6 @@ const contentStyle = computed(() => ({
 
 .content-wrapper {
   flex: 1;
-  padding-bottom: 2rem;
+  padding-top: 3rem;
 }
 </style>

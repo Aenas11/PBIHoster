@@ -6,9 +6,10 @@ import { usePagesStore } from '../stores/pages'
 import { useLayout } from '../composables/useLayout'
 import {
   Add20, Dashboard20, Document20, UserAdmin20, Pin20, PinFilled20,
-  Edit20, Folder20, ChartBar20, Table20, SettingsEdit20
+  Edit20, Folder20, ChartBar20, Table20, SettingsEdit20, Close20
 } from '@carbon/icons-vue'
 import '@carbon/web-components/es/components/ui-shell/index.js';
+import '@carbon/web-components/es/components/icon-button/index.js';
 import PageModal from './PageModal.vue'
 import type { Page } from '../types/page'
 
@@ -104,6 +105,7 @@ function getIcon(iconName: string) {
 <template>
   <cds-side-nav id="side-nav" :fixed="fixed" :expanded="expanded" :collapse-mode="collapseMode"
     aria-label="Side navigation" class="side-nav-container">
+
     <cds-side-nav-items>
       <!-- Static Items -->
       <cds-side-nav-link href="/" @click="navigateTo('/', $event)">
@@ -154,28 +156,29 @@ function getIcon(iconName: string) {
       </cds-side-nav-link>
     </cds-side-nav-items>
 
-    <div class="side-nav-spacer"></div>
+    <div class="side-nav-footer">
+      <div v-if="canEdit" class="side-nav-actions">
+        <cds-icon-button kind="ghost" size="sm" align="bottom" id="toggleEditButton"
+          :aria-label="isEditMode ? 'Exit Edit Mode' : 'Edit Pages'" @click="toggleEditMode">
+          <span slot="tooltip-content">{{ isEditMode ? 'Exit Edit Mode' : 'Edit' }} </span>
+          <component :is="isEditMode ? Close20 : Edit20" slot="icon" />
+        </cds-icon-button>
 
-    <cds-side-nav-items>
-      <cds-side-nav-divider></cds-side-nav-divider>
+        <cds-icon-button v-if="isEditMode" kind="ghost" size="sm" aria-label="New Top Level Page"
+          id="createNewPageModalButton" @click="openCreateModal(null)">
+          <span slot="tooltip-content">New Top Level Page</span>
+          <Add20 slot="icon" />
+        </cds-icon-button>
+      </div>
 
-      <!-- Edit Mode Toggle -->
-      <cds-side-nav-link v-if="canEdit" href="javascript:void(0)" @click="toggleEditMode" :active="isEditMode">
-        <Edit20 slot="title-icon" />
-        {{ isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}
-      </cds-side-nav-link>
-
-      <!-- Create Top Level Page (Only in Edit Mode) -->
-      <cds-side-nav-link v-if="isEditMode" href="javascript:void(0)" @click="openCreateModal(null)">
-        <Add20 slot="title-icon" />
-        New Top Level Page
-      </cds-side-nav-link>
-
-      <cds-side-nav-link href="javascript:void(0)" @click="togglePin">
-        <component :is="expanded ? PinFilled20 : Pin20" slot="title-icon" />
-        {{ expanded ? 'Unpin Menu' : 'Pin Menu' }}
-      </cds-side-nav-link>
-    </cds-side-nav-items>
+      <cds-side-nav-items>
+        <cds-side-nav-divider></cds-side-nav-divider>
+        <cds-side-nav-link href="javascript:void(0)" @click="togglePin">
+          <component :is="expanded ? PinFilled20 : Pin20" slot="title-icon" />
+          {{ expanded ? 'Unpin Menu' : 'Pin Menu' }}
+        </cds-side-nav-link>
+      </cds-side-nav-items>
+    </div>
   </cds-side-nav>
 
   <PageModal :open="isModalOpen" :page="selectedPage" :parent-id="parentIdForNewPage" @close="isModalOpen = false"
@@ -183,8 +186,16 @@ function getIcon(iconName: string) {
 </template>
 
 <style scoped>
-.side-nav-container {
-  padding-bottom: 4rem;
-  /* Ensure bottom items are not covered by footer */
+.side-nav-footer {
+  position: absolute;
+  bottom: 4rem;
+  width: 100%;
+}
+
+.side-nav-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
 }
 </style>

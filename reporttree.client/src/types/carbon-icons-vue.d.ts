@@ -21,4 +21,5 @@ declare module '@carbon/icons-vue' {
     export const ChartBar20: DefineComponent
     export const Table20: DefineComponent
     export const SettingsEdit20: DefineComponent
+    export const Close20: DefineComponent
 }
