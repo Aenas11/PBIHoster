@@ -227,6 +227,17 @@ All configuration can be set via environment variables in Docker or `appsettings
 | `CORS_ORIGIN_2` | Allowed origin #2 | `https://app.example.com` |
 | `CORS_ALLOW_CREDENTIALS` | Allow cookies/auth headers | `true` |
 
+#### Power BI Configuration
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `POWERBI_TENANT_ID` | Azure AD Tenant ID | ✅ Yes |
+| `POWERBI_CLIENT_ID` | Azure AD Client ID (App ID) | ✅ Yes |
+| `POWERBI_CLIENT_SECRET` | Client Secret (if AuthType is ClientSecret) | Conditional |
+| `POWERBI_AUTH_TYPE` | `ClientSecret` or `Certificate` | No (Default: ClientSecret) |
+| `POWERBI_CERTIFICATE_THUMBPRINT` | Certificate Thumbprint (if AuthType is Certificate) | Conditional |
+| `POWERBI_CERTIFICATE_PATH` | Path to .pfx file (if AuthType is Certificate) | Conditional |
+
 ### Application Settings
 
 Settings can be managed via the admin panel UI or directly in the database.
@@ -247,16 +258,11 @@ Sensitive settings (containing "key", "secret", "password") are automatically en
 After deploying, you need to create an admin user:
 
 1. **Register the first user** at `/login`
-2. **Access the database** to promote them to Admin:
-   ```bash
-   # If using Docker
-   docker-compose exec pbihoster /bin/bash
-   
-   # The database file is at: /data/reporttree.db
-   # Use LiteDB tools or manually edit JSON
-   ```
-   
-   Or use the LiteDB Studio tool to open `/data/reporttree.db` and set the user's `Roles` field to `["Admin"]`.
+   - The first user registered in the system is automatically assigned the **Admin** role.
+   - Subsequent users will be registered as **Viewers** by default.
+
+2. **Log in** with your new admin account.
+3. **Navigate to Admin Panel** to configure settings and manage users.
 
 ### Managing Pages
 

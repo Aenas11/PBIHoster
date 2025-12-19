@@ -39,6 +39,16 @@ public class AuthService
             return (false, errors);
         }
 
+        // Check if this is the first user
+        var userCount = await _repo.CountAsync();
+        if (userCount == 0)
+        {
+            if (!roles.Contains("Admin"))
+            {
+                roles.Add("Admin");
+            }
+        }
+
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
         var user = new AppUser 
         { 

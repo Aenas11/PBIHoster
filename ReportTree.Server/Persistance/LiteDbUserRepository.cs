@@ -46,5 +46,10 @@ namespace ReportTree.Server.Persistance
             }
             return Task.CompletedTask;
         }
+
+        public Task<int> CountAsync()
+        {
+            return Task.FromResult(_users.Count());
+        }
     }
 }

@@ -8,5 +8,6 @@ namespace ReportTree.Server.Persistance
         Task<AppUser?> GetByUsernameAsync(string username);
         Task<IEnumerable<AppUser>> SearchAsync(string term);
         Task DeleteAsync(string username);
+        Task<int> CountAsync();
     }
 }
