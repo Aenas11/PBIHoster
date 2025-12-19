@@ -234,10 +234,11 @@ namespace ReportTree.Server.Services
 
             if (identities != null && identities.Any())
             {
+                // Ensure each identity has at least the report's dataset ID
                 var effectiveIdentities = identities.Select(i => new EffectiveIdentity(
                     username: i.Username,
                     roles: i.Roles,
-                    datasets: i.Datasets
+                    datasets: i.Datasets?.Any() == true ? i.Datasets : new List<string> { report.DatasetId }
                 )).ToList();
 
                 request = new GenerateTokenRequestV2(
@@ -252,8 +253,30 @@ namespace ReportTree.Server.Services
                 );
             }
 
-            var embedToken = await client.EmbedToken.GenerateTokenAsync(request, cancellationToken: cancellationToken);
+            try
+            {
+                // Use V2 API for RLS support
+                var embedTokenV2 = await client.EmbedToken.GenerateTokenAsync(request, cancellationToken: cancellationToken);
 
+                return new EmbedTokenResponseDto
+                {
+                    AccessToken = embedTokenV2.Token,
+                    EmbedUrl = report.EmbedUrl,
+                    TokenId = embedTokenV2.TokenId.ToString(),
+                    Expiration = embedTokenV2.Expiration
+                };
+            }
+            catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                _logger.LogWarning("Falling back to V1 Embed Token generation due to: {Message}", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating V2 Embed Token, falling back to V1.");
+            }
+            // Fallback to V1 API if V2 fails (e.g., no RLS)
+            var requestV1 = new GenerateTokenRequest(accessLevel: TokenAccessLevel.View);
+            var embedToken = await client.Reports.GenerateTokenInGroupAsync(workspaceId, reportId, requestV1, cancellationToken: cancellationToken);
             return new EmbedTokenResponseDto
             {
                 AccessToken = embedToken.Token,
@@ -261,6 +284,17 @@ namespace ReportTree.Server.Services
                 TokenId = embedToken.TokenId.ToString(),
                 Expiration = embedToken.Expiration
             };
+
+
+            // var embedToken = await client.EmbedToken.GenerateTokenAsync(request, cancellationToken: cancellationToken);
+
+            // return new EmbedTokenResponseDto
+            // {
+            //     AccessToken = embedToken.Token,
+            //     EmbedUrl = report.EmbedUrl,
+            //     TokenId = embedToken.TokenId.ToString(),
+            //     Expiration = embedToken.Expiration
+            // };
         }
 
         public async Task<EmbedTokenResponseDto> GetDashboardEmbedTokenAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default)
