@@ -29,12 +29,19 @@ async function handleRegister() {
         await auth.register(username.value, password.value)
         // Redirect to login after successful registration
         router.push('/login')
-    } catch (e: any) {
+    } catch (e: unknown) {
         // Handle API error response structure
-        if (e.response && e.response.data && e.response.data.errors) {
-            error.value = e.response.data.errors.join(', ')
+        if (e && typeof e === 'object' && 'response' in e) {
+            const apiError = e as { response?: { data?: { errors?: string[] } } }
+            if (apiError.response?.data?.errors) {
+                error.value = apiError.response.data.errors.join(', ')
+            } else {
+                error.value = 'Registration failed'
+            }
+        } else if (e instanceof Error) {
+            error.value = e.message
         } else {
-            error.value = e.message || 'Registration failed'
+            error.value = 'Registration failed'
         }
     } finally {
         loading.value = false
