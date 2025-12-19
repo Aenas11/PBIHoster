@@ -38,7 +38,9 @@ const components: ComponentDefinition[] = [
         defaultConfig: {
             workspaceId: '',
             reportId: '',
-            viewOptions: 'FitToPage'
+            filterPaneEnabled: false,
+            navContentPaneEnabled: false,
+            background: 'Transparent'
         },
         defaultDimensions: { w: 12, h: 10 },
         minDimensions: { w: 4, h: 4 }
@@ -52,7 +54,8 @@ const components: ComponentDefinition[] = [
         defaultConfig: {
             workspaceId: '',
             dashboardId: '',
-            viewOptions: 'FitToPage'
+            filterPaneEnabled: false,
+            background: 'Transparent'
         },
         defaultDimensions: { w: 12, h: 10 },
         minDimensions: { w: 4, h: 4 }

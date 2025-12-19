@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import '@carbon/web-components/es/components/select/index.js';
 import '@carbon/web-components/es/components/select/select-item.js';
+import '@carbon/web-components/es/components/toggle/index.js';
 import type { ComponentConfigProps } from '../../types/components'
 import { ref, onMounted, watch } from 'vue'
 import { powerBIService } from '../../services/powerbi.service'
@@ -15,7 +16,9 @@ const workspaces = ref<WorkspaceDto[]>([])
 const reports = ref<ReportDto[]>([])
 const selectedWorkspace = ref(props.modelValue.workspaceId as string || '')
 const selectedReport = ref(props.modelValue.reportId as string || '')
-const selectedViewOption = ref(props.modelValue.viewOptions as string || 'FitToPage')
+const filterPaneEnabled = ref(props.modelValue.filterPaneEnabled as boolean ?? false)
+const navContentPaneEnabled = ref(props.modelValue.navContentPaneEnabled as boolean ?? false)
+const selectedBackground = ref(props.modelValue.background as string || 'Transparent')
 
 const loadWorkspaces = async () => {
     try {
@@ -53,7 +56,7 @@ watch(selectedWorkspace, async (newVal) => {
     updateConfig()
 })
 
-watch([selectedReport, selectedViewOption], () => {
+watch([selectedReport, filterPaneEnabled, navContentPaneEnabled, selectedBackground], () => {
     updateConfig()
 })
 
@@ -62,7 +65,9 @@ const updateConfig = () => {
         ...props.modelValue,
         workspaceId: selectedWorkspace.value,
         reportId: selectedReport.value,
-        viewOptions: selectedViewOption.value
+        filterPaneEnabled: filterPaneEnabled.value,
+        navContentPaneEnabled: navContentPaneEnabled.value,
+        background: selectedBackground.value
     })
 }
 </script>
@@ -81,11 +86,20 @@ const updateConfig = () => {
             <cds-select-item v-for="rep in reports" :key="rep.id" :value="rep.id">{{ rep.name }}</cds-select-item>
         </cds-select>
 
-        <cds-select label-text="View Options" :value="selectedViewOption"
-            @cds-select-selected="(e: any) => { selectedViewOption = e.detail.value }">
-            <cds-select-item value="FitToPage">Fit To Page</cds-select-item>
-            <cds-select-item value="FitToWidth">Fit To Width</cds-select-item>
-            <cds-select-item value="ActualSize">Actual Size</cds-select-item>
+        <cds-toggle label-text="Show Filter Pane" :checked="filterPaneEnabled"
+            @cds-toggle-changed="(e: any) => { filterPaneEnabled = e.detail.checked }">
+            <span slot="label-text">Show Filter Pane</span>
+        </cds-toggle>
+
+        <cds-toggle label-text="Show Page Navigation" :checked="navContentPaneEnabled"
+            @cds-toggle-changed="(e: any) => { navContentPaneEnabled = e.detail.checked }">
+            <span slot="label-text">Show Page Navigation</span>
+        </cds-toggle>
+
+        <cds-select label-text="Background" :value="selectedBackground"
+            @cds-select-selected="(e: any) => { selectedBackground = e.detail.value }">
+            <cds-select-item value="Transparent">Transparent</cds-select-item>
+            <cds-select-item value="Default">Default (White)</cds-select-item>
         </cds-select>
     </div>
 </template>

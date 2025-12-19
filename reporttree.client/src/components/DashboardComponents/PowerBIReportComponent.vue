@@ -75,7 +75,9 @@ watch(() => props.config, () => {
         <div v-if="error" class="error">{{ error }}</div>
         <PowerBIEmbed v-if="embedData" :embedUrl="embedData.embedUrl" :accessToken="embedData.accessToken"
             embedType="report" :reportId="props.config.reportId as string"
-            :viewOptions="props.config.viewOptions as any" />
+            :filterPaneEnabled="props.config.filterPaneEnabled as boolean"
+            :navContentPaneEnabled="props.config.navContentPaneEnabled as boolean"
+            :background="props.config.background as any" />
         <div v-else-if="!error && (props.config.workspaceId && props.config.reportId)" class="loading">Loading report...
         </div>
         <div v-else-if="!error" class="placeholder">Please configure the report.</div>

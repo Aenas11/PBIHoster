@@ -41,7 +41,8 @@ watch(() => props.config, () => {
         <div v-if="error" class="error">{{ error }}</div>
         <PowerBIEmbed v-if="embedData" :embedUrl="embedData.embedUrl" :accessToken="embedData.accessToken"
             embedType="dashboard" :reportId="props.config.dashboardId as string"
-            :viewOptions="props.config.viewOptions as any" />
+            :filterPaneEnabled="props.config.filterPaneEnabled as boolean"
+            :background="props.config.background as any" />
         <div v-else-if="!error && (props.config.workspaceId && props.config.dashboardId)" class="loading">Loading
             dashboard...</div>
         <div v-else-if="!error" class="placeholder">Please configure the dashboard.</div>

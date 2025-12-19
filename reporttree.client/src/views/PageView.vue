@@ -251,7 +251,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  padding: 0.5rem;
 }
 
 .panel-header {
@@ -297,6 +297,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
 .panel-body {
   flex: 1;
   overflow: auto;
+  padding: 0.1rem;
 }
 
 .dynamic-component {
