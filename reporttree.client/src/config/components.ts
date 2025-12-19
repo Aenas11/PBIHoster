@@ -14,6 +14,7 @@ import PowerBIReportComponentConfigure from '../components/DashboardComponents/P
 import PowerBIDashboardComponent from '../components/DashboardComponents/PowerBIDashboardComponent.vue'
 import PowerBIDashboardComponentConfigure from '../components/DashboardComponents/PowerBIDashboardComponentConfigure.vue'
 import PowerBIWorkspaceComponent from '../components/DashboardComponents/PowerBIWorkspaceComponent.vue'
+import PowerBIWorkspaceComponentConfigure from '../components/DashboardComponents/PowerBIWorkspaceComponentConfigure.vue'
 
 // Define component configurations
 const components: ComponentDefinition[] = [
@@ -40,7 +41,9 @@ const components: ComponentDefinition[] = [
             reportId: '',
             filterPaneEnabled: false,
             navContentPaneEnabled: false,
-            background: 'Transparent'
+            background: 'Transparent',
+            enableRLS: false,
+            rlsRoles: []
         },
         defaultDimensions: { w: 12, h: 10 },
         minDimensions: { w: 4, h: 4 }
@@ -55,7 +58,9 @@ const components: ComponentDefinition[] = [
             workspaceId: '',
             dashboardId: '',
             filterPaneEnabled: false,
-            background: 'Transparent'
+            background: 'Transparent',
+            pageView: 'fitToWidth',
+            locale: 'en-US'
         },
         defaultDimensions: { w: 12, h: 10 },
         minDimensions: { w: 4, h: 4 }
@@ -65,8 +70,11 @@ const components: ComponentDefinition[] = [
         name: 'Power BI Workspace Reports',
         description: 'Display all reports from a Power BI workspace with tabs',
         component: markRaw(PowerBIWorkspaceComponent),
+        configComponent: markRaw(PowerBIWorkspaceComponentConfigure),
         defaultConfig: {
-            workspaceId: ''
+            workspaceId: '',
+            enableRLS: false,
+            rlsRoles: []
         },
         defaultDimensions: { w: 12, h: 10 },
         minDimensions: { w: 6, h: 6 }
