@@ -9,9 +9,19 @@ const props = defineProps<{
     accessToken: string
     embedType: 'report' | 'dashboard'
     reportId: string
+    pageView?: string
     mobileLayout?: boolean
     filterPaneEnabled?: boolean
+    filterPaneExpanded?: boolean
     navContentPaneEnabled?: boolean
+    pageNavPosition?: string
+    bookmarksVisible?: boolean
+    actionBarVisible?: boolean
+    statusBarVisible?: boolean
+    locale?: string
+    visualRenderedEvents?: boolean
+    hideErrors?: boolean
+    contrastMode?: string
     background?: 'Default' | 'Transparent'
 }>()
 
@@ -67,6 +77,43 @@ const embedReport = () => {
     // Reset existing
     powerbi.reset(embedContainer.value)
 
+    // Determine page navigation position
+    const pageNavPosition = props.pageNavPosition === 'Left' ? models.PageNavigationPosition.Left : models.PageNavigationPosition.Bottom
+
+    // Determine contrast mode
+    let contrast = models.ContrastMode.None
+    switch (props.contrastMode) {
+        case 'HighContrast1':
+            contrast = models.ContrastMode.HighContrast1
+            break
+        case 'HighContrast2':
+            contrast = models.ContrastMode.HighContrast2
+            break
+        case 'HighContrastBlack':
+            contrast = models.ContrastMode.HighContrastBlack
+            break
+        case 'HighContrastWhite':
+            contrast = models.ContrastMode.HighContrastWhite
+            break
+        default:
+            contrast = models.ContrastMode.None
+    }
+
+    // Determine page view for dashboards
+    let pageView = models.PageView.FitToWidth
+    if (props.embedType === 'dashboard' && props.pageView) {
+        switch (props.pageView) {
+            case 'oneColumn':
+                pageView = models.PageView.OneColumn
+                break
+            case 'actualSize':
+                pageView = models.PageView.ActualSize
+                break
+            default:
+                pageView = models.PageView.FitToWidth
+        }
+    }
+
     const config: pbi.IEmbedConfiguration = {
         type: props.embedType,
         tokenType: models.TokenType.Embed,
@@ -74,17 +121,37 @@ const embedReport = () => {
         embedUrl: props.embedUrl,
         id: props.reportId,
         permissions: models.Permissions.Read,
+        ...(props.embedType === 'dashboard' && { pageView }),
         settings: {
             filterPaneEnabled: props.filterPaneEnabled ?? false,
             navContentPaneEnabled: props.navContentPaneEnabled ?? false,
             layoutType: props.mobileLayout ? models.LayoutType.MobilePortrait : models.LayoutType.Master,
             background: props.background === 'Transparent' ? models.BackgroundType.Transparent : models.BackgroundType.Default,
+            visualRenderedEvents: props.visualRenderedEvents ?? false,
+            hideErrors: props.hideErrors ?? false,
+            localeSettings: props.locale ? {
+                language: props.locale
+            } : undefined,
+            ...(contrast !== models.ContrastMode.None && { contrastMode: contrast }),
             panes: {
                 filters: {
-                    visible: props.filterPaneEnabled ?? false
+                    visible: props.filterPaneEnabled ?? false,
+                    expanded: props.filterPaneExpanded ?? false
                 },
                 pageNavigation: {
-                    visible: props.navContentPaneEnabled ?? false
+                    visible: props.navContentPaneEnabled ?? false,
+                    position: pageNavPosition
+                },
+                bookmarks: {
+                    visible: props.bookmarksVisible ?? false
+                }
+            },
+            bars: {
+                actionBar: {
+                    visible: props.actionBarVisible ?? false
+                },
+                statusBar: {
+                    visible: props.statusBarVisible ?? true
                 }
             }
         }

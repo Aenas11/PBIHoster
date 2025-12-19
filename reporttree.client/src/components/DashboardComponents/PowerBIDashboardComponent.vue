@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import PowerBIEmbed from '../PowerBIEmbed.vue'
+import PowerBIDashboardEmbed from '../PowerBIDashboardEmbed.vue'
 import { powerBIService } from '../../services/powerbi.service'
 import { useToastStore } from '../../stores/toast'
 import type { DashboardComponentProps } from '../../types/components'
@@ -61,10 +61,9 @@ watch(() => props.config, () => {
 <template>
     <div class="component-wrapper">
         <div v-if="error" class="error">{{ error }}</div>
-        <PowerBIEmbed v-if="embedData" :embedUrl="embedData.embedUrl" :accessToken="embedData.accessToken"
-            embedType="dashboard" :reportId="props.config.dashboardId as string"
-            :filterPaneEnabled="props.config.filterPaneEnabled as boolean"
-            :background="props.config.background as any" />
+        <PowerBIDashboardEmbed v-if="embedData" :embedUrl="embedData.embedUrl" :accessToken="embedData.accessToken"
+            :dashboardId="props.config.dashboardId as string" :pageView="props.config.pageView as string"
+            :locale="props.config.locale as string" :background="props.config.background as any" />
         <div v-else-if="!error && (props.config.workspaceId && props.config.dashboardId)" class="loading">Loading
             dashboard...</div>
         <div v-else-if="!error" class="placeholder">Please configure the dashboard.</div>
