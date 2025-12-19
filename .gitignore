@@ -75,3 +75,5 @@ dist/
 
 # Docker
 docker-compose.override.yml
+
+appsettings.Development.json
