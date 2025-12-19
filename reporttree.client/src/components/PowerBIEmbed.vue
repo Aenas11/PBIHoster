@@ -9,7 +9,7 @@ const props = defineProps<{
     accessToken: string
     embedType: 'report' | 'dashboard'
     reportId: string
-    pageView?: string
+    pageView?: 'fitToWidth' | 'oneColumn' | 'actualSize'
     mobileLayout?: boolean
     filterPaneEnabled?: boolean
     filterPaneExpanded?: boolean
@@ -99,20 +99,6 @@ const embedReport = () => {
             contrast = models.ContrastMode.None
     }
 
-    // Determine page view for dashboards
-    let pageView = models.PageView.FitToWidth
-    if (props.embedType === 'dashboard' && props.pageView) {
-        switch (props.pageView) {
-            case 'oneColumn':
-                pageView = models.PageView.OneColumn
-                break
-            case 'actualSize':
-                pageView = models.PageView.ActualSize
-                break
-            default:
-                pageView = models.PageView.FitToWidth
-        }
-    }
 
     const config: pbi.IEmbedConfiguration = {
         type: props.embedType,
@@ -121,7 +107,7 @@ const embedReport = () => {
         embedUrl: props.embedUrl,
         id: props.reportId,
         permissions: models.Permissions.Read,
-        ...(props.embedType === 'dashboard' && { pageView }),
+        ...(props.embedType === 'dashboard' && { pageView: props.pageView }),
         settings: {
             filterPaneEnabled: props.filterPaneEnabled ?? false,
             navContentPaneEnabled: props.navContentPaneEnabled ?? false,
