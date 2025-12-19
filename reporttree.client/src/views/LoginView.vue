@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import '@carbon/web-components/es/components/tile/index.js';
 import '@carbon/web-components/es/components/text-input/index.js';
 import '@carbon/web-components/es/components/button/index.js';
+import '@carbon/web-components/es/components/link/index.js';
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -46,9 +47,12 @@ async function handleLogin() {
           {{ error }}
         </div>
 
-        <cds-button @click="handleLogin" :disabled="loading">
-          {{ loading ? 'Logging in...' : 'Login' }}
-        </cds-button>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <cds-link href="/register">Register</cds-link>
+          <cds-button @click="handleLogin" :disabled="loading">
+            {{ loading ? 'Logging in...' : 'Login' }}
+          </cds-button>
+        </div>
       </cds-tile>
     </div>
   </div>

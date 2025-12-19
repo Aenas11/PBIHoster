@@ -67,5 +67,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, user, isAuthenticated, roles, groups, setToken, logout, login }
+  async function register(username: string, password: string) {
+    try {
+      await api.post('/auth/register',
+        { username, password },
+        { skipAuth: true }
+      )
+      return true
+    } catch (error) {
+      console.error(error)
+      throw error
+    }
+  }
+
+  return { token, user, isAuthenticated, roles, groups, setToken, logout, login, register }
 })
