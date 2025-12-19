@@ -56,6 +56,13 @@ watch(() => props.mobileLayout, (newVal) => {
     }
 })
 
+watch(() => props.viewOptions, () => {
+    // Apply CSS class for view options
+    if (embedContainer.value && props.viewOptions) {
+        embedContainer.value.setAttribute('data-view-option', props.viewOptions)
+    }
+})
+
 const embedReport = () => {
     if (!embedContainer.value || !props.embedUrl || !props.accessToken) return
 
@@ -64,6 +71,11 @@ const embedReport = () => {
 
     // Reset existing
     powerbi.reset(embedContainer.value)
+
+    // Apply view options data attribute
+    if (props.viewOptions && embedContainer.value) {
+        embedContainer.value.setAttribute('data-view-option', props.viewOptions)
+    }
 
     const config: pbi.IEmbedConfiguration = {
         type: props.embedType,
@@ -143,6 +155,19 @@ const embedReport = () => {
     width: 100%;
     height: 100%;
     flex: 1;
+}
+
+.powerbi-container[data-view-option="FitToPage"] {
+    /* Report will fit to available space */
+}
+
+.powerbi-container[data-view-option="FitToWidth"] {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.powerbi-container[data-view-option="ActualSize"] {
+    overflow: auto;
 }
 
 .loading-overlay {

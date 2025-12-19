@@ -234,11 +234,10 @@ namespace ReportTree.Server.Services
 
             if (identities != null && identities.Any())
             {
-                // Ensure each identity has at least the report's dataset ID
                 var effectiveIdentities = identities.Select(i => new EffectiveIdentity(
                     username: i.Username,
                     roles: i.Roles,
-                    datasets: i.Datasets?.Any() == true ? i.Datasets : new List<string> { report.DatasetId }
+                    datasets: i.Datasets
                 )).ToList();
 
                 request = new GenerateTokenRequestV2(
@@ -252,6 +251,8 @@ namespace ReportTree.Server.Services
                     reports: new List<GenerateTokenRequestV2Report> { new GenerateTokenRequestV2Report(report.Id) }
                 );
             }
+            request.Datasets = new List<GenerateTokenRequestV2Dataset> { new GenerateTokenRequestV2Dataset(report.DatasetId) };
+            request.TargetWorkspaces = new List<GenerateTokenRequestV2TargetWorkspace> { new GenerateTokenRequestV2TargetWorkspace(workspaceId) };
 
             try
             {
@@ -304,10 +305,11 @@ namespace ReportTree.Server.Services
 
             var dashboard = await client.Dashboards.GetDashboardInGroupAsync(workspaceId, dashboardId, cancellationToken: cancellationToken);
 
-            // Use V1 API for single dashboard
-            var request = new GenerateTokenRequest(accessLevel: TokenAccessLevel.View);
-            var embedToken = await client.Dashboards.GenerateTokenInGroupAsync(workspaceId, dashboardId, request, cancellationToken: cancellationToken);
 
+            // Fallback to V1 API
+            var requestV1 = new GenerateTokenRequest(accessLevel: TokenAccessLevel.View);
+            var embedToken = await client.Dashboards.GenerateTokenInGroupAsync(workspaceId, dashboardId, requestV1, cancellationToken: cancellationToken);
+            
             return new EmbedTokenResponseDto
             {
                 AccessToken = embedToken.Token,

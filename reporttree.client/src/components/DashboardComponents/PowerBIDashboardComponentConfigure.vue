@@ -81,7 +81,7 @@ const updateConfig = () => {
         </cds-select>
 
         <cds-select label-text="View Options" :value="selectedViewOption"
-            @cds-select-selected="selectedViewOption = $event.detail.value">
+            @cds-select-selected="(e: any) => { selectedViewOption = e.detail.value }">
             <cds-select-item value="FitToPage">Fit To Page</cds-select-item>
             <cds-select-item value="FitToWidth">Fit To Width</cds-select-item>
             <cds-select-item value="ActualSize">Actual Size</cds-select-item>
