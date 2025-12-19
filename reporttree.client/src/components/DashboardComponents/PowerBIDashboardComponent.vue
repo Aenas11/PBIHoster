@@ -2,13 +2,33 @@
 import { ref, onMounted, watch } from 'vue'
 import PowerBIEmbed from '../PowerBIEmbed.vue'
 import { powerBIService } from '../../services/powerbi.service'
+import { useToastStore } from '../../stores/toast'
 import type { DashboardComponentProps } from '../../types/components'
 import type { EmbedTokenResponseDto } from '../../types/powerbi'
 
 const props = defineProps<DashboardComponentProps>()
+const toast = useToastStore()
 
 const embedData = ref<EmbedTokenResponseDto | null>(null)
 const error = ref<string | null>(null)
+
+const getUserFriendlyError = (e: unknown): string => {
+    if (e instanceof Error) {
+        if (e.message.includes('401') || e.message.includes('Unauthorized')) {
+            return 'Power BI authentication failed. Please check your credentials.'
+        }
+        if (e.message.includes('404') || e.message.includes('Not Found')) {
+            return 'Dashboard not found. It may have been deleted or you may not have access.'
+        }
+        if (e.message.includes('403') || e.message.includes('Forbidden')) {
+            return 'You do not have permission to access this dashboard.'
+        }
+        if (e.message.includes('Network') || e.message.includes('fetch')) {
+            return 'Network error. Please check your connection and try again.'
+        }
+    }
+    return 'Failed to load dashboard. Please try again later.'
+}
 
 const loadEmbedData = async () => {
     const { workspaceId, dashboardId } = props.config
@@ -21,9 +41,11 @@ const loadEmbedData = async () => {
     try {
         embedData.value = await powerBIService.getDashboardEmbedToken(workspaceId as string, dashboardId as string)
         error.value = null
-    } catch (e: any) {
-        error.value = "Failed to load dashboard token."
-        console.error(e)
+    } catch (e: unknown) {
+        const friendlyMessage = getUserFriendlyError(e)
+        error.value = friendlyMessage
+        toast.error('Dashboard Load Failed', friendlyMessage, 7000)
+        console.error('Power BI Dashboard Error:', e)
     }
 }
 

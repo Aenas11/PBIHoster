@@ -2,16 +2,42 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import PowerBIEmbed from '../PowerBIEmbed.vue'
 import { powerBIService } from '../../services/powerbi.service'
+import { useToastStore } from '../../stores/toast'
 import type { DashboardComponentProps } from '../../types/components'
 import type { EmbedTokenResponseDto } from '../../types/powerbi'
 
 const props = defineProps<DashboardComponentProps>()
+const toast = useToastStore()
 
 const embedData = ref<EmbedTokenResponseDto | null>(null)
 const error = ref<string | null>(null)
 const refreshTimer = ref<number | null>(null)
+const isRefreshing = ref(false)
+const retryCount = ref(0)
+const maxRetries = 3
 
-const loadEmbedData = async () => {
+const getUserFriendlyError = (e: unknown): string => {
+    if (e instanceof Error) {
+        if (e.message.includes('401') || e.message.includes('Unauthorized')) {
+            return 'Power BI authentication failed. Please check your credentials.'
+        }
+        if (e.message.includes('404') || e.message.includes('Not Found')) {
+            return 'Report not found. It may have been deleted or you may not have access.'
+        }
+        if (e.message.includes('403') || e.message.includes('Forbidden')) {
+            return 'You do not have permission to access this report.'
+        }
+        if (e.message.includes('Network') || e.message.includes('fetch')) {
+            return 'Network error. Please check your connection and try again.'
+        }
+        if (e.message.includes('RLS') || e.message.includes('role')) {
+            return 'Row-level security configuration error. Please check your RLS roles.'
+        }
+    }
+    return 'Failed to load report. Please try again later.'
+}
+
+const loadEmbedData = async (isRetry = false) => {
     const { workspaceId, reportId, enableRLS, rlsRoles } = props.config
     if (!workspaceId || !reportId) {
         // Don't show error if just initialized empty
@@ -30,13 +56,30 @@ const loadEmbedData = async () => {
             rlsRoles as string[] | undefined
         )
         error.value = null
+        retryCount.value = 0 // Reset on success
 
         if (embedData.value?.expiration) {
             scheduleRefresh(embedData.value.expiration)
         }
-    } catch (e: any) {
-        error.value = "Failed to load report token."
-        console.error(e)
+
+        // Show success toast on retry
+        if (isRetry) {
+            toast.success('Report Loaded', 'Successfully reconnected to Power BI')
+        }
+    } catch (e: unknown) {
+        const friendlyMessage = getUserFriendlyError(e)
+        error.value = friendlyMessage
+        console.error('Power BI Report Error:', e)
+
+        // Retry logic for transient errors
+        if (retryCount.value < maxRetries && !isRetry) {
+            retryCount.value++
+            toast.warning('Retrying...', `Attempt ${retryCount.value} of ${maxRetries}`, 3000)
+            setTimeout(() => loadEmbedData(true), 2000 * retryCount.value)
+        } else {
+            toast.error('Report Load Failed', friendlyMessage, 7000)
+            retryCount.value = 0
+        }
     }
 }
 
@@ -50,9 +93,14 @@ const scheduleRefresh = (expiration: string) => {
     const refreshTime = timeUntilExpire - (5 * 60 * 1000)
 
     if (refreshTime > 0) {
-        refreshTimer.value = window.setTimeout(() => {
+        refreshTimer.value = window.setTimeout(async () => {
             console.log("Refreshing Power BI token...")
-            loadEmbedData()
+            isRefreshing.value = true
+            await loadEmbedData()
+            isRefreshing.value = false
+            if (!error.value) {
+                toast.info('Token Refreshed', 'Power BI access token has been renewed', 3000)
+            }
         }, refreshTime)
     }
 }

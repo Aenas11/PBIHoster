@@ -4,6 +4,7 @@ import { usePagesStore } from '../stores/pages'
 import { useAuthStore } from '../stores/auth'
 import type { Page } from '../types/page'
 import { Close20 } from '@carbon/icons-vue'
+import ClonePageModal from './ClonePageModal.vue'
 import '@carbon/web-components/es/components/modal/index.js';
 import '@carbon/web-components/es/components/text-input/index.js';
 import '@carbon/web-components/es/components/select/index.js';
@@ -22,6 +23,8 @@ const emit = defineEmits(['close', 'create-child'])
 
 const store = usePagesStore()
 const auth = useAuthStore()
+
+const isCloneModalOpen = ref(false)
 
 const formData = ref({
     title: '',
@@ -152,87 +155,105 @@ function createChild() {
         emit('create-child', props.page.id)
     }
 }
+
+function openCloneModal() {
+    isCloneModalOpen.value = true
+}
+
+function closeCloneModal() {
+    isCloneModalOpen.value = false
+    emit('close') // Also close the parent modal after cloning
+}
 </script>
 
 <template>
-    <cds-modal :open="open" @cds-modal-closed="emit('close')">
-        <cds-modal-header>
-            <cds-modal-close-button></cds-modal-close-button>
-            <cds-modal-label>Page Management</cds-modal-label>
-            <cds-modal-heading>{{ isEdit ? 'Edit Page' : 'Create Page' }}</cds-modal-heading>
-        </cds-modal-header>
-        <cds-modal-body>
-            <cds-tabs value="general">
-                <cds-tab target="panel-general" value="general">General</cds-tab>
-                <cds-tab target="panel-permissions" value="permissions">Permissions</cds-tab>
-            </cds-tabs>
+    <div>
+        <cds-modal :open="open" @cds-modal-closed="emit('close')">
+            <cds-modal-header>
+                <cds-modal-close-button></cds-modal-close-button>
+                <cds-modal-label>Page Management</cds-modal-label>
+                <cds-modal-heading>{{ isEdit ? 'Edit Page' : 'Create Page' }}</cds-modal-heading>
+            </cds-modal-header>
+            <cds-modal-body>
+                <cds-tabs value="general">
+                    <cds-tab target="panel-general" value="general">General</cds-tab>
+                    <cds-tab target="panel-permissions" value="permissions">Permissions</cds-tab>
+                </cds-tabs>
 
-            <div id="panel-general" role="tabpanel" aria-labelledby="tab-general">
-                <br />
-                <cds-text-input label="Title" :value="formData.title" @input="formData.title = $event.target.value"
-                    placeholder="Page Title"></cds-text-input>
-                <br />
-                <cds-select label-text="Icon" :value="formData.icon" @change="formData.icon = $event.target.value">
-                    <cds-select-item v-for="icon in icons" :key="icon" :value="icon">{{ icon }}</cds-select-item>
-                </cds-select>
-            </div>
+                <div id="panel-general" role="tabpanel" aria-labelledby="tab-general">
+                    <br />
+                    <cds-text-input label="Title" :value="formData.title" @input="formData.title = $event.target.value"
+                        placeholder="Page Title"></cds-text-input>
+                    <br />
+                    <cds-select label-text="Icon" :value="formData.icon" @change="formData.icon = $event.target.value">
+                        <cds-select-item v-for="icon in icons" :key="icon" :value="icon">{{ icon }}</cds-select-item>
+                    </cds-select>
+                </div>
 
-            <div id="panel-permissions" role="tabpanel" aria-labelledby="tab-permissions" hidden>
-                <br />
-                <cds-checkbox :checked="formData.isPublic"
-                    @cds-checkbox-changed="formData.isPublic = $event.detail.checked">Public Page</cds-checkbox>
+                <div id="panel-permissions" role="tabpanel" aria-labelledby="tab-permissions" hidden>
+                    <br />
+                    <cds-checkbox :checked="formData.isPublic"
+                        @cds-checkbox-changed="formData.isPublic = $event.detail.checked">Public Page</cds-checkbox>
 
-                <div v-if="!formData.isPublic" style="margin-top: 1rem;">
-                    <cds-text-input label="Search Users or Groups" :value="searchQuery" @input="handleSearchInput"
-                        placeholder="Type to search..."></cds-text-input>
+                    <div v-if="!formData.isPublic" style="margin-top: 1rem;">
+                        <cds-text-input label="Search Users or Groups" :value="searchQuery" @input="handleSearchInput"
+                            placeholder="Type to search..."></cds-text-input>
 
-                    <div v-if="searchResults.length > 0" class="search-results">
-                        <div v-for="result in searchResults" :key="result.type + result.name" class="search-result-item"
-                            @click="addEntity(result)">
-                            <strong>{{ result.type === 'user' ? 'User' : 'Group' }}:</strong> {{ result.name }}
+                        <div v-if="searchResults.length > 0" class="search-results">
+                            <div v-for="result in searchResults" :key="result.type + result.name"
+                                class="search-result-item" @click="addEntity(result)">
+                                <strong>{{ result.type === 'user' ? 'User' : 'Group' }}:</strong> {{ result.name }}
+                            </div>
                         </div>
-                    </div>
 
-                    <div style="margin-top: 1rem;">
-                        <p style="margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600;">Allowed Users</p>
-                        <div v-if="formData.allowedUsers.length === 0"
-                            style="font-style: italic; color: var(--cds-text-secondary);">No users added</div>
-                        <div class="tags-container">
-                            <cds-tag v-for="user in formData.allowedUsers" :key="user" type="blue" title="Remove User">
-                                {{ user }}
-                                <button class="cds--tag__close-icon" @click="removeUser(user)" aria-label="Remove User">
-                                    <Close20 />
-                                </button>
-                            </cds-tag>
+                        <div style="margin-top: 1rem;">
+                            <p style="margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600;">Allowed Users</p>
+                            <div v-if="formData.allowedUsers.length === 0"
+                                style="font-style: italic; color: var(--cds-text-secondary);">No users added</div>
+                            <div class="tags-container">
+                                <cds-tag v-for="user in formData.allowedUsers" :key="user" type="blue"
+                                    title="Remove User">
+                                    {{ user }}
+                                    <button class="cds--tag__close-icon" @click="removeUser(user)"
+                                        aria-label="Remove User">
+                                        <Close20 />
+                                    </button>
+                                </cds-tag>
+                            </div>
                         </div>
-                    </div>
 
-                    <div style="margin-top: 1rem;">
-                        <p style="margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600;">Allowed Groups</p>
-                        <div v-if="formData.allowedGroups.length === 0"
-                            style="font-style: italic; color: var(--cds-text-secondary);">No groups added</div>
-                        <div class="tags-container">
-                            <cds-tag v-for="group in formData.allowedGroups" :key="group" type="purple"
-                                title="Remove Group">
-                                {{ group }}
-                                <button class="cds--tag__close-icon" @click="removeGroup(group)"
-                                    aria-label="Remove Group">
-                                    <Close20 />
-                                </button>
-                            </cds-tag>
+                        <div style="margin-top: 1rem;">
+                            <p style="margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600;">Allowed Groups</p>
+                            <div v-if="formData.allowedGroups.length === 0"
+                                style="font-style: italic; color: var(--cds-text-secondary);">No groups added</div>
+                            <div class="tags-container">
+                                <cds-tag v-for="group in formData.allowedGroups" :key="group" type="purple"
+                                    title="Remove Group">
+                                    {{ group }}
+                                    <button class="cds--tag__close-icon" @click="removeGroup(group)"
+                                        aria-label="Remove Group">
+                                        <Close20 />
+                                    </button>
+                                </cds-tag>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </cds-modal-body>
-        <cds-modal-footer>
-            <cds-modal-footer-button kind="secondary" @click="emit('close')">Cancel</cds-modal-footer-button>
-            <cds-modal-footer-button v-if="isEdit" kind="ghost" @click="createChild">Add Child
-                Page</cds-modal-footer-button>
-            <cds-modal-footer-button v-if="isEdit" kind="danger" @click="remove">Delete</cds-modal-footer-button>
-            <cds-modal-footer-button kind="primary" @click="save">Save</cds-modal-footer-button>
-        </cds-modal-footer>
-    </cds-modal>
+            </cds-modal-body>
+            <cds-modal-footer>
+                <cds-modal-footer-button kind="secondary" @click="emit('close')">Cancel</cds-modal-footer-button>
+                <cds-modal-footer-button v-if="isEdit" kind="tertiary" @click="openCloneModal">Clone
+                    Page</cds-modal-footer-button>
+                <cds-modal-footer-button v-if="isEdit" kind="ghost" @click="createChild">Add Child
+                    Page</cds-modal-footer-button>
+                <cds-modal-footer-button v-if="isEdit" kind="danger" @click="remove">Delete</cds-modal-footer-button>
+                <cds-modal-footer-button kind="primary" @click="save">Save</cds-modal-footer-button>
+            </cds-modal-footer>
+        </cds-modal>
+
+        <!-- Clone Page Modal -->
+        <ClonePageModal :open="isCloneModalOpen" :page="page" @close="closeCloneModal" />
+    </div>
 </template>
 
 <style scoped>

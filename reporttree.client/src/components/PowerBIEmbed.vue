@@ -107,14 +107,47 @@ const embedReport = () => {
             isLoading.value = false
         })
 
-        embed.on('error', (event: any) => {
+        embed.on('error', (event: pbi.service.ICustomEvent<unknown>) => {
             console.error('Power BI Error', event.detail)
-            error.value = `Error loading Power BI content: ${event.detail?.message || 'Unknown error'}`
+            const detail = event.detail as { message?: string, detailedMessage?: string, errorCode?: string }
+            let errorMsg = 'Error loading Power BI content'
+
+            if (detail.errorCode) {
+                switch (detail.errorCode) {
+                    case 'TokenExpired':
+                        errorMsg = 'Access token expired. Refreshing...'
+                        break
+                    case 'NotFound':
+                        errorMsg = 'Content not found. Please verify the report/dashboard exists.'
+                        break
+                    case 'Forbidden':
+                        errorMsg = 'Access denied. You may not have permission to view this content.'
+                        break
+                    default:
+                        errorMsg = detail.message || detail.detailedMessage || errorMsg
+                }
+            } else {
+                errorMsg = detail.message || detail.detailedMessage || errorMsg
+            }
+
+            error.value = errorMsg
             isLoading.value = false
         })
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error('Exception embedding Power BI', e)
-        error.value = `Exception: ${e.message}`
+        let errorMsg = 'Failed to embed Power BI content'
+
+        if (e instanceof Error) {
+            if (e.message.includes('embed container')) {
+                errorMsg = 'Invalid embed container. Please refresh the page.'
+            } else if (e.message.includes('token')) {
+                errorMsg = 'Invalid access token. Please contact your administrator.'
+            } else {
+                errorMsg = `Error: ${e.message}`
+            }
+        }
+
+        error.value = errorMsg
         isLoading.value = false
     }
 }

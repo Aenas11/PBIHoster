@@ -56,12 +56,22 @@ export const usePagesStore = defineStore('pages', () => {
         await fetchPages()
     }
 
+    const clonePage = async (id: number, newTitle?: string, newParentId?: number | null) => {
+        const response = await api.post<Page>(`/pages/${id}/clone`, {
+            newTitle,
+            newParentId
+        })
+        await fetchPages()
+        return response
+    }
+
     return {
         pages,
         isLoading,
         fetchPages,
         createPage,
         updatePage,
-        deletePage
+        deletePage,
+        clonePage
     }
 })

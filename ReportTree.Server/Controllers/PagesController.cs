@@ -114,5 +114,37 @@ namespace ReportTree.Server.Controllers
             
             return Ok(new { success = true, message = "Layout saved successfully" });
         }
+
+        [HttpPost("{id}/clone")]
+        [Authorize(Roles = "Admin,Editor")]
+        public async Task<ActionResult<Page>> ClonePage(int id, [FromBody] ClonePageRequest? request = null)
+        {
+            var sourcePage = await _repo.GetByIdAsync(id);
+            if (sourcePage == null) return NotFound("Source page not found");
+
+            // Create a new page with cloned properties
+            var clonedPage = new Page
+            {
+                Title = request?.NewTitle ?? $"{sourcePage.Title} (Copy)",
+                Icon = sourcePage.Icon,
+                ParentId = request?.NewParentId ?? sourcePage.ParentId,
+                Order = sourcePage.Order + 1, // Place right after original
+                IsPublic = sourcePage.IsPublic,
+                Layout = sourcePage.Layout, // Clone the entire layout configuration
+                AllowedUsers = new List<string>(sourcePage.AllowedUsers),
+                AllowedGroups = new List<string>(sourcePage.AllowedGroups),
+                PowerBIWorkspaceId = sourcePage.PowerBIWorkspaceId
+            };
+
+            var newId = await _repo.CreateAsync(clonedPage);
+            clonedPage.Id = newId;
+            
+            // Invalidate cache
+            _cache.Remove(PAGES_CACHE_KEY);
+            
+            return CreatedAtAction(nameof(Get), new { id = clonedPage.Id }, clonedPage);
+        }
     }
+
+    public record ClonePageRequest(string? NewTitle, int? NewParentId);
 }
