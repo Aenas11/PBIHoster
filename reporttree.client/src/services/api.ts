@@ -57,7 +57,9 @@ class ApiClient {
                     // Handle custom error format with Errors array (password validation, etc.)
                     if (errorData.errors && Array.isArray(errorData.errors)) {
                         errors = errorData.errors
-                        errorMessage = errors.join('; ')
+                        if (errors) {
+                            errorMessage = errors.join('; ')
+                        }
                     }
                     // Handle ASP.NET Core validation errors format
                     else if (errorData.errors && typeof errorData.errors === 'object') {
