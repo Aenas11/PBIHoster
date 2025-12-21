@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" role="img" aria-labelledby="title desc">
+  <title id="title">Sample sales report preview</title>
+  <desc id="desc">Static preview image showing sample KPIs and charts.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161616" stop-opacity="1" />
+      <stop offset="100%" stop-color="#262626" stop-opacity="1" />
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" fill="url(#bg)" rx="16" />
+  <rect x="24" y="24" width="852" height="472" rx="12" fill="#0f62fe" opacity="0.08" />
+  <text x="48" y="80" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="30" fill="#f4f4f4" font-weight="700">Sample sales dashboard</text>
+  <g font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="18" fill="#f4f4f4" font-weight="500">
+    <text x="48" y="130">• KPIs: Revenue, Profit, Avg. Order Value</text>
+    <text x="48" y="165">• Dimensions: Region, Category, Channel</text>
+    <text x="48" y="200">• Measures: YoY growth and contribution %</text>
+  </g>
+  <rect x="520" y="110" width="320" height="140" rx="12" fill="#0f62fe" opacity="0.28" />
+  <rect x="520" y="110" width="320" height="50" rx="12" fill="#0f62fe" opacity="0.52" />
+  <text x="540" y="145" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="18" fill="#f4f4f4" font-weight="700">KPI Cards</text>
+  <rect x="520" y="280" width="320" height="180" rx="12" fill="#08bdba" opacity="0.22" />
+  <text x="540" y="320" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="18" fill="#f4f4f4" font-weight="700">Sample visual placeholder</text>
+  <text x="540" y="355" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="16" fill="#f4f4f4" opacity="0.8">Replace with live Power BI embed</text>
+</svg>

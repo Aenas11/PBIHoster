@@ -75,11 +75,13 @@ namespace ReportTree.Server
                 .AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });
             
             // Services
-            builder.Services.AddSingleton<ISettingsService, SettingsService>();
+            builder.Services.AddSingleton<SettingsService>();
+            builder.Services.AddSingleton<ISettingsService>(sp => sp.GetRequiredService<SettingsService>());
             builder.Services.AddScoped<AuditLogService>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<PageAuthorizationService>();
             builder.Services.AddSingleton<IPowerBIService, PowerBIService>();
+            builder.Services.AddSingleton<DemoContentService>();
 
             // Configure Security Policies from Configuration
             var passwordPolicy = new PasswordPolicy();

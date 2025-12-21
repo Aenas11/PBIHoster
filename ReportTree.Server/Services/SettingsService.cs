@@ -32,6 +32,12 @@ public class SettingsService : ISettingsService
         return setting?.Value;
     }
 
+    public async Task<bool> IsDemoModeEnabledAsync()
+    {
+        var value = await GetValueAsync("App.DemoModeEnabled");
+        return bool.TryParse(value, out var enabled) && enabled;
+    }
+
     public async Task<IEnumerable<AppSetting>> GetAllSettingsAsync()
     {
         var settings = await _repo.GetAllAsync();
@@ -125,6 +131,19 @@ public class SettingsService : ISettingsService
                 "",
                 "Application",
                 "The page ID to display on the home route (/)",
+                false,
+                "System"
+            );
+        }
+
+        var demoModeSetting = await GetSettingAsync("App.DemoModeEnabled");
+        if (demoModeSetting == null)
+        {
+            await UpsertSettingAsync(
+                "App.DemoModeEnabled",
+                "false",
+                "Application",
+                "Enables demo content and sample data without tenant connections.",
                 false,
                 "System"
             );

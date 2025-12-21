@@ -1,0 +1,13 @@
+Region,Category,Channel,Month,Revenue,Profit
+North,Cloud,Direct,2024-01,120000,34000
+North,Cloud,Marketplace,2024-01,76000,18000
+West,Services,Direct,2024-01,54000,12000
+West,Hardware,Reseller,2024-01,48000,8000
+South,Cloud,Direct,2024-02,130000,36000
+South,Services,Marketplace,2024-02,62000,15000
+East,Hardware,Direct,2024-02,52000,9000
+East,Cloud,Reseller,2024-02,58000,14000
+North,Services,Direct,2024-03,68000,16000
+West,Cloud,Marketplace,2024-03,72000,21000
+South,Hardware,Direct,2024-03,61000,11000
+East,Services,Reseller,2024-03,49000,12000

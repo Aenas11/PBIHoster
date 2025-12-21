@@ -7,10 +7,13 @@ A modern Power BI hosting solution with dynamic dashboard layouts, user authenti
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
+- [Release & Versioning](#release--versioning)
 - [Getting Started](#getting-started)
   - [Quick Start with Docker](#quick-start-with-docker)
   - [Development Setup](#development-setup)
 - [Configuration](#configuration)
+- [Demo Mode & Sample Data](#demo-mode--sample-data)
+- [Onboarding Walkthroughs](#onboarding-walkthroughs)
 - [User Guide](#user-guide)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
@@ -70,6 +73,12 @@ PBIHoster (also known as ReportTree) provides a secure, customizable platform fo
 - **UI Framework**: Carbon Design System v11
 - **Deployment**: Docker Compose with Caddy reverse proxy (automatic HTTPS)
 - **Authentication**: JWT Bearer tokens
+
+## Release & Versioning
+
+- **Semantic Versioning**: The root `VERSION` file controls the app version. Update it before merging to `main`.
+- **CI Artifacts**: The Docker publish workflow tags images as `v<VERSION>` and `latest`, aligning runtime artifacts with the version file.
+- **Release Notes & Changelog**: See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) for highlights and [`CHANGELOG.md`](CHANGELOG.md) for detailed history.
 
 ## Getting Started
 
@@ -180,8 +189,25 @@ For local development without Docker.
    Frontend runs on `http://localhost:5173` with API proxy configured
 
 6. **Access locally**
-   - Open `http://localhost:5173`
-   - API requests automatically proxy to backend
+- Open `http://localhost:5173`
+- API requests automatically proxy to backend
+
+## Demo Mode & Sample Data
+
+- Toggle **Demo Mode** in **Admin → Settings → Static Application Settings** to preload safe demo pages.
+- Demo pages include links to the starter dataset (`/sample-data/sample-sales.csv`) and a static report preview (`/onboarding/sample-report.svg`) so you can explore layouts without tenant data.
+- The root navigation exposes **Demo Overview** and **Sample Insights** when demo mode is on; remove or swap these once you connect your tenant.
+
+## Onboarding Walkthroughs
+
+Quick visual guides (served from `/onboarding` and available in the in-app Help page):
+
+- **Create pages**: `/onboarding/create-pages.svg`
+- **Assign roles**: `/onboarding/assign-roles.svg`
+- **Configure themes**: `/onboarding/configure-themes.svg`
+- **Sample report preview**: `/onboarding/sample-report.svg`
+
+Visit `/help` inside the app for links and context.
 
 ## Configuration
 

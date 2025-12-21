@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from './stores/theme'
 import { useAuthStore } from './stores/auth'
+import { useStaticSettingsStore } from './stores/staticSettings'
 import AppShell from './layouts/AppShell.vue'
 import LoginLayout from './layouts/LoginLayout.vue'
 import ToastNotification from './components/ToastNotification.vue'
@@ -11,6 +12,7 @@ import GlobalErrorBoundary from './components/GlobalErrorBoundary.vue'
 const route = useRoute()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
+const staticSettingsStore = useStaticSettingsStore()
 
 const currentLayout = computed(() => {
   return route.name === 'login' ? LoginLayout : AppShell
@@ -23,6 +25,10 @@ onMounted(async () => {
   // Load custom themes if user is authenticated
   if (authStore.isAuthenticated) {
     await themeStore.loadCustomThemes()
+  }
+
+  if (!staticSettingsStore.isLoaded) {
+    await staticSettingsStore.load()
   }
 })
 </script>

@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
 using ReportTree.Server.DTOs;
 using ReportTree.Server.Services;
+using System.IO;
 
 namespace ReportTree.Server.Controllers;
 
@@ -12,11 +14,13 @@ public class SettingsController : ControllerBase
 {
     private readonly SettingsService _settingsService;
     private readonly AuditLogService _auditLogService;
+    private readonly IWebHostEnvironment _env;
 
-    public SettingsController(SettingsService settingsService, AuditLogService auditLogService)
+    public SettingsController(SettingsService settingsService, AuditLogService auditLogService, IWebHostEnvironment env)
     {
         _settingsService = settingsService;
         _auditLogService = auditLogService;
+        _env = env;
     }
 
     [HttpGet]
@@ -39,7 +43,22 @@ public class SettingsController : ControllerBase
     {
         var staticSettings = new Dictionary<string, string?>();
         staticSettings["HomePageId"] = await _settingsService.GetValueAsync("App.HomePageId");
+        staticSettings["DemoModeEnabled"] = (await _settingsService.IsDemoModeEnabledAsync()).ToString();
+        staticSettings["Version"] = ReadVersion();
         return Ok(staticSettings);
+    }
+
+    private string ReadVersion()
+    {
+        try
+        {
+            var versionPath = Path.Combine(_env.ContentRootPath, "VERSION");
+            return System.IO.File.Exists(versionPath) ? System.IO.File.ReadAllText(versionPath).Trim() : "0.0.0";
+        }
+        catch
+        {
+            return "0.0.0";
+        }
     }
 
     [HttpGet("category/{category}")]
