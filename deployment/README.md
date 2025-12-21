@@ -13,15 +13,29 @@ In production, the Vue.js frontend is built and served as static files by the AS
 
 ## Quick Start
 
-1.  Download the `docker-compose.yml` file from this folder to your local machine.
-2.  Open a terminal in the directory where you saved the file.
-3.  Run the following command to start the application:
+### With HTTPS (Recommended for Production)
+
+1.  Download `docker-compose.yml` and `Caddyfile` from this folder
+2.  Edit `Caddyfile` and replace `yourdomain.com` with your actual domain
+3.  Ensure your domain's DNS points to your server's IP address
+4.  Run:
 
     ```bash
     docker compose up -d
     ```
 
-4.  The application will be available at [http://localhost:8080](http://localhost:8080).
+5.  The application will be available at `https://yourdomain.com` (Caddy handles automatic SSL)
+
+### Without HTTPS (Testing/Local Only)
+
+1.  Download `docker-compose.http.yml` from this folder
+2.  Run:
+
+    ```bash
+    docker compose -f docker-compose.http.yml up -d
+    ```
+
+3.  The application will be available at [http://localhost:8080](http://localhost:8080)
 
 ## Port Configuration
 

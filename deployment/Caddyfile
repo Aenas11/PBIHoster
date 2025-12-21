@@ -1,0 +1,34 @@
+# Caddyfile for PBIHoster
+# 
+# For local development/testing (HTTP only):
+# :80 {
+#     reverse_proxy pbihoster:8080
+# }
+#
+# For production with your domain (automatic HTTPS):
+# Replace 'yourdomain.com' with your actual domain name.
+# Caddy will automatically obtain and renew Let's Encrypt certificates.
+
+yourdomain.com {
+    reverse_proxy pbihoster:8080
+    
+    # Optional: Add headers for better security
+    header {
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Prevent clickjacking
+        X-Frame-Options "SAMEORIGIN"
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        # Enable XSS protection
+        X-XSS-Protection "1; mode=block"
+    }
+    
+    # Optional: Enable compression
+    encode gzip zstd
+    
+    # Optional: Logging
+    log {
+        output file /data/access.log
+    }
+}

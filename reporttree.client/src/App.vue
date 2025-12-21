@@ -1,55 +1,56 @@
-<script setup>
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useThemeStore } from './stores/theme'
 import { useAuthStore } from './stores/auth'
+import AppShell from './layouts/AppShell.vue'
+import LoginLayout from './layouts/LoginLayout.vue'
+import ToastNotification from './components/ToastNotification.vue'
 
-const router = useRouter()
 const route = useRoute()
-const auth = useAuthStore()
+const themeStore = useThemeStore()
+const authStore = useAuthStore()
 
-const showShell = computed(() => route.name !== 'login')
-const isAdmin = computed(() => auth.roles.includes('Admin'))
+const currentLayout = computed(() => {
+  return route.name === 'login' ? LoginLayout : AppShell
+})
 
-function handleLogout() {
-  auth.logout()
-  router.push('/login')
-}
+onMounted(async () => {
+  // Initialize theme
+  themeStore.initTheme()
+
+  // Load custom themes if user is authenticated
+  if (authStore.isAuthenticated) {
+    await themeStore.loadCustomThemes()
+  }
+})
 </script>
 
 <template>
-  <div v-if="showShell">
-    <cv-header aria-label="ReportTree">
-      <cv-header-name href="#">ReportTree</cv-header-name>
-      <template v-slot:header-global>
-        <cv-header-global-action aria-label="Logout" @click="handleLogout">
-          Logout
-        </cv-header-global-action>
-      </template>
-    </cv-header>
-    <div style="display:flex; min-height: calc(100vh - 3rem)">
-      <cv-side-nav aria-label="Side navigation" fixed>
-        <cv-side-nav-items>
-          <cv-side-nav-item href="#" @click.prevent="router.push('/')" :active="route.path === '/'">Dashboard</cv-side-nav-item>
-          <cv-side-nav-item href="#">Reports</cv-side-nav-item>
-          <cv-side-nav-item 
-            v-if="isAdmin"
-            href="#" 
-            @click.prevent="router.push('/admin')"
-            :active="route.path === '/admin'"
-          >
-            Admin
-          </cv-side-nav-item>
-        </cv-side-nav-items>
-      </cv-side-nav>
-      <main style="padding:1rem; width:100%">
-        <router-view />
-      </main>
-    </div>
-  </div>
-  <div v-else>
-    <router-view />
+  <div class="app-wrapper">
+    <component :is="currentLayout" />
+    <ToastNotification />
   </div>
 </template>
 
+<style>
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  height: 100%;
+}
+</style>
+
 <style scoped>
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
 </style>

@@ -1,10 +1,67 @@
 services:
+  caddy:
+    image: caddy:latest
+    container_name: pbihoster-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - pbihoster
+
   pbihoster:
     image: ghcr.io/aenas11/pbihoster:main
     container_name: pbihoster
     restart: unless-stopped
-    ports:
-      - "8080:8080"  # Change left side to map different host port (e.g., "80:8080")
+    # Ports only exposed internally to Caddy, not to host
+    expose:
+      - "8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - PORT=8080  # Change this if you want the app to listen on a different internal port
+      - PORT=8080
+      # JWT Configuration
+      - Jwt__Key=${JWT_KEY:-change-this-to-a-secure-key-minimum-256-bits-long-for-production}
+      - Jwt__Issuer=${JWT_ISSUER:-ReportTree}
+      - Jwt__ExpiryHours=${JWT_EXPIRY_HOURS:-8}
+      # Database
+      - LiteDb__ConnectionString=Filename=/data/reporttree.db;Connection=shared
+      # Security - Password Policy
+      - Security__PasswordPolicy__MinLength=${PASSWORD_MIN_LENGTH:-8}
+      - Security__PasswordPolicy__MaxLength=${PASSWORD_MAX_LENGTH:-128}
+      - Security__PasswordPolicy__RequireUppercase=${PASSWORD_REQUIRE_UPPERCASE:-true}
+      - Security__PasswordPolicy__RequireLowercase=${PASSWORD_REQUIRE_LOWERCASE:-true}
+      - Security__PasswordPolicy__RequireDigit=${PASSWORD_REQUIRE_DIGIT:-true}
+      - Security__PasswordPolicy__RequireSpecialChar=${PASSWORD_REQUIRE_SPECIAL:-true}
+      - Security__PasswordPolicy__MaxFailedAccessAttempts=${PASSWORD_MAX_FAILED_ATTEMPTS:-5}
+      - Security__PasswordPolicy__LockoutMinutes=${PASSWORD_LOCKOUT_MINUTES:-15}
+      # Security - Rate Limiting
+      - Security__RateLimitPolicy__Enabled=${RATE_LIMIT_ENABLED:-true}
+      - Security__RateLimitPolicy__GeneralLimit=${RATE_LIMIT_GENERAL:-100}
+      - Security__RateLimitPolicy__GeneralPeriod=${RATE_LIMIT_GENERAL_PERIOD:-1m}
+      - Security__RateLimitPolicy__AuthLimit=${RATE_LIMIT_AUTH:-5}
+      - Security__RateLimitPolicy__AuthPeriod=${RATE_LIMIT_AUTH_PERIOD:-1m}
+      # Security - CORS (comma-separated origins)
+      - Security__CorsPolicy__AllowedOrigins__0=${CORS_ORIGIN_1:-}
+      - Security__CorsPolicy__AllowedOrigins__1=${CORS_ORIGIN_2:-}
+      - Security__CorsPolicy__AllowCredentials=${CORS_ALLOW_CREDENTIALS:-true}
+      # Power BI Configuration
+      - PowerBI__TenantId=${POWERBI_TENANT_ID:-}
+      - PowerBI__ClientId=${POWERBI_CLIENT_ID:-}
+      - PowerBI__ClientSecret=${POWERBI_CLIENT_SECRET:-}
+      - PowerBI__AuthType=${POWERBI_AUTH_TYPE:-ClientSecret}
+      - PowerBI__CertificateThumbprint=${POWERBI_CERTIFICATE_THUMBPRINT:-}
+      - PowerBI__CertificatePath=${POWERBI_CERTIFICATE_PATH:-}
+      - PowerBI__AuthorityUrl=${POWERBI_AUTHORITY_URL:-https://login.microsoftonline.com/{0}/}
+      - PowerBI__ResourceUrl=${POWERBI_RESOURCE_URL:-https://analysis.windows.net/powerbi/api}
+      - PowerBI__ApiUrl=${POWERBI_API_URL:-https://api.powerbi.com}
+    volumes:
+      - pbihoster_data:/data
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pbihoster_data:
