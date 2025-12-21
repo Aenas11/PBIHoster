@@ -12,4 +12,21 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - PORT=8080
-      - Jwt__Key=this-is-a-very-secure-key-for-development-only-12345
+      - KEY_VAULT_URI=${KEY_VAULT_URI:-}
+      - Jwt__Key=${JWT_KEY:-change-this-to-a-secure-key-minimum-256-bits-long-for-production}
+      - Jwt__Issuer=${JWT_ISSUER:-ReportTree}
+      - Jwt__ExpiryHours=${JWT_EXPIRY_HOURS:-8}
+      - LiteDb__ConnectionString=Filename=/data/reporttree.db;Connection=shared
+      - PowerBI__TenantId=${POWERBI_TENANT_ID:-}
+      - PowerBI__ClientId=${POWERBI_CLIENT_ID:-}
+      - PowerBI__ClientSecret=${POWERBI_CLIENT_SECRET:-}
+      - PowerBI__AuthType=${POWERBI_AUTH_TYPE:-ClientSecret}
+      - PowerBI__CertificateThumbprint=${POWERBI_CERTIFICATE_THUMBPRINT:-}
+      - PowerBI__CertificatePath=${POWERBI_CERTIFICATE_PATH:-}
+      - PowerBI__AuthorityUrl=${POWERBI_AUTHORITY_URL:-https://login.microsoftonline.com/{0}/}
+      - PowerBI__ResourceUrl=${POWERBI_RESOURCE_URL:-https://analysis.windows.net/powerbi/api}
+      - PowerBI__ApiUrl=${POWERBI_API_URL:-https://api.powerbi.com}
+    volumes:
+      - pbihoster_data:/data
+volumes:
+  pbihoster_data:

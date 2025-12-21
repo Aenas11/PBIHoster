@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useStaticSettingsStore } from '@/stores/staticSettings'
+
+const staticSettings = useStaticSettingsStore()
+const versionLabel = computed(() => staticSettings.version ? `v${staticSettings.version}` : '')
 </script>
 
 <template>
@@ -6,7 +11,7 @@
     <div class="cds--grid cds--grid--full-width">
       <div class="cds--row">
         <div class="cds--col-lg-16">
-          <p class="footer-text">ReportTree &copy; {{ new Date().getFullYear() }}</p>
+          <p class="footer-text">ReportTree {{ versionLabel }} &copy; {{ new Date().getFullYear() }}</p>
         </div>
       </div>
     </div>

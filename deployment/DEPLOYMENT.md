@@ -62,6 +62,8 @@
    # Check logs
    docker-compose logs -f pbihoster
    ```
+   - `GET /health` returns `200 OK` if the process is up.
+   - `GET /ready` runs the LiteDB readiness check by calling `LiteDatabase.GetCollectionNames()`; failures usually point to file permissions, disk issues, or a DB file lock.
 
 9. **Access application**
    - Navigate to `https://your-domain.com`
@@ -144,6 +146,8 @@ JWT_ISSUER=ReportTree
 JWT_EXPIRY_HOURS=8
 ```
 
+> The API will not start unless `JWT_KEY`, `POWERBI_TENANT_ID`, `POWERBI_CLIENT_ID`, and either `POWERBI_CLIENT_SECRET` or certificate inputs are provided. Set them via environment variables or inject them from Azure Key Vault using `KEY_VAULT_URI`.
+
 #### Password Policy (Recommended Defaults)
 ```bash
 PASSWORD_MIN_LENGTH=8
@@ -172,6 +176,15 @@ CORS_ORIGIN_1=https://reports.example.com
 CORS_ORIGIN_2=https://reports-staging.example.com
 CORS_ALLOW_CREDENTIALS=true
 ```
+
+#### Loading secrets from Azure Key Vault
+```bash
+KEY_VAULT_URI=https://<your-key-vault>.vault.azure.net/
+```
+
+- Use secret names that mirror configuration keys (e.g., `Jwt--Key`, `PowerBI--ClientSecret`).
+- Grant the container's managed identity `get` permissions for secrets.
+- Keep environment variable fallbacks empty to avoid shipping secrets in images or compose files.
 
 ### Security Features Enabled by Default
 

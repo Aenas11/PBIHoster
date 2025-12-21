@@ -9,6 +9,7 @@ import '@carbon/web-components/es/components/modal/index.js'
 import '@carbon/web-components/es/components/text-input/index.js'
 import '@carbon/web-components/es/components/select/index.js'
 import '@carbon/web-components/es/components/textarea/index.js'
+import '@carbon/web-components/es/components/toggle/index.js'
 
 interface Setting {
     key: string
@@ -34,6 +35,7 @@ const isEditing = ref(false)
 
 // Static app settings
 const homePageId = ref<string>('')
+const demoModeEnabled = ref(false)
 
 const formData = ref<Setting>({
     key: '',
@@ -71,6 +73,13 @@ async function loadSettings() {
         } else {
             homePageId.value = ''
         }
+
+        const demoModeSetting = settings.value.find(s => s.key === 'App.DemoModeEnabled')
+        if (demoModeSetting) {
+            demoModeEnabled.value = demoModeSetting.value?.toLowerCase() === 'true'
+        } else {
+            demoModeEnabled.value = false
+        }
     } catch (error) {
         console.error('Failed to load settings:', error)
     } finally {
@@ -88,13 +97,22 @@ async function loadPages() {
 
 async function saveStaticSettings() {
     try {
-        const payload = {
-            key: 'App.HomePageId',
-            value: homePageId.value || '',
-            category: 'Application',
-            description: 'The page ID to display on the home route (/)'
-        }
-        await api.put('/settings', payload)
+        const payloads = [
+            {
+                key: 'App.HomePageId',
+                value: homePageId.value || '',
+                category: 'Application',
+                description: 'The page ID to display on the home route (/)'
+            },
+            {
+                key: 'App.DemoModeEnabled',
+                value: demoModeEnabled.value.toString(),
+                category: 'Application',
+                description: 'Enable safe demo pages and sample dataset links'
+            }
+        ]
+
+        await Promise.all(payloads.map(payload => api.put('/settings', payload)))
         toastStore.success('Success', 'Static settings saved successfully')
         await loadSettings()
     } catch (error) {
@@ -154,6 +172,10 @@ function onHomePageChange(e: CustomEvent<{ value: string }> | Event) {
     // Carbon web components use detail.value or target.value
     homePageId.value = (e as CustomEvent<{ value: string }>).detail?.value || (e.target as HTMLSelectElement)?.value || ''
 }
+function onDemoModeToggle(e: CustomEvent) {
+    const value = (e.detail?.checked ?? e.detail?.value) as boolean | undefined
+    demoModeEnabled.value = value ?? false
+}
 
 onMounted(() => {
     loadSettings()
@@ -172,24 +194,40 @@ onMounted(() => {
             <h3>Static Application Settings</h3>
             <p class="section-description">Configure core application behavior and defaults</p>
 
-            <div class="static-settings-form">
-                <div class="setting-row">
-                    <label for="home-page-select">Home Page</label>
-                    <div class="setting-input">
-                        <cds-select id="home-page-select" label-text="Select the page to display on the home route (/)"
-                            :value="homePageId" @cds-select-selected="onHomePageChange">
-                            <cds-select-item value="">No home page (default)</cds-select-item>
-                            <cds-select-item v-for="page in topLevelPages" :key="page.id" :value="page.id.toString()">
-                                {{ page.title }}
-                            </cds-select-item>
-                        </cds-select>
-                        <cds-button size="sm" @click="saveStaticSettings" style="margin-top: 1rem;">
-                            Save Static Settings
-                        </cds-button>
+        <div class="static-settings-form">
+            <div class="setting-row">
+                <label for="home-page-select">Home Page</label>
+                <div class="setting-input">
+                    <cds-select id="home-page-select" label-text="Select the page to display on the home route (/)"
+                        :value="homePageId" @cds-select-selected="onHomePageChange">
+                        <cds-select-item value="">No home page (default)</cds-select-item>
+                        <cds-select-item v-for="page in topLevelPages" :key="page.id" :value="page.id.toString()">
+                            {{ page.title }}
+                        </cds-select-item>
+                    </cds-select>
+
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <label for="demo-toggle">Demo Mode</label>
+                <div class="setting-input">
+                    <cds-toggle id="demo-toggle" :checked="demoModeEnabled" @cds-toggle-changed="onDemoModeToggle">
+                        Enable demo mode to preload sample pages and link the starter dataset without tenant data
+                    </cds-toggle>
+                    <div class="hint">
+                        Starter assets: <a href="/sample-data/sample-sales.csv" target="_blank">sample-sales.csv</a> and
+                        <a href="/onboarding/sample-report.svg" target="_blank">sample report preview</a>.
                     </div>
                 </div>
             </div>
-        </section>
+
+            <!-- save button -->
+                    <cds-button size="sm" @click="saveStaticSettings" style="margin-top: 1rem;">
+                        Save Static Settings
+                    </cds-button>
+        </div>
+    </section>
 
         <!-- Regular Settings Section -->
         <section class="regular-settings-section">
@@ -266,9 +304,7 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-.settings-manager {
-    padding: 2rem;
-}
+
 
 .header {
     display: flex;
@@ -329,6 +365,12 @@ onMounted(() => {
     .setting-input {
         display: flex;
         flex-direction: column;
+    }
+
+    .hint {
+        color: var(--cds-text-secondary);
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
     }
 }
 

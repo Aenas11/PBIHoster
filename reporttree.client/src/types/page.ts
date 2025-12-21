@@ -8,5 +8,6 @@ export interface Page {
     allowedUsers: string[]
     allowedGroups: string[]
     layout?: string
+    isDemo?: boolean
     children?: Page[]
 }

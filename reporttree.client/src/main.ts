@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { registerDashboardComponents } from './config/components'
+import { installErrorHandling } from './plugins/errorHandling'
 
 // Register all dashboard components before creating the app
 registerDashboardComponents()
@@ -12,6 +13,7 @@ registerDashboardComponents()
 const app = createApp(App)
 
 app.use(createPinia())
+installErrorHandling(app)
 app.use(router)
 
 
