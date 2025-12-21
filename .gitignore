@@ -78,3 +78,4 @@ docker-compose.override.yml
 
 appsettings.Development.json
 *.db
+*PLAN.md
