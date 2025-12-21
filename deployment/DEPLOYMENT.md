@@ -35,15 +35,26 @@
    - `JWT_KEY`: Paste the generated key from step 3
    - `CORS_ORIGIN_1`: Your frontend domain (e.g., https://reports.example.com)
 
+
 5. **Update Caddyfile**
    Edit `Caddyfile` and replace `your-domain.com` with your actual domain.
 
-6. **Deploy**
+6. **Configure Power BI Integration**
+   See the new section below for full details. At minimum, set these in your `.env`:
+   - `POWERBI_TENANT_ID`: Your Azure AD tenant ID
+   - `POWERBI_CLIENT_ID`: Azure AD App (client) ID
+   - `POWERBI_CLIENT_SECRET`: App secret (if using ClientSecret auth)
+   - `POWERBI_AUTH_TYPE`: `ClientSecret` or `Certificate` (default: ClientSecret)
+   - (Optional) `POWERBI_CERTIFICATE_THUMBPRINT`, `POWERBI_CERTIFICATE_PATH` for certificate auth
+
+   These are required for backend-to-PowerBI authentication. See below for Azure setup.
+
+7. **Deploy**
    ```bash
    docker-compose up -d
    ```
 
-7. **Verify deployment**
+8. **Verify deployment**
    ```bash
    # Check containers are running
    docker-compose ps
@@ -52,11 +63,76 @@
    docker-compose logs -f pbihoster
    ```
 
-8. **Access application**
+9. **Access application**
    - Navigate to `https://your-domain.com`
    - The first user to register will need to be promoted to Admin manually
 
 ## Security Configuration
+
+## Power BI Integration
+
+### About Azure Power BI Embedded
+
+[Azure Power BI Embedded](https://azure.microsoft.com/en-us/products/power-bi-embedded) is a Microsoft Azure service that allows developers to embed fully interactive Power BI reports and dashboards into custom applications. PBIHoster leverages this service using the "App Owns Data" model, where the application authenticates as a service principal and manages access for end users.
+
+**Key Points:**
+- Power BI Embedded enables secure, scalable analytics in your app without requiring users to have Power BI licenses.
+- The backend obtains Azure AD tokens and generates embed tokens for the frontend.
+- All report and dashboard rendering is handled by the Power BI JavaScript client in the browser.
+
+### Power BI Tenant & Workspace Configuration (Required)
+
+For embedding to work in "App Owns Data" mode, your Power BI tenant and workspaces must be configured as follows:
+
+1. **Enable Service Principal Access**: In the Power BI Admin Portal, under *Tenant settings*, enable "Allow service principals to use Power BI APIs" and grant access to the required security groups or service principal.
+2. **Workspace Assignment**: Ensure the Azure AD app (service principal) is added as an *Admin* or *Member* to the target Power BI workspaces.
+3. **Premium Capacity (Recommended)**: For production and large-scale embedding, assign workspaces to a Power BI Premium capacity (A SKUs or P SKUs) for better performance and licensing compliance.
+4. **Publish Reports**: Upload your .pbix reports to the configured workspaces.
+
+If these steps are not completed, embedding will fail with authorization errors or missing content.
+
+For more details, see the official [Power BI Embedded documentation](https://learn.microsoft.com/en-us/power-bi/developer/embedded/embed-sample-for-your-organization) and [Azure Power BI Embedded product page](https://azure.microsoft.com/en-us/products/power-bi-embedded).
+
+PBIHoster supports secure embedding of Power BI reports and dashboards using the "App Owns Data" model. The backend authenticates with Azure AD and generates embed tokens for the frontend.
+
+### Azure AD App Registration (Required)
+1. Register a new App in [Azure Portal > Azure Active Directory > App registrations](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps).
+2. Note the **Application (client) ID** and **Directory (tenant) ID**.
+3. Under **Certificates & secrets**, create a new client secret (or upload a certificate for certificate auth).
+4. Under **API permissions**, add:
+   - `Power BI Service` > `Dataset.Read.All`, `Report.Read.All`, `Workspace.Read.All`
+   - Grant admin consent for these permissions.
+5. In Power BI Admin Portal, enable **Service Principal** access for your tenant and workspaces.
+
+### Environment Variables
+Set these in your `.env` (see `.env.example`):
+```env
+POWERBI_TENANT_ID=your-tenant-id
+POWERBI_CLIENT_ID=your-client-id
+POWERBI_CLIENT_SECRET=your-client-secret
+POWERBI_AUTH_TYPE=ClientSecret
+# Optional for certificate auth:
+POWERBI_CERTIFICATE_THUMBPRINT=
+POWERBI_CERTIFICATE_PATH=
+POWERBI_AUTHORITY_URL=https://login.microsoftonline.com/{0}/
+POWERBI_RESOURCE_URL=https://analysis.windows.net/powerbi/api
+POWERBI_API_URL=https://api.powerbi.com
+```
+These are mapped to ASP.NET config in `docker-compose.yml` as `PowerBI__*`.
+
+### Docker Compose Mapping
+`docker-compose.yml` automatically maps these variables to the backend container. No manual changes needed unless customizing.
+
+### Frontend Usage
+Once configured, editors can add Power BI components to pages. The backend handles all token generation and security.
+
+### Troubleshooting Power BI Embedding
+- **"Invalid credentials"**: Check all Azure AD values and client secret/certificate.
+- **"Service principal not enabled"**: Enable in Power BI Admin Portal.
+- **"Insufficient permissions"**: Ensure API permissions are granted and admin consented.
+- **Token errors**: Check system time, secret expiry, and Docker environment variable mapping.
+- **See logs**: `docker-compose logs -f pbihoster` for backend errors.
+
 
 ### Essential Security Settings
 
