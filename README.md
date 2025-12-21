@@ -197,6 +197,8 @@ All configuration can be set via environment variables in Docker or `appsettings
 | `JWT_ISSUER` | Token issuer identifier | `ReportTree` | No |
 | `JWT_EXPIRY_HOURS` | Token expiration time in hours | `8` | No |
 
+> The API will refuse to start unless `JWT_KEY`, `POWERBI_TENANT_ID`, `POWERBI_CLIENT_ID`, and the appropriate Power BI credential (secret or certificate) are provided via environment variables or Key Vault.
+
 #### Security Settings
 
 | Variable | Description | Default |
@@ -237,6 +239,15 @@ All configuration can be set via environment variables in Docker or `appsettings
 | `POWERBI_AUTH_TYPE` | `ClientSecret` or `Certificate` | No (Default: ClientSecret) |
 | `POWERBI_CERTIFICATE_THUMBPRINT` | Certificate Thumbprint (if AuthType is Certificate) | Conditional |
 | `POWERBI_CERTIFICATE_PATH` | Path to .pfx file (if AuthType is Certificate) | Conditional |
+
+#### Key Vault Integration
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `KEY_VAULT_URI` | Azure Key Vault URI to load secrets at startup | No (recommended) |
+
+- Secrets are read directly from Key Vault when `KEY_VAULT_URI` is set (or `AZURE_KEY_VAULT_URI` as an alternative).
+- Use secret names that mirror configuration keys (e.g., `Jwt--Key`, `PowerBI--ClientSecret`).
 
 ### Application Settings
 

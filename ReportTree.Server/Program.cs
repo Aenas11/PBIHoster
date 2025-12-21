@@ -1,3 +1,5 @@
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
 using System.Diagnostics;
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
@@ -17,11 +19,19 @@ using Serilog.Formatting.Compact;
 
 namespace ReportTree.Server
 {
-    public class Program
+    public partial class Program
     {
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            var keyVaultUri = builder.Configuration["KEY_VAULT_URI"] ?? builder.Configuration["AZURE_KEY_VAULT_URI"];
+            if (!string.IsNullOrWhiteSpace(keyVaultUri))
+            {
+                builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), new DefaultAzureCredential());
+            }
+
+            SecretValidator.Validate(builder.Configuration);
 
             builder.Host.UseSerilog((context, services, configuration) =>
             {
@@ -82,6 +92,11 @@ namespace ReportTree.Server
             
             var corsPolicy = new CorsPolicy();
             builder.Configuration.Bind("Security:CorsPolicy", corsPolicy);
+            
+            var contentSecurityPolicy = new ContentSecurityPolicy();
+            builder.Configuration.Bind("Security:ContentSecurityPolicy", contentSecurityPolicy);
+
+            builder.Services.AddSingleton(contentSecurityPolicy);
             
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<PageAuthorizationService>();
@@ -152,7 +167,7 @@ namespace ReportTree.Server
             });
 
             // JWT Auth
-            var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev-super-secret-key-change-must-be-longer-than-256-bits";
+            var jwtKey = builder.Configuration["Jwt:Key"]!;
             var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ReportTree";
             var jwtExpiryHours = builder.Configuration.GetValue<int>("Jwt:ExpiryHours", 8);
             var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtKey));
@@ -257,6 +272,7 @@ namespace ReportTree.Server
             app.UseSerilogRequestLogging();
             
             // Add security headers middleware
+            var cspHeaderValue = BuildContentSecurityPolicy(contentSecurityPolicy, corsPolicy);
             app.Use(async (context, next) =>
             {
                 context.Response.Headers.Append("X-Frame-Options", "DENY");
@@ -264,6 +280,7 @@ namespace ReportTree.Server
                 context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
                 context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
                 context.Response.Headers.Append("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+                context.Response.Headers.Append("Content-Security-Policy", cspHeaderValue);
                 await next();
             });
 
@@ -327,6 +344,8 @@ namespace ReportTree.Server
                 var (token, errorMessage) = await auth.LoginAsync(req.Username, req.Password);
                 return token != null ? Results.Ok(new LoginResponse(token)) : Results.BadRequest(new { Error = errorMessage });
             });
+
+            app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
             
             // Global error handler
             app.Map("/error", (HttpContext context) =>
@@ -352,6 +371,32 @@ namespace ReportTree.Server
             app.MapFallbackToFile("/index.html");
 
             app.Run();
+        }
+
+        private static string BuildContentSecurityPolicy(ContentSecurityPolicy policy, CorsPolicy corsPolicy)
+        {
+            static string JoinSources(IEnumerable<string> sources) => string.Join(' ', sources.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct());
+
+            var frameSources = policy.FrameSources.AsEnumerable();
+            if (corsPolicy.AllowedOrigins?.Any() == true)
+            {
+                frameSources = frameSources.Concat(corsPolicy.AllowedOrigins);
+            }
+
+            var directives = new[]
+            {
+                $"default-src {JoinSources(policy.DefaultSources)}",
+                $"frame-src {JoinSources(frameSources)}",
+                $"frame-ancestors {JoinSources(policy.FrameAncestors)}",
+                $"script-src {JoinSources(policy.ScriptSources)}",
+                $"style-src {JoinSources(policy.StyleSources)}",
+                $"img-src {JoinSources(policy.ImgSources)}",
+                $"connect-src {JoinSources(policy.ConnectSources)}",
+                $"font-src {JoinSources(policy.FontSources)}",
+                "object-src 'none'"
+            };
+
+            return string.Join("; ", directives.Where(d => !string.IsNullOrWhiteSpace(d)));
         }
     }
 }
