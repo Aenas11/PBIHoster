@@ -57,7 +57,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const data = await api.post<{ token: string }>('/auth/login',
         { username, password },
-        { skipAuth: true }
+        { skipAuth: true,
+          skipErrorToast: true
+         }
       )
       setToken(data.token)
       return true

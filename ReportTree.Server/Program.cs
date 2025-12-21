@@ -235,7 +235,7 @@ namespace ReportTree.Server
             app.MapPost("/api/auth/login", async (LoginRequest req, AuthService auth) =>
             {
                 var (token, errorMessage) = await auth.LoginAsync(req.Username, req.Password);
-                return token != null ? Results.Ok(new LoginResponse(token)) : Results.Unauthorized();
+                return token != null ? Results.Ok(new LoginResponse(token)) : Results.BadRequest(new { Error = errorMessage });
             });
             
             // Global error handler
