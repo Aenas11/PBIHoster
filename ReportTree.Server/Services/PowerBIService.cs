@@ -308,7 +308,9 @@ namespace ReportTree.Server.Services
 
             // Fallback to V1 API
             var requestV1 = new GenerateTokenRequest(accessLevel: TokenAccessLevel.View);
-            var embedToken = await client.Dashboards.GenerateTokenInGroupAsync(workspaceId, dashboardId, requestV1, cancellationToken: cancellationToken);
+            try 
+            {
+                var embedToken = await client.Dashboards.GenerateTokenInGroupAsync(workspaceId, dashboardId, requestV1, cancellationToken: cancellationToken);
             
             return new EmbedTokenResponseDto
             {
@@ -317,6 +319,12 @@ namespace ReportTree.Server.Services
                 TokenId = embedToken.TokenId.ToString(),
                 Expiration = embedToken.Expiration
             };
+            }
+            catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                _logger.LogError("Error generating Dashboard Embed Token: {Message}", ex.Message);
+                throw;
+            }
         }
     }
 }

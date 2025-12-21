@@ -297,7 +297,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
 .panel-body {
   flex: 1;
   overflow: auto;
-  padding: 0.1rem;
+  padding: 0.25rem 0;
 }
 
 .dynamic-component {
