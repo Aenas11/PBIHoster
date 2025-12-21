@@ -3,6 +3,7 @@ import '@carbon/web-components/es/components/tabs/index.js'
 import UsersManager from '../components/Admin/UsersManager.vue'
 import GroupsManager from '../components/Admin/GroupsManager.vue'
 import SettingsManager from '../components/Admin/SettingsManager.vue'
+import PowerBIDiagnosticsCard from '../components/Admin/PowerBIDiagnosticsCard.vue'
 </script>
 
 <template>
@@ -23,7 +24,10 @@ import SettingsManager from '../components/Admin/SettingsManager.vue'
         </div>
 
         <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
-            <SettingsManager />
+            <div class="admin-panels">
+                <SettingsManager />
+                <PowerBIDiagnosticsCard />
+            </div>
         </div>
 
         <div id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>

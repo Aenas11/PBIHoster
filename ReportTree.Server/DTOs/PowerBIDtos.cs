@@ -1,5 +1,7 @@
 namespace ReportTree.Server.DTOs
 {
+    using System.Text.Json.Serialization;
+
     public class WorkspaceDto
     {
         public Guid Id { get; set; }
@@ -51,6 +53,34 @@ namespace ReportTree.Server.DTOs
         public string Username { get; set; } = string.Empty;
         public List<string> Roles { get; set; } = new();
         public List<string> Datasets { get; set; } = new();
+    }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum DiagnosticStatus
+    {
+        Success,
+        Warning,
+        Error
+    }
+
+    public class PowerBIDiagnosticCheckDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public DiagnosticStatus Status { get; set; }
+        public string Detail { get; set; } = string.Empty;
+        public string? Resolution { get; set; }
+        public string? DocsUrl { get; set; }
+    }
+
+    public class PowerBIDiagnosticResultDto
+    {
+        public bool Success { get; set; }
+        public Guid? WorkspaceId { get; set; }
+        public Guid? ReportId { get; set; }
+        public string? AzurePortalLink { get; set; }
+        public IEnumerable<WorkspaceDto> Workspaces { get; set; } = Enumerable.Empty<WorkspaceDto>();
+        public IEnumerable<ReportDto> Reports { get; set; } = Enumerable.Empty<ReportDto>();
+        public IEnumerable<PowerBIDiagnosticCheckDto> Checks { get; set; } = Enumerable.Empty<PowerBIDiagnosticCheckDto>();
     }
 
 }

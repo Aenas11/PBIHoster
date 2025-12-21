@@ -87,6 +87,7 @@ namespace ReportTree.Server
             builder.Services.AddScoped<PageAuthorizationService>();
             builder.Services.AddScoped<SettingsService>();
             builder.Services.AddScoped<AuditLogService>();
+            builder.Services.AddScoped<IPowerBIDiagnosticsService, PowerBIDiagnosticsService>();
             
             // Add HttpContextAccessor for audit logging
             builder.Services.AddHttpContextAccessor();

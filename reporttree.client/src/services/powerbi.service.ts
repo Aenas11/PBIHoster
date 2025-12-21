@@ -4,7 +4,8 @@ import type {
     ReportDto,
     DashboardDto,
     EmbedTokenRequestDto,
-    EmbedTokenResponseDto
+    EmbedTokenResponseDto,
+    PowerBIDiagnosticResultDto
 } from '../types/powerbi'
 
 export const powerBIService = {
@@ -46,5 +47,15 @@ export const powerBIService = {
             pageId
         }
         return api.post<EmbedTokenResponseDto>('/powerbi/embed/dashboard', request)
+    },
+
+    async runDiagnostics(workspaceId?: string, reportId?: string): Promise<PowerBIDiagnosticResultDto> {
+        const params = new URLSearchParams()
+        if (workspaceId) params.append('workspaceId', workspaceId)
+        if (reportId) params.append('reportId', reportId)
+
+        const query = params.toString()
+        const suffix = query ? `?${query}` : ''
+        return api.get<PowerBIDiagnosticResultDto>(`/powerbi/diagnostics${suffix}`)
     }
 }

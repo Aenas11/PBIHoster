@@ -4,4 +4,5 @@
     <Deploy />
   </Project>
   <Project Path="ReportTree.Server/ReportTree.Server.csproj" />
+  <Project Path="ReportTree.Server.Tests/ReportTree.Server.Tests.csproj" />
 </Solution>

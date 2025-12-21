@@ -13,6 +13,7 @@ namespace ReportTree.Server.Controllers
     public class PowerBIController : ControllerBase
     {
         private readonly IPowerBIService _powerBIService;
+        private readonly IPowerBIDiagnosticsService _powerBIDiagnosticsService;
         private readonly PageAuthorizationService _pageAuthorizationService;
         private readonly IPageRepository _pageRepository;
         private readonly AuditLogService _auditLogService;
@@ -20,12 +21,14 @@ namespace ReportTree.Server.Controllers
 
         public PowerBIController(
             IPowerBIService powerBIService,
+            IPowerBIDiagnosticsService powerBIDiagnosticsService,
             PageAuthorizationService pageAuthorizationService,
             IPageRepository pageRepository,
             AuditLogService auditLogService,
             ILogger<PowerBIController> logger)
         {
             _powerBIService = powerBIService;
+            _powerBIDiagnosticsService = powerBIDiagnosticsService;
             _pageAuthorizationService = pageAuthorizationService;
             _pageRepository = pageRepository;
             _auditLogService = auditLogService;
@@ -144,6 +147,14 @@ namespace ReportTree.Server.Controllers
 
             await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), "Access denied (no page context)", false);
             return Forbid("PageId is required for non-admin users.");
+        }
+
+        [HttpGet("diagnostics")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<PowerBIDiagnosticResultDto>> RunDiagnostics([FromQuery] Guid? workspaceId, [FromQuery] Guid? reportId, CancellationToken cancellationToken)
+        {
+            var result = await _powerBIDiagnosticsService.RunAsync(workspaceId, reportId, cancellationToken);
+            return Ok(result);
         }
     }
 }
