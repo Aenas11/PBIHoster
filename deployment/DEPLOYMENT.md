@@ -62,6 +62,8 @@
    # Check logs
    docker-compose logs -f pbihoster
    ```
+   - `GET /health` returns `200 OK` if the process is up.
+   - `GET /ready` runs the LiteDB readiness check by calling `LiteDatabase.GetCollectionNames()`; failures usually point to file permissions, disk issues, or a DB file lock.
 
 9. **Access application**
    - Navigate to `https://your-domain.com`

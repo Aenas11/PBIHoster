@@ -1,10 +1,19 @@
+using System.Diagnostics;
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
 using ReportTree.Server.Security;
 using ReportTree.Server.DTOs;
 using ReportTree.Server.Services;
+using ReportTree.Server.HealthChecks;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using Serilog;
+using Serilog.Context;
+using Serilog.Formatting.Compact;
 
 namespace ReportTree.Server
 {
@@ -13,6 +22,18 @@ namespace ReportTree.Server
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Host.UseSerilog((context, services, configuration) =>
+            {
+                configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .ReadFrom.Services(services)
+                    .Enrich.FromLogContext()
+                    .Enrich.WithMachineName()
+                    .Enrich.WithProcessId()
+                    .Enrich.WithThreadId()
+                    .WriteTo.Console(new RenderedCompactJsonFormatter());
+            });
             
             // Configure Kestrel to listen on port from environment or default to 8080
             builder.WebHost.ConfigureKestrel(serverOptions =>
@@ -39,6 +60,9 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<ISettingsRepository, LiteDbSettingsRepository>();
             builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
             builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
+            builder.Services.AddHealthChecks()
+                .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" })
+                .AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });
             
             // Services
             builder.Services.AddSingleton<ISettingsService, SettingsService>();
@@ -171,10 +195,65 @@ namespace ReportTree.Server
                 options.KnownProxies.Clear();
             });
 
+            // Observability
+            builder.Services.AddOpenTelemetry()
+                .WithMetrics(metrics =>
+                {
+                    metrics
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("ReportTree.Server"))
+                        .AddAspNetCoreInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddRuntimeInstrumentation()
+                        .AddProcessInstrumentation()
+                        .AddPrometheusExporter();
+                });
+
             var app = builder.Build();
             
             // Use forwarded headers
             app.UseForwardedHeaders();
+
+            // Apply correlation IDs early in the pipeline
+            app.Use(async (context, next) =>
+            {
+                const string correlationHeader = "X-Correlation-ID";
+                var correlationId = context.Request.Headers.TryGetValue(correlationHeader, out var existingId) &&
+                                    !string.IsNullOrWhiteSpace(existingId)
+                    ? existingId.ToString()
+                    : Guid.NewGuid().ToString();
+
+                context.TraceIdentifier = correlationId;
+                context.Response.Headers[correlationHeader] = correlationId;
+
+                var activity = Activity.Current;
+                var started = false;
+                if (activity == null)
+                {
+                    activity = new Activity("Request");
+                    activity.SetIdFormat(ActivityIdFormat.W3C);
+                    activity.Start();
+                    started = true;
+                }
+
+                activity?.SetTag("correlation_id", correlationId);
+
+                using (LogContext.PushProperty("CorrelationId", correlationId))
+                {
+                    try
+                    {
+                        await next();
+                    }
+                    finally
+                    {
+                        if (started)
+                        {
+                            activity?.Stop();
+                        }
+                    }
+                }
+            });
+
+            app.UseSerilogRequestLogging();
             
             // Add security headers middleware
             app.Use(async (context, next) =>
@@ -216,6 +295,16 @@ namespace ReportTree.Server
                 // Global error handling for production
                 app.UseExceptionHandler("/error");
             }
+
+            app.MapHealthChecks("/health", new HealthCheckOptions
+            {
+                Predicate = registration => registration.Tags.Contains("live")
+            });
+            app.MapHealthChecks("/ready", new HealthCheckOptions
+            {
+                Predicate = registration => registration.Tags.Contains("ready")
+            });
+            app.MapPrometheusScrapingEndpoint();
 
             // app.UseHttpsRedirection();
 
@@ -265,4 +354,3 @@ namespace ReportTree.Server
         }
     }
 }
-

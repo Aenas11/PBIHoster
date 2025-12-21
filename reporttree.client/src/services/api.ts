@@ -4,6 +4,7 @@
  */
 
 import { useToastStore } from '../stores/toast'
+import { reportApiError } from './monitoring'
 
 interface RequestOptions extends RequestInit {
     skipAuth?: boolean
@@ -43,6 +44,7 @@ class ApiClient {
             })
 
             if (!response.ok) {
+                const correlationId = response.headers.get('X-Correlation-ID') ?? undefined
                 if (response.status === 401) {
                     // Unauthorized - potentially redirect to login
                     window.dispatchEvent(new CustomEvent('auth:unauthorized'))
@@ -51,8 +53,10 @@ class ApiClient {
                 // Try to get error message from response
                 let errorMessage = `${response.status} ${response.statusText}`
                 let errors: string[] | undefined
+                let responseBody: string | undefined
                 try {
                     const errorData = await response.json()
+                    responseBody = JSON.stringify(errorData)
 
                     // Handle custom error format with Errors array (password validation, etc.)
                     if (errorData.errors && Array.isArray(errorData.errors)) {
@@ -84,6 +88,15 @@ class ApiClient {
                 } catch {
                     // Ignore JSON parse errors
                 }
+
+                await reportApiError({
+                    message: errorMessage,
+                    path: url,
+                    method: options.method ?? 'GET',
+                    status: response.status,
+                    correlationId,
+                    responseBody
+                })
 
                 if (!skipErrorToast) {
                     const toastStore = useToastStore()
@@ -117,6 +130,11 @@ class ApiClient {
         } catch (error) {
             // Handle network errors
             if (error instanceof Error && error.message.includes('fetch')) {
+                await reportApiError({
+                    message: error.message,
+                    path: url,
+                    method: options.method ?? 'GET'
+                })
                 if (!skipErrorToast) {
                     const toastStore = useToastStore()
                     toastStore.error('Network Error', 'Unable to connect to the server')

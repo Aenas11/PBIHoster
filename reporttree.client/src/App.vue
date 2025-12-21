@@ -6,6 +6,7 @@ import { useAuthStore } from './stores/auth'
 import AppShell from './layouts/AppShell.vue'
 import LoginLayout from './layouts/LoginLayout.vue'
 import ToastNotification from './components/ToastNotification.vue'
+import GlobalErrorBoundary from './components/GlobalErrorBoundary.vue'
 
 const route = useRoute()
 const themeStore = useThemeStore()
@@ -28,7 +29,9 @@ onMounted(async () => {
 
 <template>
   <div class="app-wrapper">
-    <component :is="currentLayout" />
+    <GlobalErrorBoundary>
+      <component :is="currentLayout" />
+    </GlobalErrorBoundary>
     <ToastNotification />
   </div>
 </template>
