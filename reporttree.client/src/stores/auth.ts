@@ -73,7 +73,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await api.post('/auth/register',
         { username, password },
-        { skipAuth: true }
+        { skipAuth: true,
+          skipErrorToast: true
+         }
       )
       return true
     } catch (error) {
