@@ -82,9 +82,10 @@ PBIHoster (also known as ReportTree) provides a secure, customizable platform fo
 
 ## Getting Started
 
+
 ### Quick Start with Docker
 
-The fastest way to deploy PBIHoster in production.
+The fastest way to deploy PBIHoster in production is to use the official Docker image as referenced in the provided `docker-compose.yml`(see [docker-compose](/deployment/docker-compose.yml)).
 
 #### Prerequisites
 - Docker and Docker Compose installed
@@ -125,10 +126,11 @@ The fastest way to deploy PBIHoster in production.
    ```
    Replace `your-domain.com` with your actual domain.
 
-6. **Deploy**
+6. **Deploy using Docker Compose**
    ```bash
    docker-compose up -d
    ```
+   This will pull and run the official image `ghcr.io/aenas11/pbihoster:main` as defined in `docker-compose.yml`. The backend, frontend, and database are all included in this image. Caddy will handle HTTPS and reverse proxy.
 
 7. **Verify deployment**
    ```bash
