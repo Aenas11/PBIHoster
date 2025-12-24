@@ -29,6 +29,12 @@ PBIHoster (also known as ReportTree) provides a secure, customizable platform fo
 - **Secure Authentication**: JWT-based authentication with comprehensive security features
 - **Audit Logging**: Track all user actions and security events
 
+## Who is this for?
+- **ISVs** embedding Power BI analytics into SaaS products
+- **Consultancies & system integrators** delivering analytics portals to clients
+- **Solution architects** designing reusable embedded analytics platforms
+- **Enterprise teams** hosting internal Power BI portals with controlled access
+
 ## Key Features
 
 ### 🔐 Authentication & Security
