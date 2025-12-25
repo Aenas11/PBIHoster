@@ -51,8 +51,8 @@
 
         <cds-inline-notification
             kind="info"
-            title-text="Demo mode"
-            subtitle-text="When Demo Mode is enabled in Admin Settings, the navigation includes Demo Overview and Sample Insights pages backed by the safe starter dataset."
+            title="Demo mode"
+            subtitle="When Demo Mode is enabled in Admin Settings, the navigation includes Demo Overview and Sample Insights pages backed by the safe starter dataset."
         />
     </div>
 </template>

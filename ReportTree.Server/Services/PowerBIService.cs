@@ -3,8 +3,11 @@ using Microsoft.PowerBI.Api;
 using Microsoft.PowerBI.Api.Models;
 using Microsoft.Rest;
 using ReportTree.Server.DTOs;
+using Microsoft.Extensions.Caching.Memory;
 using ReportTree.Server.Models;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace ReportTree.Server.Services
 {
@@ -12,16 +15,19 @@ namespace ReportTree.Server.Services
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger<PowerBIService> _logger;
+        private readonly IMemoryCache _cache;
         private IConfidentialClientApplication? _msalClient;
         private PowerBIConfiguration? _config;
         private DateTime _tokenExpiration;
         private string _accessToken = string.Empty;
         private readonly SemaphoreSlim _tokenLock = new SemaphoreSlim(1, 1);
+        private static readonly TimeSpan EmbedTokenCacheBuffer = TimeSpan.FromMinutes(2);
 
-        public PowerBIService(IConfiguration configuration, ILogger<PowerBIService> logger)
+        public PowerBIService(IConfiguration configuration, ILogger<PowerBIService> logger, IMemoryCache cache)
         {
             _configuration = configuration;
             _logger = logger;
+            _cache = cache;
         }
 
         private void LoadConfiguration()
@@ -225,6 +231,12 @@ namespace ReportTree.Server.Services
 
         public async Task<EmbedTokenResponseDto> GetReportEmbedTokenAsync(Guid workspaceId, Guid reportId, List<RLSIdentityDto>? identities = null, CancellationToken cancellationToken = default)
         {
+            var cacheKey = BuildReportEmbedCacheKey(workspaceId, reportId, identities);
+            if (_cache.TryGetValue(cacheKey, out EmbedTokenResponseDto? cachedToken) && cachedToken != null)
+            {
+                return cachedToken;
+            }
+
             var token = await GetAccessTokenAsync(cancellationToken);
             using var client = CreatePowerBIClient(token);
 
@@ -259,13 +271,15 @@ namespace ReportTree.Server.Services
                 // Use V2 API for RLS support
                 var embedTokenV2 = await client.EmbedToken.GenerateTokenAsync(request, cancellationToken: cancellationToken);
 
-                return new EmbedTokenResponseDto
+                var response = new EmbedTokenResponseDto
                 {
                     AccessToken = embedTokenV2.Token,
                     EmbedUrl = report.EmbedUrl,
                     TokenId = embedTokenV2.TokenId.ToString(),
                     Expiration = embedTokenV2.Expiration
                 };
+                CacheEmbedToken(cacheKey, response);
+                return response;
             }
             catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)
             {
@@ -278,13 +292,15 @@ namespace ReportTree.Server.Services
             // Fallback to V1 API if V2 fails (e.g., no RLS)
             var requestV1 = new GenerateTokenRequest(accessLevel: TokenAccessLevel.View);
             var embedToken = await client.Reports.GenerateTokenInGroupAsync(workspaceId, reportId, requestV1, cancellationToken: cancellationToken);
-            return new EmbedTokenResponseDto
+            var responseV1 = new EmbedTokenResponseDto
             {
                 AccessToken = embedToken.Token,
                 EmbedUrl = report.EmbedUrl,
                 TokenId = embedToken.TokenId.ToString(),
                 Expiration = embedToken.Expiration
             };
+            CacheEmbedToken(cacheKey, responseV1);
+            return responseV1;
 
 
             // var embedToken = await client.EmbedToken.GenerateTokenAsync(request, cancellationToken: cancellationToken);
@@ -300,6 +316,12 @@ namespace ReportTree.Server.Services
 
         public async Task<EmbedTokenResponseDto> GetDashboardEmbedTokenAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default)
         {
+            var cacheKey = BuildDashboardEmbedCacheKey(workspaceId, dashboardId);
+            if (_cache.TryGetValue(cacheKey, out EmbedTokenResponseDto? cachedToken) && cachedToken != null)
+            {
+                return cachedToken;
+            }
+
             var token = await GetAccessTokenAsync(cancellationToken);
             using var client = CreatePowerBIClient(token);
 
@@ -312,19 +334,74 @@ namespace ReportTree.Server.Services
             {
                 var embedToken = await client.Dashboards.GenerateTokenInGroupAsync(workspaceId, dashboardId, requestV1, cancellationToken: cancellationToken);
             
-            return new EmbedTokenResponseDto
-            {
-                AccessToken = embedToken.Token,
-                EmbedUrl = dashboard.EmbedUrl,
-                TokenId = embedToken.TokenId.ToString(),
-                Expiration = embedToken.Expiration
-            };
+                var response = new EmbedTokenResponseDto
+                {
+                    AccessToken = embedToken.Token,
+                    EmbedUrl = dashboard.EmbedUrl,
+                    TokenId = embedToken.TokenId.ToString(),
+                    Expiration = embedToken.Expiration
+                };
+                CacheEmbedToken(cacheKey, response);
+                return response;
             }
             catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)
             {
                 _logger.LogError("Error generating Dashboard Embed Token: {Message}", ex.Message);
                 throw;
             }
+        }
+
+        private void CacheEmbedToken(string cacheKey, EmbedTokenResponseDto response)
+        {
+            var now = DateTime.UtcNow;
+            if (response.Expiration <= now.Add(EmbedTokenCacheBuffer))
+            {
+                return;
+            }
+
+            var expiresIn = response.Expiration - now - EmbedTokenCacheBuffer;
+            if (expiresIn <= TimeSpan.Zero)
+            {
+                return;
+            }
+
+            _cache.Set(cacheKey, response, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = expiresIn
+            });
+        }
+
+        private static string BuildReportEmbedCacheKey(Guid workspaceId, Guid reportId, List<RLSIdentityDto>? identities)
+        {
+            var identityKey = BuildIdentityCacheKey(identities);
+            return $"embed:report:{workspaceId}:{reportId}:{identityKey}";
+        }
+
+        private static string BuildDashboardEmbedCacheKey(Guid workspaceId, Guid dashboardId)
+        {
+            return $"embed:dashboard:{workspaceId}:{dashboardId}";
+        }
+
+        private static string BuildIdentityCacheKey(List<RLSIdentityDto>? identities)
+        {
+            if (identities == null || identities.Count == 0)
+            {
+                return "no-rls";
+            }
+
+            var ordered = identities
+                .OrderBy(i => i.Username, StringComparer.OrdinalIgnoreCase)
+                .Select(i =>
+                {
+                    var roles = i.Roles.OrderBy(r => r, StringComparer.OrdinalIgnoreCase);
+                    var datasets = i.Datasets.OrderBy(d => d, StringComparer.OrdinalIgnoreCase);
+                    return $"{i.Username}:{string.Join(",", roles)}:{string.Join(",", datasets)}";
+                });
+
+            var combined = string.Join("|", ordered);
+            using var sha = SHA256.Create();
+            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(combined));
+            return Convert.ToHexString(bytes);
         }
     }
 }
