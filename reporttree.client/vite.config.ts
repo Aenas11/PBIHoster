@@ -57,6 +57,21 @@ export default defineConfig({
                 target: 'http://localhost:8080',
                 changeOrigin: true,
                 secure: false
+            },
+            '/metrics': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+                secure: false
+            },
+            '/health': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+                secure: false
+            },
+            '/ready': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+                secure: false
             }
         }
     }

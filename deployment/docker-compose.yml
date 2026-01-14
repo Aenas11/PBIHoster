@@ -23,6 +23,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - PORT=8080
+      - KEY_VAULT_URI=${KEY_VAULT_URI:-}
       # JWT Configuration
       - Jwt__Key=${JWT_KEY:-change-this-to-a-secure-key-minimum-256-bits-long-for-production}
       - Jwt__Issuer=${JWT_ISSUER:-ReportTree}

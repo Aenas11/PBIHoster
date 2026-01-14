@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" role="img" aria-labelledby="title desc">
+  <title id="title">Assign roles walkthrough</title>
+  <desc id="desc">Steps that show how to assign Admin, Editor, and Viewer roles.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1192e8" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#0043ce" stop-opacity="0.9" />
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" fill="url(#bg)" rx="16" />
+  <rect x="24" y="24" width="852" height="472" rx="12" fill="none" stroke="white" stroke-width="3" stroke-dasharray="8 8" />
+  <text x="48" y="80" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="32" fill="white" font-weight="700">Assign roles</text>
+  <g font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="20" fill="white" font-weight="500">
+    <text x="48" y="140">1. Navigate to <tspan font-weight="700">Admin &gt; Users &amp; Groups</tspan>.</text>
+    <text x="48" y="190">2. Edit a user and select <tspan font-weight="700">Admin</tspan>, <tspan font-weight="700">Editor</tspan>, or <tspan font-weight="700">Viewer</tspan>.</text>
+    <text x="48" y="240">3. Save to refresh role claims and navigation.</text>
+  </g>
+  <rect x="520" y="310" width="320" height="160" rx="12" fill="white" opacity="0.18" />
+  <rect x="548" y="340" width="264" height="100" rx="10" fill="white" opacity="0.26" />
+</svg>

@@ -7,10 +7,13 @@ A modern Power BI hosting solution with dynamic dashboard layouts, user authenti
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
+- [Release & Versioning](#release--versioning)
 - [Getting Started](#getting-started)
   - [Quick Start with Docker](#quick-start-with-docker)
   - [Development Setup](#development-setup)
 - [Configuration](#configuration)
+- [Demo Mode & Sample Data](#demo-mode--sample-data)
+- [Onboarding Walkthroughs](#onboarding-walkthroughs)
 - [User Guide](#user-guide)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
@@ -25,6 +28,12 @@ PBIHoster (also known as ReportTree) provides a secure, customizable platform fo
 - **Custom Themes**: Light/dark modes plus corporate branding support
 - **Secure Authentication**: JWT-based authentication with comprehensive security features
 - **Audit Logging**: Track all user actions and security events
+
+## Who is this for?
+- **ISVs** embedding Power BI analytics into SaaS products
+- **Consultancies & system integrators** delivering analytics portals to clients
+- **Solution architects** designing reusable embedded analytics platforms
+- **Enterprise teams** hosting internal Power BI portals with controlled access
 
 ## Key Features
 
@@ -71,11 +80,18 @@ PBIHoster (also known as ReportTree) provides a secure, customizable platform fo
 - **Deployment**: Docker Compose with Caddy reverse proxy (automatic HTTPS)
 - **Authentication**: JWT Bearer tokens
 
+## Release & Versioning
+
+- **Semantic Versioning**: The root `VERSION` file controls the app version. Update it before merging to `main`.
+- **CI Artifacts**: The Docker publish workflow tags images as `v<VERSION>` and `latest`, aligning runtime artifacts with the version file.
+- **Release Notes & Changelog**: See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) for highlights and [`CHANGELOG.md`](CHANGELOG.md) for detailed history.
+
 ## Getting Started
+
 
 ### Quick Start with Docker
 
-The fastest way to deploy PBIHoster in production.
+The fastest way to deploy PBIHoster in production is to use the official Docker image as referenced in the provided `docker-compose.yml`(see [docker-compose](/deployment/docker-compose.yml)).
 
 #### Prerequisites
 - Docker and Docker Compose installed
@@ -116,10 +132,11 @@ The fastest way to deploy PBIHoster in production.
    ```
    Replace `your-domain.com` with your actual domain.
 
-6. **Deploy**
+6. **Deploy using Docker Compose**
    ```bash
    docker-compose up -d
    ```
+   This will pull and run the official image `ghcr.io/aenas11/pbihoster:main` as defined in `docker-compose.yml`. The backend, frontend, and database are all included in this image. Caddy will handle HTTPS and reverse proxy.
 
 7. **Verify deployment**
    ```bash
@@ -180,8 +197,25 @@ For local development without Docker.
    Frontend runs on `http://localhost:5173` with API proxy configured
 
 6. **Access locally**
-   - Open `http://localhost:5173`
-   - API requests automatically proxy to backend
+- Open `http://localhost:5173`
+- API requests automatically proxy to backend
+
+## Demo Mode & Sample Data
+
+- Toggle **Demo Mode** in **Admin → Settings → Static Application Settings** to preload safe demo pages.
+- Demo pages include links to the starter dataset (`/sample-data/sample-sales.csv`) and a static report preview (`/onboarding/sample-report.svg`) so you can explore layouts without tenant data.
+- The root navigation exposes **Demo Overview** and **Sample Insights** when demo mode is on; remove or swap these once you connect your tenant.
+
+## Onboarding Walkthroughs
+
+Quick visual guides (served from `/onboarding` and available in the in-app Help page):
+
+- **Create pages**: `/onboarding/create-pages.svg`
+- **Assign roles**: `/onboarding/assign-roles.svg`
+- **Configure themes**: `/onboarding/configure-themes.svg`
+- **Sample report preview**: `/onboarding/sample-report.svg`
+
+Visit `/help` inside the app for links and context.
 
 ## Configuration
 
@@ -196,6 +230,8 @@ All configuration can be set via environment variables in Docker or `appsettings
 | `JWT_KEY` | Secret key for signing JWT tokens (256-bit minimum) | - | ✅ Yes |
 | `JWT_ISSUER` | Token issuer identifier | `ReportTree` | No |
 | `JWT_EXPIRY_HOURS` | Token expiration time in hours | `8` | No |
+
+> The API will refuse to start unless `JWT_KEY`, `POWERBI_TENANT_ID`, `POWERBI_CLIENT_ID`, and the appropriate Power BI credential (secret or certificate) are provided via environment variables or Key Vault.
 
 #### Security Settings
 
@@ -237,6 +273,15 @@ All configuration can be set via environment variables in Docker or `appsettings
 | `POWERBI_AUTH_TYPE` | `ClientSecret` or `Certificate` | No (Default: ClientSecret) |
 | `POWERBI_CERTIFICATE_THUMBPRINT` | Certificate Thumbprint (if AuthType is Certificate) | Conditional |
 | `POWERBI_CERTIFICATE_PATH` | Path to .pfx file (if AuthType is Certificate) | Conditional |
+
+#### Key Vault Integration
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `KEY_VAULT_URI` | Azure Key Vault URI to load secrets at startup | No (recommended) |
+
+- Secrets are read directly from Key Vault when `KEY_VAULT_URI` is set (or `AZURE_KEY_VAULT_URI` as an alternative).
+- Use secret names that mirror configuration keys (e.g., `Jwt--Key`, `PowerBI--ClientSecret`).
 
 ### Application Settings
 

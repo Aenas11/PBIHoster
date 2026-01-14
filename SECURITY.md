@@ -162,6 +162,28 @@ All other security settings have production-ready defaults but can be customized
 4. **Update Dependencies**: Keep Docker images and packages updated
 5. **Backup Database**: Regular backups of LiteDB file in `/data` volume
 
+### Runtime Secret Management
+- **Environment-first**: All secrets (JWT signing key, Power BI credentials) are read from environment variables at startup. The app will refuse to boot if any are missing or using default/weak placeholders.
+- **Azure Key Vault ready**: Set `KEY_VAULT_URI` (or `AZURE_KEY_VAULT_URI`) to load secrets directly from a vault via managed identity. Ensure secret names match configuration keys, e.g. `Jwt--Key`, `PowerBI--ClientSecret`.
+- **Deployment safety**: Keep secrets out of `appsettings.json` and git. Validate deployments by checking container logs for `Missing or insecure secrets` errors before exposing endpoints.
+
+### Key Rotation Procedure
+1. **Prepare new secrets**: Generate a new 256-bit JWT key (`openssl rand -base64 32`) and, if applicable, a new Power BI client secret or certificate.
+2. **Stage in Key Vault**: Add the new values as fresh versions in Key Vault (`KEY_VAULT_URI`) using the same secret names. Verify access with `az keyvault secret show --name Jwt--Key --vault-name <name>`.
+3. **Update environment**: If not using Key Vault, update `JWT_KEY` / `POWERBI_CLIENT_SECRET` environment variables on the host or orchestration platform. Never check values into source control.
+4. **Restart with validation**: Restart the `pbihoster` container or app service. Startup validation will fail fast if any value is missing, preventing partial deployments with mixed secrets.
+5. **Invalidate old tokens**: After successful rollout, remove old secret versions and prompt users to re-authenticate.
+
+### Power BI Service Principal Least Privilege
+- **Scope to workspaces**: Grant the service principal access only to required workspaces (e.g., Contributor on specific workspaces). Avoid tenant-wide roles.
+- **Limit API permissions**: In Azure AD, keep permissions minimal (`Dataset.Read.All`/`Report.Read.All` as required) and avoid broad admin consents unless explicitly needed.
+- **Rotate client credentials**: Store `POWERBI_CLIENT_SECRET` or certificates in Key Vault, and rotate alongside JWT keys.
+- **Audit regularly**: Review activity logs for the service principal and remove unused workspaces or roles. Validate that multi-tenant access is disabled unless intentionally configured.
+
+### Automated Security Checks
+- **CI enforcement**: The `Security Scans` workflow runs CodeQL SAST, gitleaks secret scanning, dependency review (PRs), and vulnerability audits for .NET (`dotnet list package --vulnerable`) and the Vue client (`npm audit --audit-level=high`).
+- **Dependency alerts**: Fix or suppress findings in CI before merging. Keep lockfiles updated to capture patched transitive dependencies.
+
 ### Security Layers
 
 ```

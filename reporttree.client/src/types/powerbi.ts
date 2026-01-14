@@ -37,3 +37,23 @@ export interface RLSIdentityDto {
     roles: string[];
     datasets: string[];
 }
+
+export type DiagnosticStatus = 'Success' | 'Warning' | 'Error'
+
+export interface PowerBIDiagnosticCheckDto {
+    name: string
+    status: DiagnosticStatus
+    detail: string
+    resolution?: string
+    docsUrl?: string
+}
+
+export interface PowerBIDiagnosticResultDto {
+    success: boolean
+    workspaceId?: string
+    reportId?: string
+    azurePortalLink?: string
+    workspaces: WorkspaceDto[]
+    reports: ReportDto[]
+    checks: PowerBIDiagnosticCheckDto[]
+}

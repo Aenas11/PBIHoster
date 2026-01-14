@@ -2,23 +2,22 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import '@carbon/web-components/es/components/button/index.js'
+import { useStaticSettingsStore } from '@/stores/staticSettings'
 
 const router = useRouter()
-const homePageId = ref<string>('')
+const staticSettings = useStaticSettingsStore()
 const loading = ref(true)
 
 onMounted(async () => {
     try {
-        const response = await fetch('/api/settings/static')
-        if (response.ok) {
-            const staticSettings = await response.json()
-            homePageId.value = staticSettings.HomePageId || ''
+        if (!staticSettings.isLoaded) {
+            await staticSettings.load()
+        }
 
-            // If home page is configured, redirect to it
-            if (homePageId.value && homePageId.value !== '' && homePageId.value !== 'null') {
-                router.push({ name: 'page', params: { id: homePageId.value } })
-                return
-            }
+        // If home page is configured, redirect to it
+        if (staticSettings.homePageId && staticSettings.homePageId !== '' && staticSettings.homePageId !== 'null') {
+            router.push({ name: 'page', params: { id: staticSettings.homePageId } })
+            return
         }
     } catch (error) {
         console.error('Error fetching home page setting:', error)
@@ -41,7 +40,13 @@ function goToAdmin() {
             <h1>Welcome to PBI Hoster</h1>
             <p>No home page has been configured yet.</p>
             <p>Please configure a home page in the admin settings.</p>
+            <p v-if="staticSettings.demoModeEnabled" class="demo-banner">
+                Demo mode is enabled — start from the <strong>Demo Overview</strong> page in the side navigation to see
+                sample layouts and the quick-start dataset.
+            </p>
             <cds-button @click="goToAdmin">Go to Admin Panel</cds-button>
+            <cds-button kind="tertiary" href="/help" style="margin-left: 0.5rem;">View Help &amp;
+                Walkthroughs</cds-button>
         </div>
     </div>
 </template>
@@ -77,5 +82,13 @@ function goToAdmin() {
     cds-button {
         margin-top: 1rem;
     }
+}
+
+.demo-banner {
+    background: rgba(15, 98, 254, 0.08);
+    border: 1px solid rgba(15, 98, 254, 0.3);
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin: 1rem 0;
 }
 </style>

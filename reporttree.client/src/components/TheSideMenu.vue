@@ -8,12 +8,9 @@ import { useLayout } from '../composables/useLayout'
 import { useGridLayout } from '../composables/useGridLayout'
 import {
   Add20, Dashboard20, Document20, UserAdmin20, Pin20, PinFilled20,
-  Edit20, Folder20, ChartBar20, Table20, SettingsEdit20, Close20
+  Edit20, Folder20, ChartBar20, Table20, SettingsEdit20, Close20, Help20
 } from '@carbon/icons-vue'
-import '@carbon/web-components/es/components/ui-shell/index.js';
-import '@carbon/web-components/es/components/icon-button/index.js';
-import '@carbon/web-components/es/components/button/index.js';
-import '@carbon/web-components/es/components/modal/index.js';
+
 import PageModal from './PageModal.vue'
 import type { Page } from '../types/page'
 
@@ -121,7 +118,7 @@ function handleCreateChild(parentId: number) {
 
 // Icon mapping
 const iconMap: Record<string, typeof Dashboard20> = {
-  Dashboard20, Document20, Folder20, ChartBar20, Table20
+  Dashboard20, Document20, Folder20, ChartBar20, Table20, Help20
 }
 
 function getIcon(iconName: string) {
@@ -177,6 +174,11 @@ function getIcon(iconName: string) {
         </cds-side-nav-menu>
       </template>
 
+      <cds-side-nav-link href="/help" @click="navigateTo('/help', $event)">
+        <Help20 slot="title-icon" />
+        Help &amp; Onboarding
+      </cds-side-nav-link>
+
       <cds-side-nav-link v-if="isAdmin" href="/admin" @click="navigateTo('/admin', $event)">
         <UserAdmin20 slot="title-icon" />
         Admin
@@ -190,7 +192,7 @@ function getIcon(iconName: string) {
           @click="toggleEditMode" class="action-button">
           <span v-if="expanded">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
           <span v-if="!expanded" slot="tooltip-content">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages'
-            }}</span>
+          }}</span>
           <component :is="editModeStore.isEditMode ? Close20 : Edit20" slot="icon" />
         </cds-button>
 

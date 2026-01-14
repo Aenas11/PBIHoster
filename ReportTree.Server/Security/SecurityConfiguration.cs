@@ -6,6 +6,7 @@ public class SecurityConfiguration
     public AppRateLimitPolicy AppRateLimitPolicy { get; set; } = new();
     public SessionPolicy SessionPolicy { get; set; } = new();
     public CorsPolicy CorsPolicy { get; set; } = new();
+    public ContentSecurityPolicy ContentSecurityPolicy { get; set; } = new();
 }
 
 public class PasswordPolicy
@@ -40,4 +41,16 @@ public class CorsPolicy
 {
     public string[] AllowedOrigins { get; set; } = Array.Empty<string>();
     public bool AllowCredentials { get; set; } = true;
+}
+
+public class ContentSecurityPolicy
+{
+    public string[] DefaultSources { get; set; } = new[] { "'self'" };
+    public string[] FrameSources { get; set; } = new[] { "'self'", "https://app.powerbi.com", "https://*.powerbi.com" };
+    public string[] ScriptSources { get; set; } = new[] { "'self'", "https://js.powerbi.com" };
+    public string[] StyleSources { get; set; } = new[] { "'self'", "'unsafe-inline'", "https://fonts.googleapis.com" };
+    public string[] ImgSources { get; set; } = new[] { "'self'", "data:", "https://*.powerbi.com" };
+    public string[] ConnectSources { get; set; } = new[] { "'self'", "https://api.powerbi.com", "https://*.analysis.windows.net" };
+    public string[] FontSources { get; set; } = new[] { "'self'", "data:" };
+    public string[] FrameAncestors { get; set; } = new[] { "'self'" };
 }

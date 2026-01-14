@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { Logout20, Switcher20, User20 } from '@carbon/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEditModeStore } from '@/stores/editMode'
+import { useStaticSettingsStore } from '@/stores/staticSettings'
+import '@carbon/web-components/es/components/tag/index.js'
 // import ThemeSwitcher from './ThemeSwitcher.vue'
 
 defineProps<{
@@ -20,6 +22,7 @@ const emit = defineEmits<{
 const router = useRouter()
 const authStore = useAuthStore()
 const editModeStore = useEditModeStore()
+const staticSettings = useStaticSettingsStore()
 
 function goToProfile() {
   router.push('/profile')
@@ -33,6 +36,9 @@ function goToProfile() {
     <cds-header-menu-button button-label-active="Close menu" button-label-inactive="Open menu"
       @click="emit('toggleMenu')" :active="isSideNavExpanded" />
     <cds-header-name href="/" prefix="Report">Tree</cds-header-name>
+    <cds-tag v-if="staticSettings.demoModeEnabled" type="blue" title="Demo mode enabled" size="sm" class="demo-tag">
+      Demo mode
+    </cds-tag>
 
 
     <div class="cds--header__global" v-if="authStore.isAuthenticated">
@@ -75,5 +81,9 @@ cds-header-global-action {
   cds-header-menu-button {
     display: none;
   }
+}
+
+.demo-tag {
+  margin-left: 0.5rem;
 }
 </style>

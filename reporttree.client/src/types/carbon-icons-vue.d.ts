@@ -28,4 +28,6 @@ declare module '@carbon/icons-vue' {
     export const ErrorFilled20: DefineComponent
     export const WarningAltFilled20: DefineComponent
     export const InformationFilled20: DefineComponent
+    export const Launch16: DefineComponent
+    export const Help20: DefineComponent
 }
