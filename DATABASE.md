@@ -130,9 +130,9 @@ Stores application configuration and settings that can be managed via the admin 
 **Standard Settings**:
 - `App.DemoModeEnabled` → Show demo pages
 - `App.CompanyName` → Application name
-- `POWERBI_TENANT_ID` → Power BI integration
-- `POWERBI_CLIENT_ID` → Power BI integration
 - `Email.SmtpServer` → Email configuration
+
+**Power BI Settings**: Stored in environment variables (not in AppSetting), e.g. `PowerBI__TenantId`, `PowerBI__ClientId`, `PowerBI__ClientSecret`.
 
 **Encryption**: Settings with keys containing "key", "secret", "password" are automatically encrypted.
 

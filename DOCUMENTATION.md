@@ -238,7 +238,7 @@ README.md (Entry point)
 
 **Read this for:** Setting up logging infrastructure, configuring alerts
 
-### [RELEASE_NOTES.md](RELEASE_NOTES.md)
+### [RELEASE_NOTES.md](documentation/RELEASE_NOTES.md)
 **Latest release highlights and upgrade notes**
 
 - Current version highlights
@@ -278,13 +278,13 @@ All documentation in PBIHoster follows these principles:
 
 ### Who Updates Documentation?
 - **Contributors**: Update CONTRIBUTING.md and code-related docs
-- **Release Manager**: Updates CHANGELOG.md and RELEASE_NOTES.md
+- **Release Manager**: Updates CHANGELOG.md and documentation/RELEASE_NOTES.md
 - **Product Manager**: Maintains ROADMAP.md
 - **DevOps/Operations**: Updates DEPLOYMENT.md and TROUBLESHOOTING.md
 - **Security**: Maintains SECURITY.md
 
 ### When to Update?
-- Before every release (CHANGELOG.md, RELEASE_NOTES.md)
+- Before every release (CHANGELOG.md, documentation/RELEASE_NOTES.md)
 - When architecture changes (ARCHITECTURE.md, DATABASE.md)
 - When APIs are added/changed (API.md)
 - When features are added/planned (ROADMAP.md)

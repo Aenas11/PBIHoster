@@ -3,8 +3,7 @@
 This file consolidates feature planning and documentation content from the following sources:
 - AUTHENTICATION_IMPLEMENTATION_PLAN.md
 - CORPORATE_FEATURES_IMPLEMENTATION_PLAN.md
-- POWERBI_IMPLEMENTATION_PLAN.md
-- THEME_SYSTEM.md
+- ROADMAP.md (Power BI testing & documentation plan)
 
 ---
 
