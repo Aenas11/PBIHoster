@@ -1,102 +1,212 @@
 # PBIHoster
 
-A modern Power BI hosting solution with dynamic dashboard layouts, user authentication, and role-based access control. Built for organizations that need to securely host and manage Power BI reports with an "App owns the data" approach.
+> A modern, secure Power BI hosting platform for embedding analytics into applications and portals. Built for ISVs, consultancies, and enterprises that need to manage Power BI reports with user authentication, role-based access control, and corporate branding.
+
+**Current Version**: v0.3.0 | **License**: MIT | **Status**: Actively Maintained
+
+[![CI/CD](https://github.com/aenas11/pbihoster/workflows/CI%2FCD/badge.svg)](https://github.com/aenas11/pbihoster/actions)
+[![Security Scans](https://github.com/aenas11/pbihoster/workflows/Security%20Scans/badge.svg)](https://github.com/aenas11/pbihoster/actions)
+
+## Quick Links
+
+📖 **[Full Documentation](#documentation)** | 🚀 **[Deployment Guide](deployment/DEPLOYMENT.md)** | 💻 **[Architecture](ARCHITECTURE.md)** | 🔒 **[Security](SECURITY.md)** | 🛣️ **[Roadmap](ROADMAP.md)**
+
+---
+
+## What is PBIHoster?
+
+PBIHoster is an open-source platform for hosting and managing Power BI reports using the "App owns the data" embedding model. It provides:
+
+- **Secure Multi-User Access**: JWT-based authentication with role-based access control
+- **Dynamic Content Organization**: Hierarchical page tree with drag-and-drop dashboard layouts
+- **Enterprise Branding**: Custom themes, logos, and white-labeling capabilities
+- **Comprehensive Audit Trail**: Track all user actions and security events
+- **Simple Deployment**: Docker Compose with automatic HTTPS via Caddy
+- **Zero Operational Dependencies**: Embedded LiteDB database (no external servers)
 
 ## Table of Contents
 
-- [Overview](#overview)
+- [Quick Start](#quick-start)
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
-- [Release & Versioning](#release--versioning)
-- [Feature Plans](#feature-plans)
-- [Getting Started](#getting-started)
-  - [Quick Start with Docker](#quick-start-with-docker)
-  - [Development Setup](#development-setup)
-- [Configuration](#configuration)
-- [Demo Mode & Sample Data](#demo-mode--sample-data)
-- [Onboarding Walkthroughs](#onboarding-walkthroughs)
-- [User Guide](#user-guide)
-- [Security](#security)
-- [Troubleshooting](#troubleshooting)
+- [Documentation](#documentation)
+- [Use Cases](#use-cases)
+- [Getting Help](#getting-help)
 
-## Overview
+## Quick Start
 
-PBIHoster (also known as ReportTree) provides a secure, customizable platform for hosting Power BI reports. It features:
+### Docker (Recommended for Production)
 
-- **Hierarchical Navigation**: Organize reports in a tree structure with unlimited nesting
-- **Dynamic Dashboards**: Drag-and-drop layout system with customizable components
-- **Role-Based Access**: Control who can view, edit, or manage content
-- **Custom Themes**: Light/dark modes plus corporate branding support
-- **Secure Authentication**: JWT-based authentication with comprehensive security features
-- **Audit Logging**: Track all user actions and security events
+```bash
+# 1. Clone repository
+git clone https://github.com/aenas11/pbihoster.git
+cd pbihoster/deployment
 
-## Who is this for?
-- **ISVs** embedding Power BI analytics into SaaS products
-- **Consultancies & system integrators** delivering analytics portals to clients
-- **Solution architects** designing reusable embedded analytics platforms
-- **Enterprise teams** hosting internal Power BI portals with controlled access
+# 2. Setup configuration
+cp .env.example .env
+openssl rand -base64 32 > jwt_key.txt
+# Edit .env and set JWT_KEY, CORS_ORIGIN_1, and Power BI credentials
+
+# 3. Update domain in Caddyfile
+nano Caddyfile  # Replace yourdomain.com with your domain
+
+# 4. Deploy
+docker-compose up -d
+
+# 5. Access application
+# Navigate to https://yourdomain.com and register the first user (auto-promoted to Admin)
+```
+
+See [DEPLOYMENT.md](deployment/DEPLOYMENT.md) for detailed production setup and Power BI configuration.
+
+### Local Development
+
+```bash
+# Backend (requires .NET 10 SDK)
+cd ReportTree.Server
+dotnet watch run          # http://localhost:5001
+
+# Frontend (requires Node.js 18+, in another terminal)
+cd reporttree.client
+npm install && npm run dev  # http://localhost:5173
+
+# Access http://localhost:5173 (API requests proxy to backend)
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
+
+---
 
 ## Key Features
 
-### 🔐 Authentication & Security
-- JWT token-based authentication
-- Three user roles: **Admin**, **Editor**, and **Viewer**
-- Password policy enforcement (complexity requirements)
-- Account lockout after failed login attempts
-- API rate limiting to prevent abuse
-- Comprehensive audit logging
-- Security headers and CORS protection
+### 🔐 Security & Authentication
+- ✅ JWT-based authentication with account lockout protection
+- ✅ Three user roles: **Admin** (full control), **Editor** (create/edit), **Viewer** (read-only)
+- ✅ Password complexity enforcement
+- ✅ API rate limiting (prevents brute force and DoS)
+- ✅ Comprehensive audit logging (all user actions)
+- ✅ CORS protection and security headers
+- ✅ Support for external identity providers (OIDC/OAuth2) - [Planned](ROADMAP.md#phase-2-advanced-authentication-2-3-weeks---v050)
 
-### 📊 Page & Content Management
-- **Dynamic Page Tree**: Create unlimited nested pages and folders
-- **Drag-and-Drop Layouts**: Configurable dashboard components
-- **Role-Based Visibility**: Control page access by user roles and groups
-- **Public/Private Pages**: Choose which pages require authentication
-- **Edit Mode**: Manage navigation structure without accidentally clicking links
+### 📊 Content Management
+- ✅ Hierarchical page tree (unlimited nesting for organizing reports)
+- ✅ Drag-and-drop layout system with components
+- ✅ Role-based and group-based access control per page
+- ✅ Public page support (no authentication required)
+- ✅ Favorites and bookmarks
+- ✅ Edit mode for managing structure without navigating
 
-### 🎨 Themes & Customization
-- Built-in Carbon Design System themes (White, Gray 10, Gray 90, Gray 100)
-- Custom corporate themes with full color token control
-- Organization-specific theme libraries
-- Persistent theme selection across sessions
+### 🎨 Customization & Branding
+- ✅ Four built-in themes (White, Gray 10, Gray 90, Gray 100) from Carbon Design System
+- ✅ Custom corporate themes with full color control
+- ✅ Logo upload and favicon customization
+- ✅ Custom footer links
+- ✅ App name customization
+
+### 📈 Power BI Integration
+- ✅ Secure embedding with "App owns the data" model
+- ✅ Row-Level Security (RLS) support
+- ✅ Dynamic workspace selection
+- ✅ Report and dashboard embedding
+- ✅ Planned: Dataset refresh scheduling, refresh history
 
 ### 👥 User & Group Management
-- User profile management
-- Group-based permissions
-- Password change with validation
-- Email configuration
+- ✅ User profile management and password change
+- ✅ Admin user creation and role assignment
+- ✅ Group-based permissions
+- ✅ Account lockout and unlock
 
-### ⚙️ Settings & Configuration
-- Centralized settings management
-- Category-based organization
-- Automatic encryption for sensitive values
-- Ready for Power BI integration (ClientId, TenantId, etc.)
+### 📋 Audit & Compliance
+- ✅ Comprehensive audit logging
+- ✅ Filtering by user, action, and date range
+- ✅ Export audit logs
+- ✅ Security event tracking (failed logins, lockouts, etc.)
+
+---
 
 ## Tech Stack
 
-- **Backend**: ASP.NET Core (.NET 10) Web API
-- **Frontend**: Vue 3 (Composition API) + TypeScript + Vite
-- **Database**: LiteDB (embedded NoSQL, no separate database server needed)
-- **UI Framework**: Carbon Design System v11
-- **Deployment**: Docker Compose with Caddy reverse proxy (automatic HTTPS)
-- **Authentication**: JWT Bearer tokens
+| Layer | Technology | Notes |
+|-------|-----------|-------|
+| **Backend** | ASP.NET Core (.NET 10) | Modern, high-performance web API |
+| **Frontend** | Vue 3 + TypeScript + Vite | Reactive SPA with type safety |
+| **Database** | LiteDB | Embedded NoSQL - no separate DB server |
+| **UI Components** | Carbon Design System v11 | Enterprise-grade design system |
+| **Authentication** | JWT Bearer Tokens | Stateless, scalable auth |
+| **Deployment** | Docker + Docker Compose | Single container with all components |
+| **Reverse Proxy** | Caddy | Automatic HTTPS with Let's Encrypt |
 
-## Release & Versioning
+---
 
-- **Semantic Versioning**: The root `VERSION` file controls the app version. Update it before merging to `main`.
-- **CI Artifacts**: The Docker publish workflow tags images as `v<VERSION>` and `latest`, aligning runtime artifacts with the version file.
-- **Release Notes & Changelog**: See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) for highlights and [`CHANGELOG.md`](CHANGELOG.md) for detailed history.
+## Documentation
 
-## Feature Plans
+### User & Deployment
+- 🚀 [**Deployment Guide**](deployment/DEPLOYMENT.md) - Production setup, Power BI configuration, security checklist
+- 📖 [**User Guide**](README.md#user-guide) - Creating pages, managing users, configuring themes
+- 🔒 [**Security Guide**](SECURITY.md) - Authentication, authorization, best practices
+- 📋 [**Operations & Troubleshooting**](TROUBLESHOOTING.md) - Monitoring, common issues, recovery
 
-- Consolidated feature planning and documentation lives in [Features.md](Features.md).
+### Developers
+- 🏗️ [**Architecture**](ARCHITECTURE.md) - System design, layered architecture, data models
+- 🔌 [**API Documentation**](API.md) - REST endpoints, authentication, error handling
+- 🗄️ [**Database Schema**](DATABASE.md) - LiteDB collections, relationships, queries
+- 🤝 [**Contributing**](CONTRIBUTING.md) - Development setup, code standards, PR process
+- 🛣️ [**Roadmap**](ROADMAP.md) - Planned features, implementation timeline
 
-## Getting Started
+### Reference
+- 📝 [**Changelog**](CHANGELOG.md) - Detailed history of all releases
+- 📢 [**Release Notes**](RELEASE_NOTES.md) - Highlights of latest release
 
+---
 
-### Quick Start with Docker
+## Use Cases
 
-The fastest way to deploy PBIHoster in production is to use the official Docker image as referenced in the provided `docker-compose.yml`(see [docker-compose](/deployment/docker-compose.yml)).
+### ISVs & SaaS Products
+Embed Power BI analytics directly into your application, whitelabeled with your branding. Users don't need Power BI licenses—your app manages authentication and access.
+
+### Management Consultancies
+Deliver custom analytics portals to clients with role-based access, audit trails, and automatic HTTPS. One instance per client for complete data isolation.
+
+### Enterprise Analytics Teams
+Host internal analytics portals with organizational hierarchies, group-based permissions, and comprehensive audit logging for compliance.
+
+### Solution Architects
+Create reusable analytics hosting infrastructure as a platform component, with templated deployments and standardized security practices.
+
+---
+
+## Feature Comparison
+
+|Feature|PBIHoster|Power BI Premium|Power BI Embedded|
+|---|---|---|---|
+|Embedded Licensing|Yes (App owns data)|Yes|Yes|
+|Custom Branding|✅ Full|⚪ Limited|⚪ No|
+|Self-Hosted Option|✅ Docker|❌|❌|
+|Cost Model|Open Source|Per capacity|Per token|
+|Hierarchical Navigation|✅|⚪|❌|
+|Group Management|✅|⚪|⚪|
+|Audit Logging|✅|✅|⚪|
+|RLS Support|✅|✅|✅|
+|Role-Based Access|✅|⚪|❌|
+|Open Source|✅ MIT License|❌|❌|
+
+---
+
+## Installation Requirements
+
+### For Docker Deployment (Production)
+- Docker & Docker Compose
+- A domain name with DNS pointing to your server
+- Ports 80 and 443 open (HTTP/HTTPS)
+- Azure AD app for Power BI integration
+
+### For Local Development
+- .NET 10 SDK
+- Node.js 18+ with npm
+- Git
+- VS Code (optional)
+
+---
 
 #### Prerequisites
 - Docker and Docker Compose installed
@@ -167,309 +277,241 @@ For local development without Docker.
 - Git
 
 #### Steps
-
-1. **Clone and setup**
-   ```bash
-   git clone <repository-url>
-   cd PBIHoster
-   ```
-
-2. **Backend setup**
-   ```bash
-   cd ReportTree.Server
-   dotnet restore
-   dotnet build
-   ```
-
-3. **Frontend setup**
-   ```bash
-   cd ../reporttree.client
-   npm install
-   ```
-
-4. **Run backend** (in one terminal)
-   ```bash
-   cd ReportTree.Server
-   dotnet watch run
-   ```
-   Backend runs on `http://localhost:5001` (or check launchSettings.json)
-
-5. **Run frontend** (in another terminal)
-   ```bash
-   cd reporttree.client
-   npm run dev
-   ```
-   Frontend runs on `http://localhost:5173` with API proxy configured
-
-6. **Access locally**
-- Open `http://localhost:5173`
-- API requests automatically proxy to backend
-
-## Demo Mode & Sample Data
-
-- Toggle **Demo Mode** in **Admin → Settings → Static Application Settings** to preload safe demo pages.
-- Demo pages include links to the starter dataset (`/sample-data/sample-sales.csv`) and a static report preview (`/onboarding/sample-report.svg`) so you can explore layouts without tenant data.
-- The root navigation exposes **Demo Overview** and **Sample Insights** when demo mode is on; remove or swap these once you connect your tenant.
-
-## Onboarding Walkthroughs
-
-Quick visual guides (served from `/onboarding` and available in the in-app Help page):
-
-- **Create pages**: `/onboarding/create-pages.svg`
-- **Assign roles**: `/onboarding/assign-roles.svg`
-- **Configure themes**: `/onboarding/configure-themes.svg`
-- **Sample report preview**: `/onboarding/sample-report.svg`
-
-Visit `/help` inside the app for links and context.
-
-## Configuration
-
-### Environment Variables
-
-All configuration can be set via environment variables in Docker or `appsettings.json` for development.
-
-#### Essential Settings
-
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `JWT_KEY` | Secret key for signing JWT tokens (256-bit minimum) | - | ✅ Yes |
-| `JWT_ISSUER` | Token issuer identifier | `ReportTree` | No |
-| `JWT_EXPIRY_HOURS` | Token expiration time in hours | `8` | No |
-
-> The API will refuse to start unless `JWT_KEY`, `POWERBI_TENANT_ID`, `POWERBI_CLIENT_ID`, and the appropriate Power BI credential (secret or certificate) are provided via environment variables or Key Vault.
-
-#### Security Settings
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PASSWORD_MIN_LENGTH` | Minimum password length | `8` |
-| `PASSWORD_REQUIRE_UPPERCASE` | Require uppercase letter | `true` |
-| `PASSWORD_REQUIRE_LOWERCASE` | Require lowercase letter | `true` |
-| `PASSWORD_REQUIRE_DIGIT` | Require number | `true` |
-| `PASSWORD_REQUIRE_SPECIAL` | Require special character | `true` |
-| `PASSWORD_MAX_FAILED_ATTEMPTS` | Failed logins before lockout | `5` |
-| `PASSWORD_LOCKOUT_MINUTES` | Lockout duration | `15` |
-
-#### Rate Limiting
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `RATE_LIMIT_ENABLED` | Enable rate limiting | `true` |
-| `RATE_LIMIT_GENERAL` | Max requests per period (general) | `100` |
-| `RATE_LIMIT_GENERAL_PERIOD` | Time period for general limit | `1m` |
-| `RATE_LIMIT_AUTH` | Max requests per period (auth endpoints) | `5` |
-| `RATE_LIMIT_AUTH_PERIOD` | Time period for auth limit | `1m` |
-
-#### CORS Settings
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `CORS_ORIGIN_1` | Allowed origin #1 | `https://reports.example.com` |
-| `CORS_ORIGIN_2` | Allowed origin #2 | `https://app.example.com` |
-| `CORS_ALLOW_CREDENTIALS` | Allow cookies/auth headers | `true` |
-
-#### Power BI Configuration
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `POWERBI_TENANT_ID` | Azure AD Tenant ID | ✅ Yes |
-| `POWERBI_CLIENT_ID` | Azure AD Client ID (App ID) | ✅ Yes |
-| `POWERBI_CLIENT_SECRET` | Client Secret (if AuthType is ClientSecret) | Conditional |
-| `POWERBI_AUTH_TYPE` | `ClientSecret` or `Certificate` | No (Default: ClientSecret) |
-| `POWERBI_CERTIFICATE_THUMBPRINT` | Certificate Thumbprint (if AuthType is Certificate) | Conditional |
-| `POWERBI_CERTIFICATE_PATH` | Path to .pfx file (if AuthType is Certificate) | Conditional |
-
-#### Key Vault Integration
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `KEY_VAULT_URI` | Azure Key Vault URI to load secrets at startup | No (recommended) |
-
-- Secrets are read directly from Key Vault when `KEY_VAULT_URI` is set (or `AZURE_KEY_VAULT_URI` as an alternative).
-- Use secret names that mirror configuration keys (e.g., `Jwt--Key`, `PowerBI--ClientSecret`).
-
-### Application Settings
-
-Settings can be managed via the admin panel UI or directly in the database.
-
-**Settings Categories:**
-- **General**: Application-wide settings
-- **Security**: Security-related configuration
-- **PowerBI**: Power BI connection details (ClientId, TenantId, WorkspaceId)
-- **Email**: Email server configuration
-- **Authentication**: Auth provider settings
-
-Sensitive settings (containing "key", "secret", "password") are automatically encrypted.
-
 ## User Guide
 
 ### First Time Setup
 
-After deploying, you need to create an admin user:
+1. **Access the application**
+   - Navigate to your deployment URL
+   - Click "Register" and create your first user account
+   - The first user is automatically promoted to **Admin** role
+   - Log in with your credentials
 
-1. **Register the first user** at `/login`
-   - The first user registered in the system is automatically assigned the **Admin** role.
-   - Subsequent users will be registered as **Viewers** by default.
+2. **Configure basic settings** (as Admin)
+   - Navigate to **Admin Panel** → **Settings**
+   - Set your organization's name, logo, and colors
+   - Configure Power BI integration (if using reports)
 
-2. **Log in** with your new admin account.
-3. **Navigate to Admin Panel** to configure settings and manage users.
+3. **Create your first page** (optional)
+   - Click "Edit Pages" in the sidebar
+   - Add a new top-level page
+   - Assign roles that can access it
+   - Save and exit edit mode
 
-### Managing Pages
+### Managing Content
 
-#### Creating Your First Page
+**Creating Pages & Hierarchy**
+- Pages can be nested infinitely (folders → subfolders → pages)
+- Each page can have a layout with draggable components
+- Set access control per page (roles, users, groups, or public)
+- See [ARCHITECTURE.md](ARCHITECTURE.md#data-model) for data model details
 
-1. **Enter Edit Mode**: Click "Edit Pages" at the bottom of the side menu
-2. **Add Top-Level Page**: Click "New Top Level Page"
-3. **Fill in Details**:
-   - Title: e.g., "Sales Dashboard"
-   - Icon: Choose from Carbon icons
-   - Roles: Select which roles can access (Admin, Editor, Viewer)
-4. **Save**: Click "Create Page"
+**Embedding Power BI Reports**
+- Add "Power BI Report" components to page layouts
+- Select workspace, report, and optionally configure RLS roles
+- Reports display securely within your app
 
-#### Creating Subpages (Folders)
+**Managing Users**
+- Create users in Admin Panel → Users
+- Assign roles (Admin, Editor, Viewer)
+- Add users to groups for bulk access management
+- Reset passwords or unlock accounts as needed
 
-1. **Enter Edit Mode**
-2. **Click on Parent Page** to edit it
-3. **Add Child Page**: Click "Add Child Page" button in the modal
-4. **Fill in Details** and save
+### Demo Mode & Sample Content
 
-#### Managing Access Control
+Toggle **Demo Mode** in Admin Panel → Settings to see:
+- Sample pages and navigation structure
+- Sample Power BI report preview (static)
+- Sample dataset for reference
 
-For each page, you can configure:
-- **Public Access**: Toggle to allow unauthenticated users
-- **Role-Based Access**: Select roles that can view the page
-- **User Access**: Add specific users by username
-- **Group Access**: Add user groups for easier management
+Useful for exploring without configuring Power BI first.
 
-### Managing Themes
+---
 
-#### Switching Themes
+## Deployment
 
-1. Click the **theme icon** in the header (top-right)
-2. Select from available themes:
-   - **White**: Light theme with white background
-   - **Gray 10**: Light theme with subtle gray
-   - **Gray 90**: Dark theme
-   - **Gray 100**: Darker theme
-   - Custom corporate themes (if available)
+### Production Deployment (Recommended)
 
-#### Creating Custom Themes (Admin/Editor)
+See the comprehensive [**Deployment Guide**](deployment/DEPLOYMENT.md) for:
+- Step-by-step Docker Compose setup
+- Power BI configuration and authentication
+- Security hardening checklist
+- HTTPS and reverse proxy setup
+- Backup and recovery procedures
 
-1. Navigate to **Admin Panel** → **Themes**
-2. Click **"Create Custom Theme"**
-3. Fill in:
-   - **Theme Name**: Your theme name
-   - **Organization ID**: (Optional) Leave blank for global theme
-   - **Theme Tokens**: JSON with color definitions
-4. Use the sample JSON as a starting point
-5. **Save** to make it available
+### Local Development
 
-### Managing Users & Groups
+See [**Contributing Guide**](CONTRIBUTING.md) for development environment setup with hot-reload.
 
-#### Creating Users (Admin only)
+---
 
-1. Go to **Admin Panel** → **Users & Groups** tab
-2. Click **"Add User"**
-3. Enter username, password, and assign roles
-4. Optionally add to groups
-5. Save
-
-#### Creating Groups (Admin only)
-
-1. Go to **Admin Panel** → **Groups** section
-2. Click **"Create Group"**
-3. Enter group name and description
-4. Add members by username
-5. Save
-
-Groups can then be assigned to pages for easier access control.
-
-### User Profile
-
-Users can manage their own profile:
-
-1. Click **user icon** in header → **Profile**
-2. **View** username, email, roles, and group memberships
-3. **Update Email**: Change email address
-4. **Change Password**: Update password (requires current password)
-
-### Audit Logs (Admin)
-
-View all user actions and security events:
-
-1. Go to **Admin Panel** → **Audit Logs** tab
-2. **Filter** by user, resource, or date range
-3. **Review** login attempts, lockouts, and changes
-
-## Security
+## Security & Compliance
 
 ### Security Features
 
-PBIHoster includes enterprise-grade security:
+- ✅ JWT-based authentication with automatic expiry
+- ✅ Password complexity enforcement and account lockout
+- ✅ Row-Level Security (RLS) for Power BI reports
+- ✅ Role-based access control (Admin, Editor, Viewer)
+- ✅ Group-based permissions for bulk access management
+- ✅ API rate limiting (prevents brute force attacks)
+- ✅ Comprehensive audit logging (all actions tracked)
+- ✅ Security headers and CORS protection
+- ✅ Encrypted credentials and sensitive data at rest
+- ✅ Automatic HTTPS with Let's Encrypt (Docker)
 
-- ✅ **Password Policy**: Enforced complexity requirements
-- ✅ **Account Lockout**: Automatic lockout after failed attempts (brute force protection)
-- ✅ **Rate Limiting**: Prevents API abuse and DoS attacks
-- ✅ **CORS Protection**: Restricts cross-origin requests
-- ✅ **Security Headers**: X-Frame-Options, CSP, XSS protection
-- ✅ **JWT Authentication**: Secure token-based auth
-- ✅ **Audit Logging**: Complete trail of all actions
-- ✅ **HTTPS**: Automatic SSL via Caddy (in Docker deployment)
-- ✅ **Encrypted Settings**: Sensitive configuration values encrypted at rest
+### Pre-Production Checklist
 
-### Best Practices
+See [**Security Guide**](SECURITY.md) for detailed security implementation and:
+- [ ] Change `JWT_KEY` to a strong random value
+- [ ] Configure `CORS_ORIGIN` for your domain(s)
+- [ ] Set up database backups
+- [ ] Review and adjust password policy
+- [ ] Enable audit log monitoring
+- [ ] Test account lockout recovery
+- [ ] Verify Power BI service principal configuration
 
-**Before going to production:**
+---
 
-- [ ] Change `JWT_KEY` to a strong random value (256+ bits)
-- [ ] Configure `CORS_ORIGIN` to match your frontend domain
-- [ ] Review password policy and adjust if needed
-- [ ] Test rate limiting doesn't impact legitimate users
-- [ ] Enable HTTPS (automatic with Docker/Caddy)
-- [ ] Set up database backups (mount `/data` volume)
-- [ ] Review audit logs regularly
-- [ ] Document your security configuration
+## Architecture & Technical Details
 
-### Monitoring Security
+### System Architecture
 
-**Key metrics to monitor:**
-- Failed login attempts (spike = potential attack)
-- Account lockouts (frequent = brute force or UX issue)
-- Rate limit hits (429 responses = bot activity)
-- Audit log patterns
+PBIHoster follows a layered architecture:
 
-**Check audit logs for:**
-```sql
--- Recent failed logins
-db.AuditLog.find({ Action: "LOGIN", Success: false })
-
--- Account lockouts
-db.AuditLog.find({ Action: "ACCOUNT_LOCKED" })
-
--- Password changes
-db.AuditLog.find({ Action: "CHANGE_PASSWORD" })
+```
+Frontend (Vue 3 + TypeScript)
+        ↓
+API Layer (ASP.NET Core REST API)
+        ↓
+Service Layer (Business logic)
+        ↓
+Repository Layer (Data access with LiteDB)
+        ↓
+LiteDB (Embedded database)
 ```
 
-## Troubleshooting
+See [**ARCHITECTURE.md**](ARCHITECTURE.md) for complete system design, data models, and integration patterns.
 
-### Common Issues
+### REST API
 
-#### "Account is locked" Error
+All operations are available via REST API:
 
-**Cause**: Too many failed login attempts
+```bash
+curl -X GET https://your-domain.com/api/pages \
+  -H "Authorization: Bearer $TOKEN"
+```
 
-**Solution**:
-1. Wait for the lockout period (default 15 minutes)
-2. Or manually unlock: Access LiteDB and delete the record from `AccountLockout` collection
+See [**API.md**](API.md) for complete endpoint documentation with examples.
 
-#### CORS Errors in Browser
+### Database Schema
 
-**Symptom**: Console shows "CORS policy blocked" errors
+LiteDB collections and their relationships:
 
-**Solution**:
-1. Ensure `CORS_ORIGIN_1` matches your frontend domain exactly (including `https://`)
-2. Restart the application: `docker-compose restart pbihoster`
-3. Clear browser cache
+| Collection | Purpose |
+|-----------|---------|
+| `AppUser` | User accounts, authentication |
+| `Page` | Page hierarchy, layouts, access control |
+| `AppSetting` | Configuration (encrypted for sensitive data) |
+| `AuditLog` | Comprehensive audit trail |
+| `Group` | User groups for bulk access management |
+| `CustomTheme` | Custom branding and color tokens |
+| `LoginAttempt` | Failed login tracking (lockout) |
+| `DatasetRefreshSchedule` | Scheduled Power BI dataset refreshes |
+| `DatasetRefreshRun` | Refresh execution history |
+
+See [**DATABASE.md**](DATABASE.md) for complete schema documentation and query examples.
+
+---
+
+## Support & Community
+
+### Getting Help
+
+- 📖 **[Full Documentation](#documentation)** - Guides for all topics
+- 🐛 **[GitHub Issues](https://github.com/aenas11/pbihoster/issues)** - Bug reports and feature requests
+- 💬 **[GitHub Discussions](https://github.com/aenas11/pbihoster/discussions)** - Ask questions, share ideas
+- 🛠️ **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and resolutions
+
+### Contributing
+
+We welcome contributions! See [**CONTRIBUTING.md**](CONTRIBUTING.md) for:
+- Development setup guide
+- Code standards and conventions
+- Pull request process
+- Testing requirements
+
+### Reporting Issues
+
+When reporting bugs, please include:
+- Your environment (Docker, local, Kubernetes, etc.)
+- Application version (from `/version` endpoint)
+- Steps to reproduce
+- Expected vs. actual behavior
+- Relevant logs (from `/api/audit` or container logs)
+
+---
+
+## Versioning & Releases
+
+**Semantic Versioning**: Major.Minor.Patch (e.g., 0.3.0)
+
+- **CHANGELOG.md**: Detailed history of all releases
+- **RELEASE_NOTES.md**: Highlights of latest release
+- **ROADMAP.md**: Planned features and timeline
+
+---
+
+## License
+
+PBIHoster is released under the **MIT License** - see [LICENSE](LICENSE) file for details.
+
+You are free to:
+- ✅ Use commercially
+- ✅ Modify the source code
+- ✅ Distribute and sublicense
+- ✅ Use privately
+
+---
+
+## Acknowledgments
+
+- **Microsoft Power BI** for the embedded analytics platform
+- **Carbon Design System** for the enterprise UI framework
+- **LiteDB** for the embedded database
+- **Caddy** for the automated reverse proxy
+
+---
+
+## Related Resources
+
+### Microsoft Power BI
+- [Power BI Embedded Documentation](https://learn.microsoft.com/en-us/power-bi/developer/embedded/)
+- [Power BI REST API Reference](https://learn.microsoft.com/en-us/rest/api/power-bi/)
+- [App owns the data sample](https://github.com/Microsoft/PowerBI-Developer-Samples)
+
+### Design System
+- [Carbon Design System](https://www.carbondesignsystem.com/)
+- [Carbon Vue Components](https://carbon-components-vue.netlify.app/)
+- [Carbon Icons](https://www.carbondesignsystem.com/elements/icons/library/)
+
+### Technologies
+- [ASP.NET Core Documentation](https://learn.microsoft.com/en-us/dotnet/core/aspnet/)
+- [Vue 3 Guide](https://vuejs.org/)
+- [LiteDB Documentation](https://docs.litedb.org/)
+- [Docker Documentation](https://docs.docker.com/)
+
+---
+
+## Contact & Links
+
+- **GitHub**: [aenas11/pbihoster](https://github.com/aenas11/pbihoster)
+- **Issues**: [Report a bug](https://github.com/aenas11/pbihoster/issues)
+- **Discussions**: [Ask a question](https://github.com/aenas11/pbihoster/discussions)
+
+---
+
+**Last Updated**: 2025-02-06 | **Version**: 0.3.0
 
 #### Rate Limiting (429 Errors)
 
