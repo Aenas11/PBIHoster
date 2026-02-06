@@ -28,6 +28,10 @@ public class BrandingController : ControllerBase
             return NotFound();
         }
 
+        Response.Headers["Cache-Control"] = "public, max-age=86400";
+        Response.Headers["ETag"] = $"\"{asset.Info.Id}-{asset.Info.Length}\"";
+        Response.Headers["Last-Modified"] = asset.Info.UploadedAt.ToUniversalTime().ToString("R");
+
         return File(asset.Content, asset.Info.ContentType, asset.Info.FileName);
     }
 
