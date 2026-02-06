@@ -352,6 +352,24 @@ namespace ReportTree.Server
                 var (token, errorMessage) = await auth.LoginAsync(req.Username, req.Password);
                 return token != null ? Results.Ok(new LoginResponse(token)) : Results.BadRequest(new { Error = errorMessage });
             });
+
+            app.MapPost("/api/auth/refresh", async (HttpContext context, IUserRepository users, ITokenService tokenService) =>
+            {
+                var username = context.User.Identity?.Name;
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                    return Results.Unauthorized();
+                }
+
+                var user = await users.GetByUsernameAsync(username);
+                if (user == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+                var token = tokenService.Generate(user);
+                return Results.Ok(new LoginResponse(token));
+            }).RequireAuthorization();
             
             // Global error handler
             app.Map("/error", (HttpContext context) =>

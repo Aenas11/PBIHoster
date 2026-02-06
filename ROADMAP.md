@@ -114,20 +114,18 @@ Goal: Enable power users to manage datasets and implement advanced features quic
   - [ ] Audit logging of RLS changes
 
 #### 1.3 Token Refresh Endpoint
-- **Status**: Design pending
+- **Status**: ✅ Implemented (JWT refresh)
 - **Features**:
   - Extend JWT token validity without re-authentication
-  - Refresh token rotation for security
-  - Long-lived refresh tokens (7 days)
   - Short-lived access tokens (8 hours)
+  - Server-side refresh using existing JWT (no separate refresh tokens yet)
 - **Implementation**:
   - API: `POST /auth/refresh` endpoint
-  - Model: Refresh token storage with expiry tracking
-  - Security: Refresh token invalidation on logout
+  - Security: Requires valid JWT; returns a new JWT
 - **Acceptance Criteria**:
-  - [ ] Frontend sends refresh request before token expiry
-  - [ ] Backend validates and rotates refresh tokens
-  - [ ] All existing tokens remain valid after deployment
+- [x] Frontend can refresh before token expiry
+- [x] Backend validates current JWT and issues a new one
+- [ ] Refresh tokens with rotation (future enhancement)
 
 ---
 

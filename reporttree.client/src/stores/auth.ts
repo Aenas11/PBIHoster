@@ -12,6 +12,7 @@ interface CustomJwtPayload extends JwtPayload {
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(localStorage.getItem('token') || '')
   const user = ref<unknown | null>(null)
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
   const isAuthenticated = computed(() => !!token.value)
 
@@ -42,15 +43,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   })
 
+  if (token.value) {
+    scheduleRefresh(token.value)
+  }
+
   function setToken(newToken: string) {
     token.value = newToken
     localStorage.setItem('token', newToken)
+    scheduleRefresh(newToken)
   }
 
   function logout() {
     token.value = ''
     user.value = null
     localStorage.removeItem('token')
+    if (refreshTimer) {
+      clearTimeout(refreshTimer)
+      refreshTimer = null
+    }
   }
 
   async function login(username: string, password: string) {
@@ -84,5 +94,45 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, user, isAuthenticated, roles, groups, setToken, logout, login, register }
+  async function refresh() {
+    if (!token.value) return false
+    try {
+      const data = await api.post<{ token: string }>('/auth/refresh')
+      setToken(data.token)
+      return true
+    } catch (error) {
+      console.error('Token refresh failed', error)
+      logout()
+      return false
+    }
+  }
+
+  function scheduleRefresh(currentToken: string) {
+    try {
+      const decoded = jwtDecode<CustomJwtPayload>(currentToken)
+      if (!decoded.exp) return
+
+      const expiresAt = decoded.exp * 1000
+      const refreshAt = expiresAt - 5 * 60 * 1000 // 5 minutes before expiry
+      const delay = refreshAt - Date.now()
+
+      if (refreshTimer) {
+        clearTimeout(refreshTimer)
+        refreshTimer = null
+      }
+
+      if (delay <= 0) {
+        refresh()
+        return
+      }
+
+      refreshTimer = setTimeout(() => {
+        refresh()
+      }, delay)
+    } catch {
+      // Ignore schedule errors
+    }
+  }
+
+  return { token, user, isAuthenticated, roles, groups, setToken, logout, login, register, refresh }
 })

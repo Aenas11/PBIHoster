@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from './stores/theme'
 import { useAuthStore } from './stores/auth'
@@ -13,6 +13,11 @@ const route = useRoute()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
 const staticSettingsStore = useStaticSettingsStore()
+
+const handleUnauthorized = async () => {
+  if (!authStore.isAuthenticated) return
+  await authStore.refresh()
+}
 
 const currentLayout = computed(() => {
   return route.name === 'login' ? LoginLayout : AppShell
@@ -30,6 +35,11 @@ onMounted(async () => {
   if (!staticSettingsStore.isLoaded) {
     await staticSettingsStore.load()
   }
+  window.addEventListener('auth:unauthorized', handleUnauthorized)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('auth:unauthorized', handleUnauthorized)
 })
 
 function applyBranding(appName: string, faviconUrl: string) {

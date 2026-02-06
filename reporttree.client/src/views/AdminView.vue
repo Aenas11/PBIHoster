@@ -5,6 +5,7 @@ import GroupsManager from '../components/Admin/GroupsManager.vue'
 import SettingsManager from '../components/Admin/SettingsManager.vue'
 import PowerBIDiagnosticsCard from '../components/Admin/PowerBIDiagnosticsCard.vue'
 import DataRefreshManager from '../components/Admin/DataRefreshManager.vue'
+import AuditLogsPanel from '../components/Admin/AuditLogsPanel.vue'
 </script>
 
 <template>
@@ -33,8 +34,8 @@ import DataRefreshManager from '../components/Admin/DataRefreshManager.vue'
         </div>
 
         <div id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>
-            <div class="tab-content">
-                <p>Audit logs functionality coming soon...</p>
+            <div class="admin-panels">
+                <AuditLogsPanel />
             </div>
         </div>
     </div>

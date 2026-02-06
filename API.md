@@ -69,9 +69,7 @@ There is no server-side logout endpoint. Clients should delete the stored JWT to
 
 ### Token Expiration & Refresh
 
-Tokens expire after configured duration (default: 8 hours). No automatic refresh endpoint currently implemented—users must re-authenticate.
-
-**Future Enhancement**: Token refresh endpoint planned for v0.4.
+Tokens expire after configured duration (default: 8 hours). Use the refresh endpoint to obtain a new JWT before expiry.
 
 ## Endpoints by Resource
 
@@ -82,6 +80,7 @@ Tokens expire after configured duration (default: 8 hours). No automatic refresh
 | POST | `/auth/login` | ❌ No | Login with username/password |
 | POST | `/auth/register` | ❌ No | Register new user (first user becomes Admin) |
 | POST | `/auth/logout` | ✅ Yes | **Not implemented** (client-side logout only) |
+| POST | `/auth/refresh` | ✅ Yes | Refresh JWT using current session |
 
 ### Pages (`/pages`)
 
@@ -369,20 +368,6 @@ Response 200 OK:
     ...
   ]
 }
-```
-
-### Directory (`/directory`)
-
-| Method | Endpoint | Auth | Roles | Description |
-|--------|----------|------|-------|-------------|
-| GET | `/directory/users` | ✅ Yes | All | Search users (query param `query`) |
-| GET | `/directory/groups` | ✅ Yes | All | Search groups (query param `query`) |
-
-#### Search Users
-
-```http
-GET /api/directory/users?query=john
-Authorization: Bearer <token>
 ```
 
 ### Health & Status

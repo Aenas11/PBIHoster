@@ -68,7 +68,7 @@ The API follows a hybrid pattern:
 
 #### API Structure
 ```
-/api/auth/           - Authentication (login, register, logout; refresh planned)
+/api/auth/           - Authentication (login, register, refresh; logout is client-side)
 /api/pages/          - Page/content management
 /api/users/          - User management and profiles
 /api/admin/          - Admin operations (requires Admin role)
