@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, useAttrs } from 'vue'
+import { computed, ref, onMounted, useAttrs, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useEditModeStore } from '../stores/editMode'
 import { usePagesStore } from '../stores/pages'
+import { useFavoritesStore } from '../stores/favorites'
 import { useLayout } from '../composables/useLayout'
 import { useGridLayout } from '../composables/useGridLayout'
 import {
   Add20, Dashboard20, Document20, UserAdmin20, Pin20, PinFilled20,
-  Edit20, Folder20, ChartBar20, Table20, SettingsEdit20, Close20, Help20
+  Edit20, Folder20, ChartBar20, Table20, SettingsEdit20, Close20, Help20,
+  Star20
 } from '@carbon/icons-vue'
 
 import PageModal from './PageModal.vue'
@@ -23,6 +25,7 @@ const expanded = defineModel<boolean>('expanded')
 const auth = useAuthStore()
 const editModeStore = useEditModeStore()
 const pagesStore = usePagesStore()
+const favoritesStore = useFavoritesStore()
 const layout = useLayout()
 const gridLayout = useGridLayout()
 const router = useRouter()
@@ -45,6 +48,19 @@ const collapseMode = computed(() => {
 
 onMounted(() => {
   pagesStore.fetchPages()
+  if (auth.isAuthenticated) {
+    favoritesStore.loadAll()
+  }
+})
+
+watch(() => auth.isAuthenticated, (isAuthed) => {
+  if (isAuthed) {
+    favoritesStore.loadAll()
+  } else {
+    favoritesStore.favoriteIds = []
+    favoritesStore.recentIds = []
+    favoritesStore.isLoaded = false
+  }
 })
 
 function togglePin() {
@@ -124,6 +140,30 @@ const iconMap: Record<string, typeof Dashboard20> = {
 function getIcon(iconName: string) {
   return iconMap[iconName] || Document20
 }
+
+function flattenPages(tree: Page[], results: Page[] = []) {
+  tree.forEach(page => {
+    results.push(page)
+    if (page.children && page.children.length > 0) {
+      flattenPages(page.children, results)
+    }
+  })
+  return results
+}
+
+const flatPages = computed(() => flattenPages(pagesStore.pages))
+
+const favoritePages = computed(() =>
+  favoritesStore.favoriteIds
+    .map(id => flatPages.value.find(page => page.id === id))
+    .filter((page): page is Page => !!page)
+)
+
+const recentPages = computed(() =>
+  favoritesStore.recentIds
+    .map(id => flatPages.value.find(page => page.id === id))
+    .filter((page): page is Page => !!page)
+)
 </script>
 
 <template>
@@ -131,6 +171,29 @@ function getIcon(iconName: string) {
     aria-label="Side navigation" class="side-nav-container">
 
     <cds-side-nav-items>
+      <cds-side-nav-menu v-if="auth.isAuthenticated && favoritePages.length > 0" title="Favorites">
+        <Star20 slot="title-icon" />
+        <cds-side-nav-link v-for="page in favoritePages" :key="`fav-${page.id}`" :href="`/page/${page.id}`"
+          @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
+          <component :is="getIcon(page.icon)" slot="title-icon" />
+          {{ page.title }}
+          <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
+        </cds-side-nav-link>
+      </cds-side-nav-menu>
+
+      <cds-side-nav-menu v-if="auth.isAuthenticated && recentPages.length > 0" title="Recent">
+        <Document20 slot="title-icon" />
+        <cds-side-nav-link v-for="page in recentPages" :key="`recent-${page.id}`" :href="`/page/${page.id}`"
+          @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
+          <component :is="getIcon(page.icon)" slot="title-icon" />
+          {{ page.title }}
+          <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
+        </cds-side-nav-link>
+      </cds-side-nav-menu>
+
+      <cds-side-nav-divider
+        v-if="auth.isAuthenticated && (favoritePages.length > 0 || recentPages.length > 0)"></cds-side-nav-divider>
+
       <!-- Static Items -->
       <!-- <cds-side-nav-link href="/" @click="navigateTo('/', $event)">
         <Dashboard20 slot="title-icon" />
@@ -192,7 +255,7 @@ function getIcon(iconName: string) {
           @click="toggleEditMode" class="action-button">
           <span v-if="expanded">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
           <span v-if="!expanded" slot="tooltip-content">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages'
-          }}</span>
+            }}</span>
           <component :is="editModeStore.isEditMode ? Close20 : Edit20" slot="icon" />
         </cds-button>
 

@@ -168,4 +168,9 @@ public class AuthService
     {
         return await _repo.GetByUsernameAsync(username);
     }
+
+    public async Task UpdateUserAsync(AppUser user)
+    {
+        await _repo.UpsertAsync(user);
+    }
 }

@@ -19,27 +19,27 @@ This document outlines the implementation plan for high-priority corporate featu
 ## Feature Roadmap
 
 ### Phase 1: Quick Wins (2-3 weeks)
-- RLS (Row-Level Security) Management UI
-- White-Label Customization
-- Favorites & Bookmarks
-- Data Refresh Management
+- [ ] RLS (Row-Level Security) Management UI
+- [x] White-Label Customization
+- [x] Favorites & Bookmarks
+- [ ] Data Refresh Management
 
 ### Phase 2: SSO & Advanced Authentication (2-3 weeks)
-- Azure AD Groups Sync
+- [ ] Azure AD Groups Sync
 
 ### Phase 3: Analytics & Monitoring (2 weeks)
-- Usage Analytics Dashboard
-- Performance Monitoring
+- [ ] Usage Analytics Dashboard
+- [ ] Performance Monitoring
 
 ### Phase 4: Collaboration & Governance (3 weeks)
-- Embedded Comments & Annotations
-- Compliance & Data Governance
-- Report Versioning & Rollback
+- [ ] Embedded Comments & Annotations
+- [ ] Compliance & Data Governance
+- [ ] Report Versioning & Rollback
 
 ### Phase 5: Advanced Features (4+ weeks)
-- Scheduling & Subscriptions
-- Multi-Tenancy
-- Backup & Disaster Recovery
+- [ ] Scheduling & Subscriptions
+- [ ] Multi-Tenancy (deferred; clients host separate instances)
+- [ ] Backup & Disaster Recovery
 
 ---
 
@@ -51,14 +51,14 @@ This document outlines the implementation plan for high-priority corporate featu
 - Frontend: New admin panel for RLS, integrate with Page edit modal
 
 ### 2. White-Label Customization
-- Logo upload, custom app name, footer links, favicon
-- Backend: Branding endpoints, file upload support
-- Frontend: Branding manager UI, dynamic header/footer
+- [x] Logo upload, custom app name, footer links, favicon
+- [x] Backend: Branding endpoints, file upload support
+- [x] Frontend: Branding manager UI, dynamic header/footer
 
 ### 3. Favorites & Bookmarks
-- Star/favorite pages, recent pages list, quick access dropdown
-- Backend: Extend AppUser, endpoints for favorites/recent
-- Frontend: Star icons in navigation, favorites dropdown
+- [x] Star/favorite pages, recent pages list, quick access dropdown
+- [x] Backend: Extend AppUser, endpoints for favorites/recent
+- [x] Frontend: Star icons in navigation, favorites dropdown
 
 ### 4. Data Refresh Management
 - Manual/scheduled dataset refresh, refresh history, notifications
@@ -101,9 +101,7 @@ This document outlines the implementation plan for high-priority corporate featu
 - Frontend: Subscription manager, schedule picker
 
 ### 12. Multi-Tenancy
-- Tenant isolation, branding, subdomain routing, superadmin UI
-- Backend: Tenant model, tenant resolution middleware, repository updates
-- Frontend: Tenant selector, management UI
+- Deferred: Clients host separate instances
 
 ### 13. Backup & Disaster Recovery
 - Automated backups to cloud, restore, health checks
@@ -131,4 +129,4 @@ This document outlines the implementation plan for high-priority corporate featu
 
 ---
 
-**Last Updated:** 2025-12-19
+**Last Updated:** 2026-02-06

@@ -15,6 +15,8 @@ import PowerBIDashboardComponent from '../components/DashboardComponents/PowerBI
 import PowerBIDashboardComponentConfigure from '../components/DashboardComponents/PowerBIDashboardComponentConfigure.vue'
 import PowerBIWorkspaceComponent from '../components/DashboardComponents/PowerBIWorkspaceComponent.vue'
 import PowerBIWorkspaceComponentConfigure from '../components/DashboardComponents/PowerBIWorkspaceComponentConfigure.vue'
+import FavoritesComponent from '../components/DashboardComponents/FavoritesComponent.vue'
+import FavoritesComponentConfigure from '../components/DashboardComponents/FavoritesComponentConfigure.vue'
 
 // Define component configurations
 const components: ComponentDefinition[] = [
@@ -78,6 +80,20 @@ const components: ComponentDefinition[] = [
         },
         defaultDimensions: { w: 12, h: 10 },
         minDimensions: { w: 6, h: 6 }
+    },
+    {
+        type: 'favorites',
+        name: 'Favorites & Recents',
+        description: 'Show your favorite and recently viewed pages',
+        component: markRaw(FavoritesComponent),
+        configComponent: markRaw(FavoritesComponentConfigure),
+        defaultConfig: {
+            showFavorites: true,
+            showRecents: true,
+            maxItems: 6
+        },
+        defaultDimensions: { w: 6, h: 6 },
+        minDimensions: { w: 3, h: 4 }
     }
 ]
 

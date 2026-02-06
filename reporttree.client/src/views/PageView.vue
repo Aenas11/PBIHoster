@@ -8,17 +8,24 @@ import { GridLayout, GridItem } from 'grid-layout-plus'
 import { useGridLayout } from '../composables/useGridLayout'
 import { useComponentRegistry } from '../composables/useComponentRegistry'
 import { useEditModeStore } from '../stores/editMode'
-import { TrashCan20, SettingsEdit20 } from '@carbon/icons-vue'
-import { onMounted, watch, ref } from 'vue'
+import { TrashCan20, SettingsEdit20, Star20, StarFilled20 } from '@carbon/icons-vue'
+import { onMounted, watch, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { usePagesStore } from '../stores/pages'
+import { useFavoritesStore } from '../stores/favorites'
 import ErrorComponent from '../components/DashboardComponents/ErrorComponent.vue'
 import MetadataEditor from '../components/DashboardComponents/MetadataEditor.vue'
 import type { GridItemWithComponent } from '../composables/useGridLayout'
+import type { Page } from '../types/page'
 
 const route = useRoute()
 const gridLayout = useGridLayout()
 const editModeStore = useEditModeStore()
 const { getComponent } = useComponentRegistry()
+const authStore = useAuthStore()
+const pagesStore = usePagesStore()
+const favoritesStore = useFavoritesStore()
 
 // Modal state
 const isConfigModalOpen = ref(false)
@@ -35,6 +42,21 @@ const activeTab = ref('general')
 
 // Force refresh key to bust cache
 const layoutKey = ref(0)
+const currentPageId = computed(() => Number(route.params.id))
+
+function findPageById(pages: { id: number; children?: unknown[] }[], id: number): Page | null {
+  for (const page of pages) {
+    if (page.id === id) return page as Page
+    if (page.children && Array.isArray(page.children)) {
+      const match = findPageById(page.children as Page[], id)
+      if (match) return match
+    }
+  }
+  return null
+}
+
+const currentPage = computed(() => findPageById(pagesStore.pages, currentPageId.value))
+const isFavorite = computed(() => favoritesStore.isFavorite(currentPageId.value))
 
 // Load layout when component mounts or route changes
 onMounted(async () => {
@@ -43,6 +65,18 @@ onMounted(async () => {
     await gridLayout.loadLayout(pageId)
     layoutKey.value++
   }
+
+  if (pagesStore.pages.length === 0) {
+    await pagesStore.fetchPages()
+  }
+
+  if (authStore.isAuthenticated && !favoritesStore.isLoaded) {
+    await favoritesStore.loadAll()
+  }
+
+  if (authStore.isAuthenticated && currentPageId.value) {
+    await favoritesStore.recordRecent(currentPageId.value)
+  }
 })
 
 // Watch for route changes
@@ -50,8 +84,20 @@ watch(() => route.params.id, async (newId) => {
   if (newId) {
     await gridLayout.loadLayout(newId as string)
     layoutKey.value++
+
+    if (authStore.isAuthenticated) {
+      await favoritesStore.recordRecent(Number(newId))
+    }
   }
 })
+
+const toggleFavorite = async () => {
+  if (!authStore.isAuthenticated || !currentPageId.value) {
+    return
+  }
+
+  await favoritesStore.toggleFavorite(currentPageId.value)
+}
 
 const removePanel = (id: string) => {
   gridLayout.removePanel(id)
@@ -147,8 +193,18 @@ const getConfigComponent = (item: GridItemWithComponent) => {
       <p>Loading page layout...</p>
     </div>
 
-    <GridLayout v-else v-model:layout="gridLayout.layout.value" :key="`layout-${layoutKey}`" :col-num="12"
-      :row-height="30" :is-draggable="editModeStore.isEditMode" :is-resizable="editModeStore.isEditMode"
+    <div v-if="!gridLayout.isLoading.value" class="page-header">
+      <div class="page-title">{{ currentPage?.title || 'Page' }}</div>
+      <div class="page-actions" v-if="authStore.isAuthenticated">
+        <cds-button kind="ghost" size="sm" @click="toggleFavorite">
+          <component :is="isFavorite ? StarFilled20 : Star20" slot="icon" />
+          {{ isFavorite ? 'Favorited' : 'Favorite' }}
+        </cds-button>
+      </div>
+    </div>
+
+    <GridLayout v-if="!gridLayout.isLoading.value" v-model:layout="gridLayout.layout.value" :key="`layout-${layoutKey}`"
+      :col-num="12" :row-height="30" :is-draggable="editModeStore.isEditMode" :is-resizable="editModeStore.isEditMode"
       :vertical-compact="false" :use-css-transforms="true" :margin="[10, 10]"
       @layout-updated="gridLayout.onLayoutUpdated" class="grid-container">
       <GridItem v-for="item in (gridLayout.layout.value as GridItemWithComponent[])" :key="`${item.i}-${layoutKey}`"
@@ -220,6 +276,19 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   flex-direction: column;
   height: 100%;
   /* padding: 1rem; */
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.5rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--cds-text-primary);
 }
 
 @media (prefers-color-scheme: dark) {
