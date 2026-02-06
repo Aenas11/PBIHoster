@@ -108,7 +108,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 - ✅ Row-Level Security (RLS) support
 - ✅ Dynamic workspace selection
 - ✅ Report and dashboard embedding
-- ✅ Planned: Dataset refresh scheduling, refresh history
+- ✅ Dataset refresh scheduling and history (Admin)
 
 ### 👥 User & Group Management
 - ✅ User profile management and password change
@@ -118,8 +118,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 
 ### 📋 Audit & Compliance
 - ✅ Comprehensive audit logging
-- ✅ Filtering by user, action, and date range
-- ✅ Export audit logs
+- ✅ Filtering by user or resource (API)
+- ⏳ Export audit logs (planned)
 - ✅ Security event tracking (failed logins, lockouts, etc.)
 
 ---

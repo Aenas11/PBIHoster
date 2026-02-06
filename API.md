@@ -24,28 +24,22 @@ Authorization: Bearer eyJhbGc...
 #### 1. Register a New User
 
 ```http
-POST /auth/register
+POST /api/auth/register
 Content-Type: application/json
 
 {
   "username": "john.doe",
-  "email": "john@example.com",
-  "password": "SecurePass123!"
+  "password": "SecurePass123!",
+  "roles": ["Viewer"]
 }
 
-Response 200 OK:
-{
-  "accessToken": "eyJhbGc...",
-  "expiresIn": 28800,
-  "tokenType": "Bearer",
-  "username": "john.doe"
-}
+Response 200 OK
 ```
 
 #### 2. Login
 
 ```http
-POST /auth/login
+POST /api/auth/login
 Content-Type: application/json
 
 {
@@ -55,33 +49,23 @@ Content-Type: application/json
 
 Response 200 OK:
 {
-  "accessToken": "eyJhbGc...",
-  "expiresIn": 28800,
-  "tokenType": "Bearer"
+  "token": "eyJhbGc..."
 }
 
-Response 401 Unauthorized (invalid credentials):
+Response 400 Bad Request (invalid credentials):
 {
-  "message": "Invalid username or password"
+  "error": "Invalid username or password"
 }
 
-Response 423 Locked (account lockout):
+Response 400 Bad Request (account lockout):
 {
-  "message": "Account is locked due to too many failed login attempts. Try again later."
+  "error": "Account is locked. Try again in 15 minutes."
 }
 ```
 
-#### 3. Logout
+#### 3. Logout (Client-side)
 
-```http
-POST /auth/logout
-Authorization: Bearer <token>
-
-Response 200 OK:
-{
-  "message": "Logout successful"
-}
-```
+There is no server-side logout endpoint. Clients should delete the stored JWT token to sign out.
 
 ### Token Expiration & Refresh
 
@@ -97,21 +81,19 @@ Tokens expire after configured duration (default: 8 hours). No automatic refresh
 |--------|----------|------|-------------|
 | POST | `/auth/login` | ❌ No | Login with username/password |
 | POST | `/auth/register` | ❌ No | Register new user (first user becomes Admin) |
-| POST | `/auth/logout` | ✅ Yes | Logout and invalidate session |
+| POST | `/auth/logout` | ✅ Yes | **Not implemented** (client-side logout only) |
 
 ### Pages (`/pages`)
 
 | Method | Endpoint | Auth | Roles | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/pages` | ✅ Yes | All | List accessible pages (tree structure) |
-| GET | `/pages/{pageId}` | ✅ Yes | All | Get single page details with access check |
-| POST | `/pages` | ✅ Yes | Admin, Editor | Create new top-level page |
-| PUT | `/pages/{pageId}` | ✅ Yes | Admin, Editor | Update page (title, icon, roles, layout) |
-| DELETE | `/pages/{pageId}` | ✅ Yes | Admin | Delete page (cascade to children) |
-| POST | `/pages/{pageId}/children` | ✅ Yes | Admin, Editor | Create child page (subpage) |
-| PUT | `/pages/{pageId}/move` | ✅ Yes | Admin | Move page to different parent |
-| GET | `/pages/{pageId}/access` | ✅ Yes | Admin | Get detailed access control settings |
-| PUT | `/pages/{pageId}/access` | ✅ Yes | Admin | Update access control (roles, users, groups) |
+| GET | `/pages` | ❌ No | Public/All | List accessible pages (auth applied if logged in) |
+| GET | `/pages/{pageId}` | ❌ No | Public/All | Get page details (auth required if not public) |
+| POST | `/pages` | ✅ Yes | Admin, Editor | Create new page |
+| PUT | `/pages/{pageId}` | ✅ Yes | Admin, Editor | Update page metadata/layout |
+| DELETE | `/pages/{pageId}` | ✅ Yes | Admin, Editor | Delete page |
+| POST | `/pages/{pageId}/layout` | ✅ Yes | Admin, Editor | Save layout JSON for page |
+| POST | `/pages/{pageId}/clone` | ✅ Yes | Admin, Editor | Clone page (optionally set new title/parent) |
 
 #### Get Pages (Accessible)
 
@@ -122,19 +104,13 @@ Authorization: Bearer <token>
 Response 200 OK:
 [
   {
-    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "id": 1,
     "title": "Sales Dashboard",
-    "description": "Q4 sales metrics",
     "icon": "dashboard",
+    "parentId": null,
     "isPublic": false,
-    "allowedRoles": ["Admin", "Editor", "Viewer"],
-    "children": [
-      {
-        "id": "...",
-        "title": "North Region",
-        "children": []
-      }
-    ],
+    "allowedUsers": ["alice", "bob"],
+    "allowedGroups": ["Sales"],
     "layout": {
       "components": [
         {
@@ -161,117 +137,90 @@ Content-Type: application/json
 
 {
   "title": "Sales Dashboard",
-  "description": "Q4 sales metrics",
   "icon": "chart--column",
-  "allowedRoles": ["Admin", "Editor", "Viewer"],
   "isPublic": false
 }
 
 Response 201 Created:
 {
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "id": 101,
   "title": "Sales Dashboard",
   ...
 }
 ```
 
-### Users (`/users`)
+### Users & Profile (`/admin/users`, `/profile`, `/directory`)
+
+**Admin User Management** (`/admin/users`)
 
 | Method | Endpoint | Auth | Roles | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/users` | ✅ Yes | Admin | List all users with roles |
-| GET | `/users/me` | ✅ Yes | All | Get current logged-in user profile |
-| GET | `/users/{userId}` | ✅ Yes | Admin | Get user details |
-| POST | `/users` | ✅ Yes | Admin | Create new user |
-| PUT | `/users/{userId}` | ✅ Yes | Admin, Self | Update user (roles, groups) |
-| DELETE | `/users/{userId}` | ✅ Yes | Admin | Delete user |
-| PUT | `/users/{userId}/roles` | ✅ Yes | Admin | Update user roles |
-| PUT | `/users/{userId}/password` | ✅ Yes | Admin | Reset user password |
-| POST | `/users/{userId}/unlock` | ✅ Yes | Admin | Unlock locked account |
-| PUT | `/users/me/profile` | ✅ Yes | All | Update own profile (email) |
-| PUT | `/users/me/password` | ✅ Yes | All | Change own password |
+| GET | `/admin/users` | ✅ Yes | Admin | Search users (query param `term`) |
+| POST | `/admin/users` | ✅ Yes | Admin | Create or update a user (roles, password, groups) |
+| DELETE | `/admin/users/{username}` | ✅ Yes | Admin | Delete user |
 
-#### Get Current User Profile
-
-```http
-GET /api/users/me
-Authorization: Bearer <token>
-
-Response 200 OK:
-{
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "username": "john.doe",
-  "email": "john@example.com",
-  "roles": ["Admin", "Editor"],
-  "groups": ["Engineering", "Leadership"],
-  "favoritePageIds": ["...", "..."],
-  "lastLoginAt": "2025-02-06T10:30:00Z"
-}
-```
-
-#### Update Own Password
-
-```http
-PUT /api/users/me/password
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "currentPassword": "OldPass123!",
-  "newPassword": "NewPass456!"
-}
-
-Response 200 OK:
-{
-  "message": "Password changed successfully"
-}
-
-Response 400 Bad Request (weak password):
-{
-  "message": "Password does not meet complexity requirements"
-}
-```
-
-### User Groups (`/groups`)
+**Profile** (`/profile`)
 
 | Method | Endpoint | Auth | Roles | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/groups` | ✅ Yes | Admin | List all groups |
-| POST | `/groups` | ✅ Yes | Admin | Create new group |
-| PUT | `/groups/{groupId}` | ✅ Yes | Admin | Update group |
-| DELETE | `/groups/{groupId}` | ✅ Yes | Admin | Delete group |
-| GET | `/groups/{groupId}/members` | ✅ Yes | Admin | List group members |
-| POST | `/groups/{groupId}/members` | ✅ Yes | Admin | Add member to group |
-| DELETE | `/groups/{groupId}/members/{userId}` | ✅ Yes | Admin | Remove member from group |
+| GET | `/profile` | ✅ Yes | All | Get current user profile |
+| PUT | `/profile` | ✅ Yes | All | Update profile (email) |
+| POST | `/profile/change-password` | ✅ Yes | All | Change own password |
 
-### Admin Settings (`/admin/settings`, `/settings`)
+**Favorites & Recents** (`/profile`)
 
 | Method | Endpoint | Auth | Roles | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/admin/settings` | ✅ Yes | Admin | List all settings |
-| GET | `/admin/settings/{key}` | ✅ Yes | Admin | Get single setting |
-| PUT | `/admin/settings/{key}` | ✅ Yes | Admin | Update setting |
-| GET | `/settings/app` | ✅ Yes | All | Get public app settings |
+| GET | `/profile/favorites` | ✅ Yes | All | Get favorite page IDs |
+| POST | `/profile/favorites/{pageId}` | ✅ Yes | All | Add favorite page |
+| DELETE | `/profile/favorites/{pageId}` | ✅ Yes | All | Remove favorite page |
+| GET | `/profile/recent` | ✅ Yes | All | Get recent page IDs |
+| POST | `/profile/recent/{pageId}` | ✅ Yes | All | Record recently viewed page |
+
+**Directory Search** (`/directory`)
+
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| GET | `/directory/users` | ✅ Yes | All | Search users (query param `query`) |
+| GET | `/directory/groups` | ✅ Yes | All | Search groups (query param `query`) |
+
+### User Groups (`/admin/groups`)
+
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| GET | `/admin/groups` | ✅ Yes | Admin | List or search groups (query param `term`) |
+| POST | `/admin/groups` | ✅ Yes | Admin | Create new group |
+| PUT | `/admin/groups/{groupId}` | ✅ Yes | Admin | Update group |
+| DELETE | `/admin/groups/{groupId}` | ✅ Yes | Admin | Delete group |
+| POST | `/admin/groups/{groupId}/members` | ✅ Yes | Admin | Add member to group |
+| DELETE | `/admin/groups/{groupId}/members/{username}` | ✅ Yes | Admin | Remove member from group |
+
+### Settings (`/settings`)
+
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| GET | `/settings` | ✅ Yes | Admin | List all settings (encrypted values masked) |
+| GET | `/settings/{key}` | ✅ Yes | Admin | Get single setting |
+| GET | `/settings/category/{category}` | ✅ Yes | Admin | List settings by category |
+| PUT | `/settings` | ✅ Yes | Admin | Create or update setting |
+| DELETE | `/settings/{key}` | ✅ Yes | Admin | Delete setting |
+| GET | `/settings/static` | ❌ No | Public | Get public app settings (branding + version) |
 
 #### Update Setting (Admin)
 
 ```http
-PUT /api/admin/settings/App.DemoModeEnabled
+PUT /api/settings
 Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "value": "true"
-}
-
-Response 200 OK:
-{
   "key": "App.DemoModeEnabled",
   "value": "true",
-  "category": "General",
-  "description": "Enable demo mode with sample pages",
-  "encrypted": false
+  "category": "Application",
+  "description": "Enable demo mode with sample pages"
 }
+
+Response 200 OK
 ```
 
 ### Themes (`/themes`)
@@ -311,31 +260,16 @@ Response 200 OK:
 ]
 ```
 
-### Branding (`/branding`)
+### Branding Assets (`/branding/assets`)
 
 | Method | Endpoint | Auth | Roles | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/branding` | ❌ No | Public | Get current branding (public) |
-| POST | `/branding/logo` | ✅ Yes | Admin | Upload logo |
-| DELETE | `/branding/logo` | ✅ Yes | Admin | Delete logo |
-| PUT | `/branding/settings` | ✅ Yes | Admin | Update branding (name, links) |
+| GET | `/branding/assets/{id}` | ❌ No | Public | Fetch logo/favicon by asset id |
+| POST | `/branding/assets/{assetType}` | ✅ Yes | Admin | Upload `logo` or `favicon` |
+| DELETE | `/branding/assets/{assetType}` | ✅ Yes | Admin | Remove `logo` or `favicon` |
 
-#### Get Branding (Public)
-
-```http
-GET /api/branding
-
-Response 200 OK:
-{
-  "appName": "Company Analytics",
-  "logoUrl": "https://example.com/logo.png",
-  "favicon": "https://example.com/favicon.ico",
-  "footerLinks": [
-    { "label": "Privacy", "url": "https://..." },
-    { "label": "Support", "url": "https://..." }
-  ]
-}
-```
+**Branding settings** (app name, footer text/links, logo/favicon URLs) are exposed via `GET /settings/static` and updated via `PUT /settings` with keys:
+`Branding.AppName`, `Branding.FooterText`, `Branding.FooterLinkUrl`, `Branding.FooterLinkLabel`, `Branding.LogoAssetId`, `Branding.FaviconAssetId`.
 
 ### Power BI (`/powerbi`)
 
@@ -344,8 +278,10 @@ Response 200 OK:
 | GET | `/powerbi/workspaces` | ✅ Yes | Admin, Editor | List Power BI workspaces |
 | GET | `/powerbi/workspaces/{workspaceId}/reports` | ✅ Yes | All | List reports in workspace |
 | GET | `/powerbi/workspaces/{workspaceId}/dashboards` | ✅ Yes | All | List dashboards in workspace |
+| GET | `/powerbi/workspaces/{workspaceId}/datasets` | ✅ Yes | All | List datasets in workspace |
 | POST | `/powerbi/embed/report` | ✅ Yes | All* | Generate embed token for report |
 | POST | `/powerbi/embed/dashboard` | ✅ Yes | All* | Generate embed token for dashboard |
+| GET | `/powerbi/diagnostics` | ✅ Yes | Admin | Run diagnostics (optional workspace/report query params) |
 
 *Access controlled by page authorization
 
@@ -357,19 +293,19 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "reportId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "resourceId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "workspaceId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "pageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "pageId": 42,
   "enableRLS": true,
   "rlsRoles": ["Sales_Team", "North_Region"]
 }
 
 Response 200 OK:
 {
-  "token": "eyJhbGc...",
+  "accessToken": "eyJhbGc...",
   "embedUrl": "https://app.powerbi.com/view...",
-  "reportId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "expiresIn": 3600
+  "tokenId": "...",
+  "expiration": "2025-02-06T11:30:00Z"
 }
 ```
 
@@ -391,11 +327,13 @@ Response 200 OK:
 POST /api/refreshes/datasets/3fa85f64-5717-4562-b3fc-2c963f66afa6/run
 Authorization: Bearer <token>
 
-Response 202 Accepted:
+Response 200 OK:
 {
-  "runId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "datasetId": "...",
+  "workspaceId": "...",
   "status": "Queued",
-  "requestedAt": "2025-02-06T10:30:00Z"
+  "requestedAtUtc": "2025-02-06T10:30:00Z"
 }
 ```
 
@@ -403,12 +341,14 @@ Response 202 Accepted:
 
 | Method | Endpoint | Auth | Roles | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/audit` | ✅ Yes | Admin | Query audit logs (with filters) |
+| GET | `/audit` | ✅ Yes | Admin | List audit logs (supports `skip`/`take`) |
+| GET | `/audit/user/{username}` | ✅ Yes | Admin | Filter logs by username |
+| GET | `/audit/resource/{resource}` | ✅ Yes | Admin | Filter logs by resource |
 
 #### Query Audit Logs
 
 ```http
-GET /api/audit?action=LOGIN&success=false&days=7
+GET /api/audit?skip=0&take=100
 Authorization: Bearer <token>
 
 Response 200 OK:
@@ -416,16 +356,15 @@ Response 200 OK:
   "total": 23,
   "logs": [
     {
-      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "id": 101,
       "action": "LOGIN",
       "resource": "User",
-      "resourceId": "...",
-      "userId": "...",
+      "details": "Invalid password",
       "username": "john.doe",
       "ipAddress": "192.168.1.100",
       "success": false,
-      "failureReason": "Invalid password",
-      "createdAt": "2025-02-06T10:30:00Z"
+      "timestamp": "2025-02-06T10:30:00Z",
+      "userAgent": "Mozilla/5.0"
     },
     ...
   ]
@@ -436,32 +375,14 @@ Response 200 OK:
 
 | Method | Endpoint | Auth | Roles | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/directory` | ✅ Yes | All | List directory (pages + users) |
-| GET | `/directory/search` | ✅ Yes | All | Search directory |
+| GET | `/directory/users` | ✅ Yes | All | Search users (query param `query`) |
+| GET | `/directory/groups` | ✅ Yes | All | Search groups (query param `query`) |
 
-#### Search Directory
+#### Search Users
 
 ```http
-GET /api/directory/search?q=dashboard
+GET /api/directory/users?query=john
 Authorization: Bearer <token>
-
-Response 200 OK:
-{
-  "pages": [
-    {
-      "id": "...",
-      "title": "Sales Dashboard",
-      "description": "Q4 metrics"
-    }
-  ],
-  "users": [
-    {
-      "id": "...",
-      "username": "dashboard.admin",
-      "email": "admin@example.com"
-    }
-  ]
-}
 ```
 
 ### Health & Status
@@ -520,29 +441,11 @@ Retry-After: 45
 
 ## Pagination
 
-Endpoints returning lists support pagination via query parameters:
-
-```
-GET /api/audit?page=2&pageSize=50
-
-Response:
-{
-  "total": 523,
-  "page": 2,
-  "pageSize": 50,
-  "data": [ ... ]
-}
-```
+Some list endpoints support pagination via `skip` and `take` query parameters (e.g., `/audit`, `/refreshes/datasets/{datasetId}/history`).
 
 ## Filtering
 
-Query parameters allow filtering of results:
-
-```
-GET /api/audit?action=LOGIN&success=false&days=7&username=john
-
-Supported filters vary by endpoint. See endpoint documentation.
-```
+Filtering is endpoint-specific. For example, use `/audit/user/{username}` or `/audit/resource/{resource}` for audit logs and `/directory/users?query=...` for user search.
 
 ## Correlation IDs
 
