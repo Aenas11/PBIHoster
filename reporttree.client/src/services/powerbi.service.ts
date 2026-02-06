@@ -3,6 +3,7 @@ import type {
     WorkspaceDto,
     ReportDto,
     DashboardDto,
+    DatasetDto,
     EmbedTokenRequestDto,
     EmbedTokenResponseDto,
     PowerBIDiagnosticResultDto
@@ -19,6 +20,10 @@ export const powerBIService = {
 
     async getDashboards(workspaceId: string): Promise<DashboardDto[]> {
         return api.get<DashboardDto[]>(`/powerbi/workspaces/${workspaceId}/dashboards`)
+    },
+
+    async getDatasets(workspaceId: string): Promise<DatasetDto[]> {
+        return api.get<DatasetDto[]>(`/powerbi/workspaces/${workspaceId}/datasets`)
     },
 
     async getReportEmbedToken(

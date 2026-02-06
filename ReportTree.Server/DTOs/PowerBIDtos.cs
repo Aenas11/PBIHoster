@@ -23,6 +23,12 @@ namespace ReportTree.Server.DTOs
         public string EmbedUrl { get; set; } = string.Empty;
     }
 
+    public class DatasetDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+
     public class EmbedTokenRequestDto
     {
         public Guid WorkspaceId { get; set; }

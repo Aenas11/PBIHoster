@@ -186,6 +186,20 @@ namespace ReportTree.Server.Services
             });
         }
 
+        public async Task<IEnumerable<DatasetDto>> GetDatasetsAsync(Guid workspaceId, CancellationToken cancellationToken = default)
+        {
+            var token = await GetAccessTokenAsync(cancellationToken);
+            using var client = CreatePowerBIClient(token);
+
+            var datasets = await client.Datasets.GetDatasetsInGroupAsync(workspaceId, cancellationToken: cancellationToken);
+
+            return datasets.Value.Select(d => new DatasetDto
+            {
+                Id = d.Id,
+                Name = d.Name
+            });
+        }
+
         public async Task<ReportDto?> GetReportAsync(Guid workspaceId, Guid reportId, CancellationToken cancellationToken = default)
         {
             var token = await GetAccessTokenAsync(cancellationToken);

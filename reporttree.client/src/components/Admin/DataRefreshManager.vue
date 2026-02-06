@@ -17,7 +17,8 @@
                     <cds-table-header-cell>Dataset</cds-table-header-cell>
                     <cds-table-header-cell>Cron</cds-table-header-cell>
                     <cds-table-header-cell>Time zone</cds-table-header-cell>
-                    <cds-table-header-cell>Status</cds-table-header-cell>
+                    <cds-table-header-cell>Enabled</cds-table-header-cell>
+                    <cds-table-header-cell>Latest</cds-table-header-cell>
                     <cds-table-header-cell>Actions</cds-table-header-cell>
                 </cds-table-header-row>
             </cds-table-head>
@@ -38,6 +39,11 @@
                     <cds-table-cell>
                         <cds-tag :type="schedule.enabled ? 'green' : 'cool-gray'" size="sm">
                             {{ schedule.enabled ? 'Enabled' : 'Disabled' }}
+                        </cds-tag>
+                    </cds-table-cell>
+                    <cds-table-cell>
+                        <cds-tag :type="latestStatusTag(schedule.datasetId)" size="sm">
+                            {{ latestStatusLabel(schedule.datasetId) }}
                         </cds-tag>
                     </cds-table-cell>
                     <cds-table-cell>
@@ -102,6 +108,37 @@
                 <cds-modal-heading>{{ editing ? 'Edit schedule' : 'Create schedule' }}</cds-modal-heading>
             </cds-modal-header>
             <cds-modal-body>
+                <div class="lookup">
+                    <h4>Power BI lookup</h4>
+                    <cds-select label-text="Workspace" :value="lookupWorkspace"
+                        @cds-select-selected="onLookupWorkspace">
+                        <cds-select-item value="" disabled>Select workspace</cds-select-item>
+                        <cds-select-item v-for="ws in workspaces" :key="ws.id" :value="ws.id">
+                            {{ ws.name }}
+                        </cds-select-item>
+                    </cds-select>
+
+                    <cds-select label-text="Report" :value="lookupReport" @cds-select-selected="onLookupReport"
+                        :disabled="!lookupWorkspace">
+                        <cds-select-item value="" disabled>Select report (optional)</cds-select-item>
+                        <cds-select-item v-for="rep in reports" :key="rep.id" :value="rep.id">
+                            {{ rep.name }}
+                        </cds-select-item>
+                    </cds-select>
+
+                    <cds-select label-text="Dataset" :value="lookupDataset"
+                        @cds-select-selected="lookupDataset = $event.detail.value" :disabled="!lookupWorkspace">
+                        <cds-select-item value="" disabled>Select dataset</cds-select-item>
+                        <cds-select-item v-for="ds in datasets" :key="ds.id" :value="ds.id">
+                            {{ ds.name }}
+                        </cds-select-item>
+                    </cds-select>
+
+                    <cds-button size="sm" kind="ghost" @click="applyLookup" :disabled="!lookupWorkspace">
+                        Use selection
+                    </cds-button>
+                </div>
+
                 <cds-text-input label="Name" :value="form.name" @input="onNameInput"></cds-text-input>
                 <cds-text-input label="Workspace ID" :value="form.workspaceId"
                     @input="onWorkspaceInput"></cds-text-input>
@@ -140,16 +177,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { refreshService } from '@/services/refresh.service'
+import { powerBIService } from '@/services/powerbi.service'
 import type {
     DatasetRefreshScheduleDto,
     DatasetRefreshRunDto,
     RefreshNotificationTargetDto
 } from '@/types/refresh'
+import type { DatasetDto, ReportDto, WorkspaceDto } from '@/types/powerbi'
 import { useToastStore } from '@/stores/toast'
 
 import '@carbon/web-components/es/components/button/index.js'
 import '@carbon/web-components/es/components/data-table/index.js'
 import '@carbon/web-components/es/components/modal/index.js'
+import '@carbon/web-components/es/components/select/index.js'
 import '@carbon/web-components/es/components/text-input/index.js'
 import '@carbon/web-components/es/components/tag/index.js'
 import '@carbon/web-components/es/components/toggle/index.js'
@@ -158,6 +198,13 @@ const toast = useToastStore()
 const schedules = ref<DatasetRefreshScheduleDto[]>([])
 const history = ref<DatasetRefreshRunDto[]>([])
 const selectedScheduleId = ref<string | null>(null)
+const latestRuns = ref<Record<string, DatasetRefreshRunDto | null>>({})
+const workspaces = ref<WorkspaceDto[]>([])
+const reports = ref<ReportDto[]>([])
+const datasets = ref<DatasetDto[]>([])
+const lookupWorkspace = ref('')
+const lookupReport = ref('')
+const lookupDataset = ref('')
 const showModal = ref(false)
 const editing = ref(false)
 
@@ -191,6 +238,17 @@ function statusTag(status: string) {
     return 'cool-gray'
 }
 
+function latestStatusTag(datasetId: string) {
+    const latest = latestRuns.value[datasetId]
+    if (!latest) return 'cool-gray'
+    return statusTag(latest.status)
+}
+
+function latestStatusLabel(datasetId: string) {
+    const latest = latestRuns.value[datasetId]
+    return latest?.status ?? 'Unknown'
+}
+
 function formatDate(value?: string | null) {
     if (!value) return '-'
     return new Date(value).toLocaleString()
@@ -221,6 +279,10 @@ function openCreate() {
         notifyTargets: []
     }
     notifyTargetsText.value = ''
+    lookupWorkspace.value = ''
+    lookupReport.value = ''
+    lookupDataset.value = ''
+    ensureWorkspacesLoaded()
     showModal.value = true
 }
 
@@ -245,6 +307,13 @@ function openEdit(schedule: DatasetRefreshScheduleDto) {
     notifyTargetsText.value = schedule.notifyTargets
         .map(t => `${t.type.toLowerCase()}:${t.target}`)
         .join(', ')
+    lookupWorkspace.value = schedule.workspaceId
+    lookupReport.value = schedule.reportId ?? ''
+    lookupDataset.value = schedule.datasetId
+    ensureWorkspacesLoaded()
+    if (schedule.workspaceId) {
+        loadWorkspaceAssets(schedule.workspaceId)
+    }
     showModal.value = true
 }
 
@@ -266,6 +335,56 @@ function onEnabledToggle(e: CustomEvent) { form.value.enabled = Boolean(e.detail
 function onNotifySuccessToggle(e: CustomEvent) { form.value.notifyOnSuccess = Boolean(e.detail?.checked ?? e.detail?.value) }
 function onNotifyFailureToggle(e: CustomEvent) { form.value.notifyOnFailure = Boolean(e.detail?.checked ?? e.detail?.value) }
 
+async function ensureWorkspacesLoaded() {
+    if (workspaces.value.length > 0) return
+    try {
+        workspaces.value = await powerBIService.getWorkspaces()
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+async function loadWorkspaceAssets(workspaceId: string) {
+    if (!workspaceId) return
+    try {
+        const [reportsResult, datasetsResult] = await Promise.all([
+            powerBIService.getReports(workspaceId),
+            powerBIService.getDatasets(workspaceId)
+        ])
+        reports.value = reportsResult
+        datasets.value = datasetsResult
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+async function onLookupWorkspace(e: CustomEvent) {
+    lookupWorkspace.value = e.detail.value
+    lookupReport.value = ''
+    lookupDataset.value = ''
+    await loadWorkspaceAssets(lookupWorkspace.value)
+}
+
+function onLookupReport(e: CustomEvent) {
+    lookupReport.value = e.detail.value
+    const report = reports.value.find(r => r.id === lookupReport.value)
+    if (report) {
+        lookupDataset.value = report.datasetId
+    }
+}
+
+function applyLookup() {
+    if (lookupWorkspace.value) {
+        form.value.workspaceId = lookupWorkspace.value
+    }
+    if (lookupDataset.value) {
+        form.value.datasetId = lookupDataset.value
+    }
+    if (lookupReport.value) {
+        form.value.reportId = lookupReport.value
+    }
+}
+
 function parseNotifyTargets(text: string): RefreshNotificationTargetDto[] {
     if (!text.trim()) return []
     return text
@@ -286,6 +405,19 @@ function parseNotifyTargets(text: string): RefreshNotificationTargetDto[] {
 
 async function loadSchedules() {
     schedules.value = await refreshService.getSchedules()
+    const uniqueDatasets = Array.from(new Set(schedules.value.map(s => s.datasetId)))
+    const latestEntries = await Promise.all(
+        uniqueDatasets.map(async datasetId => {
+            try {
+                const runs = await refreshService.getHistory(datasetId, 0, 1)
+                return [datasetId, runs[0] ?? null] as const
+            } catch (error) {
+                console.error(error)
+                return [datasetId, null] as const
+            }
+        })
+    )
+    latestRuns.value = Object.fromEntries(latestEntries)
     const first = schedules.value[0]
     if (first && !selectedScheduleId.value) {
         selectSchedule(first)
@@ -408,6 +540,20 @@ onMounted(async () => {
 
 .history {
     margin-top: 1.5rem;
+}
+
+.lookup {
+    border: 1px dashed var(--cds-border-subtle, #c6c6c6);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.lookup h4 {
+    margin: 0;
+    font-size: 0.95rem;
 }
 
 .empty-state {

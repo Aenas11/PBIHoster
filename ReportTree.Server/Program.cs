@@ -89,6 +89,8 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<RefreshNotificationService>();
             builder.Services.AddScoped<DatasetRefreshService>();
             builder.Services.Configure<RefreshOptions>(builder.Configuration.GetSection("Refresh"));
+            builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+            builder.Services.AddSingleton<EmailService>();
             builder.Services.AddHostedService<RefreshSchedulerHostedService>();
 
             // Configure Security Policies from Configuration
@@ -378,26 +380,6 @@ namespace ReportTree.Server
 
             app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
             
-            // Global error handler
-            app.Map("/error", (HttpContext context) =>
-            {
-                var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-                var isDevelopment = app.Environment.IsDevelopment();
-                
-                return Results.Problem(
-                    title: "An error occurred",
-                    detail: isDevelopment ? exception?.Error.Message : "An unexpected error occurred. Please try again later.",
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            });
-
-            // Initialize default settings
-            using (var scope = app.Services.CreateScope())
-            {
-                var settingsService = scope.ServiceProvider.GetRequiredService<SettingsService>();
-                settingsService.InitializeDefaultSettingsAsync().Wait();
-            }
-
             // Serve the Vue.js frontend for all non-API routes
             app.MapFallbackToFile("/index.html");
 
