@@ -44,6 +44,19 @@ public class SettingsController : ControllerBase
         var staticSettings = new Dictionary<string, string?>();
         staticSettings["HomePageId"] = await _settingsService.GetValueAsync("App.HomePageId");
         staticSettings["DemoModeEnabled"] = (await _settingsService.IsDemoModeEnabledAsync()).ToString();
+        var appName = await _settingsService.GetValueAsync("Branding.AppName");
+        var footerText = await _settingsService.GetValueAsync("Branding.FooterText");
+        var footerLinkUrl = await _settingsService.GetValueAsync("Branding.FooterLinkUrl");
+        var footerLinkLabel = await _settingsService.GetValueAsync("Branding.FooterLinkLabel");
+        var logoAssetId = await _settingsService.GetValueAsync("Branding.LogoAssetId");
+        var faviconAssetId = await _settingsService.GetValueAsync("Branding.FaviconAssetId");
+
+        staticSettings["AppName"] = appName;
+        staticSettings["FooterText"] = footerText;
+        staticSettings["FooterLinkUrl"] = footerLinkUrl;
+        staticSettings["FooterLinkLabel"] = footerLinkLabel;
+        staticSettings["LogoUrl"] = string.IsNullOrWhiteSpace(logoAssetId) ? null : $"/api/branding/assets/{logoAssetId}";
+        staticSettings["FaviconUrl"] = string.IsNullOrWhiteSpace(faviconAssetId) ? null : $"/api/branding/assets/{faviconAssetId}";
         staticSettings["Version"] = ReadVersion();
         return Ok(staticSettings);
     }

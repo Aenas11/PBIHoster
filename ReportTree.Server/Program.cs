@@ -68,8 +68,11 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IThemeRepository, LiteDbThemeRepository>();
             builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
             builder.Services.AddSingleton<ISettingsRepository, LiteDbSettingsRepository>();
+            builder.Services.AddSingleton<IBrandingAssetRepository, LiteDbBrandingAssetRepository>();
             builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
             builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
+            builder.Services.AddSingleton<IDatasetRefreshScheduleRepository, LiteDbDatasetRefreshScheduleRepository>();
+            builder.Services.AddSingleton<IDatasetRefreshRunRepository, LiteDbDatasetRefreshRunRepository>();
             builder.Services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" })
                 .AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });
@@ -77,11 +80,18 @@ namespace ReportTree.Server
             // Services
             builder.Services.AddSingleton<SettingsService>();
             builder.Services.AddSingleton<ISettingsService>(sp => sp.GetRequiredService<SettingsService>());
+            builder.Services.AddSingleton<BrandingService>();
             builder.Services.AddScoped<AuditLogService>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<PageAuthorizationService>();
             builder.Services.AddSingleton<IPowerBIService, PowerBIService>();
             builder.Services.AddSingleton<DemoContentService>();
+            builder.Services.AddSingleton<RefreshNotificationService>();
+            builder.Services.AddScoped<DatasetRefreshService>();
+            builder.Services.Configure<RefreshOptions>(builder.Configuration.GetSection("Refresh"));
+            builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+            builder.Services.AddSingleton<EmailService>();
+            builder.Services.AddHostedService<RefreshSchedulerHostedService>();
 
             // Configure Security Policies from Configuration
             var passwordPolicy = new PasswordPolicy();
@@ -99,11 +109,6 @@ namespace ReportTree.Server
             builder.Configuration.Bind("Security:ContentSecurityPolicy", contentSecurityPolicy);
 
             builder.Services.AddSingleton(contentSecurityPolicy);
-            
-            builder.Services.AddScoped<AuthService>();
-            builder.Services.AddScoped<PageAuthorizationService>();
-            builder.Services.AddScoped<SettingsService>();
-            builder.Services.AddScoped<AuditLogService>();
             builder.Services.AddScoped<IPowerBIDiagnosticsService, PowerBIDiagnosticsService>();
             
             // Add HttpContextAccessor for audit logging
@@ -167,6 +172,7 @@ namespace ReportTree.Server
             {
                 options.EnableForHttps = true;
             });
+            builder.Services.AddHttpClient();
 
             // JWT Auth
             var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -369,26 +375,6 @@ namespace ReportTree.Server
 
             app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
             
-            // Global error handler
-            app.Map("/error", (HttpContext context) =>
-            {
-                var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-                var isDevelopment = app.Environment.IsDevelopment();
-                
-                return Results.Problem(
-                    title: "An error occurred",
-                    detail: isDevelopment ? exception?.Error.Message : "An unexpected error occurred. Please try again later.",
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            });
-
-            // Initialize default settings
-            using (var scope = app.Services.CreateScope())
-            {
-                var settingsService = scope.ServiceProvider.GetRequiredService<SettingsService>();
-                settingsService.InitializeDefaultSettingsAsync().Wait();
-            }
-
             // Serve the Vue.js frontend for all non-API routes
             app.MapFallbackToFile("/index.html");
 

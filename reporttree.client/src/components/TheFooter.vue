@@ -4,6 +4,16 @@ import { useStaticSettingsStore } from '@/stores/staticSettings'
 
 const staticSettings = useStaticSettingsStore()
 const versionLabel = computed(() => staticSettings.version ? `v${staticSettings.version}` : '')
+const appName = computed(() => staticSettings.appName || 'ReportTree')
+const footerText = computed(() => {
+  if (staticSettings.footerText) {
+    return staticSettings.footerText
+  }
+  const year = new Date().getFullYear()
+  return `${appName.value} ${versionLabel.value} © ${year}`.trim()
+})
+const footerLinkUrl = computed(() => staticSettings.footerLinkUrl || '')
+const footerLinkLabel = computed(() => staticSettings.footerLinkLabel || '')
 </script>
 
 <template>
@@ -11,7 +21,12 @@ const versionLabel = computed(() => staticSettings.version ? `v${staticSettings.
     <div class="cds--grid cds--grid--full-width">
       <div class="cds--row">
         <div class="cds--col-lg-16">
-          <p class="footer-text">ReportTree {{ versionLabel }} &copy; {{ new Date().getFullYear() }}</p>
+          <p class="footer-text">
+            {{ footerText }}
+            <a v-if="footerLinkUrl" :href="footerLinkUrl" target="_blank" rel="noopener noreferrer" class="footer-link">
+              {{ footerLinkLabel || footerLinkUrl }}
+            </a>
+          </p>
         </div>
       </div>
     </div>
@@ -35,6 +50,11 @@ const versionLabel = computed(() => staticSettings.version ? `v${staticSettings.
   padding: 0;
   font-size: 0.875rem;
   color: #525252;
+}
+
+.footer-link {
+  margin-left: 0.5rem;
+  color: inherit;
 }
 
 @media (prefers-color-scheme: dark) {

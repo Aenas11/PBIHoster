@@ -14,6 +14,7 @@ namespace ReportTree.Server.Controllers
     {
         private readonly IPageRepository _repo;
         private readonly PageAuthorizationService _authService;
+        private readonly AuthService _authServiceCore;
         private readonly IMemoryCache _cache;
         private readonly SettingsService _settingsService;
         private readonly DemoContentService _demoContentService;
@@ -23,12 +24,14 @@ namespace ReportTree.Server.Controllers
         public PagesController(
             IPageRepository repo, 
             PageAuthorizationService authService,
+            AuthService authServiceCore,
             IMemoryCache cache,
             SettingsService settingsService,
             DemoContentService demoContentService)
         {
             _repo = repo;
             _authService = authService;
+            _authServiceCore = authServiceCore;
             _cache = cache;
             _settingsService = settingsService;
             _demoContentService = demoContentService;
@@ -78,6 +81,8 @@ namespace ReportTree.Server.Controllers
             {
                 return User.Identity?.IsAuthenticated == true ? Forbid() : Unauthorized();
             }
+
+            await ApplyDefaultHomeLayoutAsync(page);
 
             return page;
         }
@@ -165,6 +170,82 @@ namespace ReportTree.Server.Controllers
             _cache.Remove(PAGES_CACHE_KEY);
             
             return CreatedAtAction(nameof(Get), new { id = clonedPage.Id }, clonedPage);
+        }
+
+        private async Task ApplyDefaultHomeLayoutAsync(Page page)
+        {
+            if (page.Layout != null && page.Layout.Trim().Length > 0)
+            {
+                return;
+            }
+
+            if (User.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            var username = User.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return;
+            }
+
+            var user = await _authServiceCore.GetUserAsync(username);
+            if (user == null || user.HomeFavoritesSeeded)
+            {
+                return;
+            }
+
+            var homePageIdRaw = await _settingsService.GetValueAsync("App.HomePageId");
+            if (!int.TryParse(homePageIdRaw, out var homePageId))
+            {
+                return;
+            }
+
+            if (homePageId != page.Id)
+            {
+                return;
+            }
+
+            page.Layout = BuildDefaultHomeLayout();
+            await _repo.UpdateAsync(page);
+            _cache.Remove(PAGES_CACHE_KEY);
+
+            user.HomeFavoritesSeeded = true;
+            await _authServiceCore.UpdateUserAsync(user);
+        }
+
+        private static string BuildDefaultHomeLayout()
+        {
+            var layout = new[]
+            {
+                new
+                {
+                    i = "panel-0",
+                    x = 0,
+                    y = 0,
+                    w = 6,
+                    h = 6,
+                    minW = 3,
+                    minH = 4,
+                    componentType = "favorites",
+                    componentConfig = new
+                    {
+                        showFavorites = true,
+                        showRecents = true,
+                        maxItems = 6
+                    },
+                    metadata = new
+                    {
+                        title = "Favorites & Recents",
+                        description = "Quick access to favorite and recently viewed pages",
+                        createdAt = DateTime.UtcNow.ToString("o"),
+                        updatedAt = DateTime.UtcNow.ToString("o")
+                    }
+                }
+            };
+
+            return System.Text.Json.JsonSerializer.Serialize(layout);
         }
     }
 

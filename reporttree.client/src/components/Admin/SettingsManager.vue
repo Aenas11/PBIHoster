@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { api } from '../../services/api'
 import { useToastStore } from '../../stores/toast'
+import { useStaticSettingsStore } from '../../stores/staticSettings'
 import { Add20, Edit20, TrashCan20 } from '@carbon/icons-vue'
 import '@carbon/web-components/es/components/button/index.js'
 import '@carbon/web-components/es/components/data-table/index.js'
@@ -27,6 +28,7 @@ interface Page {
 }
 
 const toastStore = useToastStore()
+const staticSettingsStore = useStaticSettingsStore()
 const settings = ref<Setting[]>([])
 const pages = ref<Page[]>([])
 const loading = ref(false)
@@ -36,6 +38,17 @@ const isEditing = ref(false)
 // Static app settings
 const homePageId = ref<string>('')
 const demoModeEnabled = ref(false)
+const appName = ref('ReportTree')
+const footerText = ref('')
+const footerLinkUrl = ref('')
+const footerLinkLabel = ref('')
+
+const logoFile = ref<File | null>(null)
+const faviconFile = ref<File | null>(null)
+const logoInput = ref<HTMLInputElement | null>(null)
+const faviconInput = ref<HTMLInputElement | null>(null)
+const logoUrl = computed(() => staticSettingsStore.logoUrl)
+const faviconUrl = computed(() => staticSettingsStore.faviconUrl)
 
 const formData = ref<Setting>({
     key: '',
@@ -45,7 +58,7 @@ const formData = ref<Setting>({
     isEncrypted: false
 })
 
-const categories = ['General', 'Security', 'PowerBI', 'Email', 'Authentication', 'Application']
+const categories = ['General', 'Security', 'PowerBI', 'Email', 'Authentication', 'Application', 'Branding']
 
 // Filter out static app settings from regular settings
 const regularSettings = computed(() =>
@@ -80,6 +93,18 @@ async function loadSettings() {
         } else {
             demoModeEnabled.value = false
         }
+
+        const appNameSetting = settings.value.find(s => s.key === 'Branding.AppName')
+        appName.value = appNameSetting?.value || staticSettingsStore.appName || 'ReportTree'
+
+        const footerTextSetting = settings.value.find(s => s.key === 'Branding.FooterText')
+        footerText.value = footerTextSetting?.value || ''
+
+        const footerLinkUrlSetting = settings.value.find(s => s.key === 'Branding.FooterLinkUrl')
+        footerLinkUrl.value = footerLinkUrlSetting?.value || ''
+
+        const footerLinkLabelSetting = settings.value.find(s => s.key === 'Branding.FooterLinkLabel')
+        footerLinkLabel.value = footerLinkLabelSetting?.value || ''
     } catch (error) {
         console.error('Failed to load settings:', error)
     } finally {
@@ -109,12 +134,37 @@ async function saveStaticSettings() {
                 value: demoModeEnabled.value.toString(),
                 category: 'Application',
                 description: 'Enable safe demo pages and sample dataset links'
+            },
+            {
+                key: 'Branding.AppName',
+                value: appName.value || 'ReportTree',
+                category: 'Branding',
+                description: 'Application display name'
+            },
+            {
+                key: 'Branding.FooterText',
+                value: footerText.value || '',
+                category: 'Branding',
+                description: 'Footer text override'
+            },
+            {
+                key: 'Branding.FooterLinkUrl',
+                value: footerLinkUrl.value || '',
+                category: 'Branding',
+                description: 'Footer link URL'
+            },
+            {
+                key: 'Branding.FooterLinkLabel',
+                value: footerLinkLabel.value || '',
+                category: 'Branding',
+                description: 'Footer link label'
             }
         ]
 
         await Promise.all(payloads.map(payload => api.put('/settings', payload)))
         toastStore.success('Success', 'Static settings saved successfully')
         await loadSettings()
+        await staticSettingsStore.load()
     } catch (error) {
         console.error('Failed to save static settings:', error)
         toastStore.error('Error', 'Failed to save static settings')
@@ -176,6 +226,112 @@ function onDemoModeToggle(e: CustomEvent) {
     const value = (e.detail?.checked ?? e.detail?.value) as boolean | undefined
     demoModeEnabled.value = value ?? false
 }
+function onAppNameInput(e: Event) { appName.value = (e.target as HTMLInputElement).value }
+function onFooterTextInput(e: Event) { footerText.value = (e.target as HTMLInputElement).value }
+function onFooterLinkUrlInput(e: Event) { footerLinkUrl.value = (e.target as HTMLInputElement).value }
+function onFooterLinkLabelInput(e: Event) { footerLinkLabel.value = (e.target as HTMLInputElement).value }
+function onLogoFileChange(e: Event) {
+    logoFile.value = (e.target as HTMLInputElement).files?.[0] ?? null
+}
+function onFaviconFileChange(e: Event) {
+    faviconFile.value = (e.target as HTMLInputElement).files?.[0] ?? null
+}
+
+function getAuthHeader(): HeadersInit {
+    const token = localStorage.getItem('token')
+    return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+async function uploadBrandingAsset(assetType: 'logo' | 'favicon', file: File | null) {
+    if (!file) {
+        toastStore.error('Error', 'Select a file to upload')
+        return
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`/api/branding/assets/${assetType}`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: formData
+    })
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Upload failed' }))
+        throw new Error(error.error || 'Upload failed')
+    }
+
+    await staticSettingsStore.load()
+    await loadSettings()
+
+    if (assetType === 'logo') {
+        logoFile.value = null
+        if (logoInput.value) logoInput.value.value = ''
+    } else {
+        faviconFile.value = null
+        if (faviconInput.value) faviconInput.value.value = ''
+    }
+}
+
+async function deleteBrandingAsset(assetType: 'logo' | 'favicon') {
+    if (!confirm(`Remove the current ${assetType}?`)) {
+        return
+    }
+
+    const response = await fetch(`/api/branding/assets/${assetType}`, {
+        method: 'DELETE',
+        headers: getAuthHeader()
+    })
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Delete failed' }))
+        throw new Error(error.error || 'Delete failed')
+    }
+
+    await staticSettingsStore.load()
+    await loadSettings()
+}
+
+async function handleUploadLogo() {
+    try {
+        await uploadBrandingAsset('logo', logoFile.value)
+        toastStore.success('Success', 'Logo updated')
+    } catch (error) {
+        console.error('Logo upload failed', error)
+        toastStore.error('Error', 'Logo upload failed')
+    }
+}
+
+async function handleUploadFavicon() {
+    try {
+        await uploadBrandingAsset('favicon', faviconFile.value)
+        toastStore.success('Success', 'Favicon updated')
+    } catch (error) {
+        console.error('Favicon upload failed', error)
+        toastStore.error('Error', 'Favicon upload failed')
+    }
+}
+
+async function handleDeleteLogo() {
+    try {
+        await deleteBrandingAsset('logo')
+        toastStore.success('Success', 'Logo removed')
+    } catch (error) {
+        console.error('Logo delete failed', error)
+        toastStore.error('Error', 'Logo delete failed')
+    }
+}
+
+async function handleDeleteFavicon() {
+    try {
+        await deleteBrandingAsset('favicon')
+        toastStore.success('Success', 'Favicon removed')
+    } catch (error) {
+        console.error('Favicon delete failed', error)
+        toastStore.error('Error', 'Favicon delete failed')
+    }
+}
 
 onMounted(() => {
     loadSettings()
@@ -220,6 +376,75 @@ onMounted(() => {
                             and
                             <a href="/onboarding/sample-report.svg" target="_blank">sample report preview</a>.
                         </div>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="app-name">Application Name</label>
+                    <div class="setting-input">
+                        <cds-text-input id="app-name" label="" :value="appName" @input="onAppNameInput"
+                            placeholder="ReportTree"></cds-text-input>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="footer-text">Footer Text</label>
+                    <div class="setting-input">
+                        <cds-text-input id="footer-text" label="" :value="footerText" @input="onFooterTextInput"
+                            placeholder="Leave blank to use default"></cds-text-input>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="footer-link-url">Footer Link URL</label>
+                    <div class="setting-input">
+                        <cds-text-input id="footer-link-url" label="" :value="footerLinkUrl"
+                            @input="onFooterLinkUrlInput" placeholder="https://example.com"></cds-text-input>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="footer-link-label">Footer Link Label</label>
+                    <div class="setting-input">
+                        <cds-text-input id="footer-link-label" label="" :value="footerLinkLabel"
+                            @input="onFooterLinkLabelInput" placeholder="Support"></cds-text-input>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label>Brand Logo</label>
+                    <div class="setting-input">
+                        <div class="asset-row">
+                            <img v-if="logoUrl" :src="logoUrl" class="asset-preview" alt="" aria-hidden="true" />
+                            <span v-else class="asset-placeholder">No logo uploaded</span>
+                        </div>
+                        <div class="asset-actions">
+                            <input ref="logoInput" type="file" accept="image/png,image/jpeg,image/webp"
+                                @change="onLogoFileChange" />
+                            <cds-button size="sm" @click="handleUploadLogo">Upload Logo</cds-button>
+                            <cds-button size="sm" kind="secondary" @click="handleDeleteLogo"
+                                :disabled="!logoUrl">Remove</cds-button>
+                        </div>
+                        <div class="hint">PNG, JPG, or WebP. Max 2 MB.</div>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label>Favicon</label>
+                    <div class="setting-input">
+                        <div class="asset-row">
+                            <img v-if="faviconUrl" :src="faviconUrl" class="asset-preview" alt="" aria-hidden="true" />
+                            <span v-else class="asset-placeholder">No favicon uploaded</span>
+                        </div>
+                        <div class="asset-actions">
+                            <input ref="faviconInput" type="file"
+                                accept="image/png,image/x-icon,image/vnd.microsoft.icon"
+                                @change="onFaviconFileChange" />
+                            <cds-button size="sm" @click="handleUploadFavicon">Upload Favicon</cds-button>
+                            <cds-button size="sm" kind="secondary" @click="handleDeleteFavicon"
+                                :disabled="!faviconUrl">Remove</cds-button>
+                        </div>
+                        <div class="hint">PNG or ICO. Max 2 MB.</div>
                     </div>
                 </div>
 
@@ -371,6 +596,30 @@ onMounted(() => {
         font-size: 0.875rem;
         margin-top: 0.5rem;
     }
+}
+
+.asset-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.asset-preview {
+    height: 36px;
+    width: auto;
+}
+
+.asset-placeholder {
+    font-size: 0.875rem;
+    color: var(--cds-text-secondary);
+}
+
+.asset-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    align-items: center;
 }
 
 .regular-settings-section {

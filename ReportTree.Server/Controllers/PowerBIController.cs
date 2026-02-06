@@ -59,6 +59,14 @@ namespace ReportTree.Server.Controllers
             return Ok(dashboards);
         }
 
+        [HttpGet("workspaces/{workspaceId}/datasets")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<DatasetDto>>> GetDatasets(Guid workspaceId, CancellationToken cancellationToken)
+        {
+            var datasets = await _powerBIService.GetDatasetsAsync(workspaceId, cancellationToken);
+            return Ok(datasets);
+        }
+
         [HttpPost("embed/report")]
         [Authorize]
         public async Task<ActionResult<EmbedTokenResponseDto>> GetReportEmbedToken([FromBody] EmbedTokenRequestDto request, CancellationToken cancellationToken)

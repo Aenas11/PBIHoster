@@ -41,7 +41,7 @@ public class LiteDbLoginAttemptRepository : ILoginAttemptRepository
     public Task<AccountLockout?> GetLockoutAsync(string username)
     {
         var lockout = _lockouts.FindOne(x => x.Username == username);
-        return Task.FromResult(lockout);
+        return Task.FromResult<AccountLockout?>(lockout);
     }
 
     public Task UpsertLockoutAsync(AccountLockout lockout)

@@ -16,6 +16,11 @@ export interface DashboardDto {
     embedUrl: string;
 }
 
+export interface DatasetDto {
+    id: string;
+    name: string;
+}
+
 export interface EmbedTokenRequestDto {
     workspaceId: string
     resourceId: string
