@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from './stores/theme'
 import { useAuthStore } from './stores/auth'
@@ -31,6 +31,30 @@ onMounted(async () => {
     await staticSettingsStore.load()
   }
 })
+
+function applyBranding(appName: string, faviconUrl: string) {
+  if (appName) {
+    document.title = appName
+  }
+
+  if (faviconUrl) {
+    let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (!favicon) {
+      favicon = document.createElement('link')
+      favicon.rel = 'icon'
+      document.head.appendChild(favicon)
+    }
+    favicon.href = faviconUrl
+  }
+}
+
+watch(
+  () => [staticSettingsStore.appName, staticSettingsStore.faviconUrl],
+  ([appName, faviconUrl]) => {
+    applyBranding(appName || '', faviconUrl || '')
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

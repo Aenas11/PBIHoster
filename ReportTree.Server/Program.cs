@@ -68,6 +68,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IThemeRepository, LiteDbThemeRepository>();
             builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
             builder.Services.AddSingleton<ISettingsRepository, LiteDbSettingsRepository>();
+            builder.Services.AddSingleton<IBrandingAssetRepository, LiteDbBrandingAssetRepository>();
             builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
             builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
             builder.Services.AddHealthChecks()
@@ -77,6 +78,7 @@ namespace ReportTree.Server
             // Services
             builder.Services.AddSingleton<SettingsService>();
             builder.Services.AddSingleton<ISettingsService>(sp => sp.GetRequiredService<SettingsService>());
+            builder.Services.AddSingleton<BrandingService>();
             builder.Services.AddScoped<AuditLogService>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<PageAuthorizationService>();

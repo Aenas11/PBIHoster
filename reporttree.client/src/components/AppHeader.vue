@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '@carbon/web-components/es/components/ui-shell/index.js';
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Logout20, Switcher20, User20 } from '@carbon/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -23,6 +24,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const editModeStore = useEditModeStore()
 const staticSettings = useStaticSettingsStore()
+const appName = computed(() => staticSettings.appName || 'ReportTree')
+const logoUrl = computed(() => staticSettings.logoUrl || '')
 
 function goToProfile() {
   router.push('/profile')
@@ -31,11 +34,12 @@ function goToProfile() {
 </script>
 
 <template>
-  <cds-header aria-label="ReportTree">
+  <cds-header :aria-label="appName">
     <cds-skip-to-content></cds-skip-to-content>
     <cds-header-menu-button button-label-active="Close menu" button-label-inactive="Open menu"
       @click="emit('toggleMenu')" :active="isSideNavExpanded" />
-    <cds-header-name href="/" prefix="Report">Tree</cds-header-name>
+    <img v-if="logoUrl" :src="logoUrl" class="brand-logo" alt="" aria-hidden="true" />
+    <cds-header-name href="/" prefix="">{{ appName }}</cds-header-name>
     <cds-tag v-if="staticSettings.demoModeEnabled" type="blue" title="Demo mode enabled" size="sm" class="demo-tag">
       Demo mode
     </cds-tag>
@@ -85,5 +89,12 @@ cds-header-global-action {
 
 .demo-tag {
   margin-left: 0.5rem;
+}
+
+.brand-logo {
+  height: 22px;
+  width: auto;
+  margin-left: 0.5rem;
+  margin-right: 0.25rem;
 }
 </style>
