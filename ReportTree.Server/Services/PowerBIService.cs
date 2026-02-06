@@ -290,6 +290,8 @@ namespace ReportTree.Server.Services
                 _logger.LogError(ex, "Error generating V2 Embed Token, falling back to V1.");
             }
             // Fallback to V1 API if V2 fails (e.g., no RLS)
+            try
+            {
             var requestV1 = new GenerateTokenRequest(accessLevel: TokenAccessLevel.View);
             var embedToken = await client.Reports.GenerateTokenInGroupAsync(workspaceId, reportId, requestV1, cancellationToken: cancellationToken);
             var responseV1 = new EmbedTokenResponseDto
@@ -301,6 +303,21 @@ namespace ReportTree.Server.Services
             };
             CacheEmbedToken(cacheKey, responseV1);
             return responseV1;
+            }
+            catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                _logger.LogError("Error generating Report Embed Token: {Message}", ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating Report Embed Token.");
+                throw;
+            }
+
+            // return await fallback logic here if needed
+
+
 
 
             // var embedToken = await client.EmbedToken.GenerateTokenAsync(request, cancellationToken: cancellationToken);
