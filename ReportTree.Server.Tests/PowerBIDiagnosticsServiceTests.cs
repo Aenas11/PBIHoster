@@ -132,4 +132,10 @@ file class FakePowerBIService : IPowerBIService
     {
         return Task.FromResult<DashboardDto?>(null);
     }
+
+    public Task<IEnumerable<DatasetDto>> GetDatasetsAsync(Guid workspaceId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IEnumerable<DatasetDto>>(Array.Empty<DatasetDto>());
+        
+    }
 }
