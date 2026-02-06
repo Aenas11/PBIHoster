@@ -194,40 +194,41 @@ onMounted(() => {
             <h3>Static Application Settings</h3>
             <p class="section-description">Configure core application behavior and defaults</p>
 
-        <div class="static-settings-form">
-            <div class="setting-row">
-                <label for="home-page-select">Home Page</label>
-                <div class="setting-input">
-                    <cds-select id="home-page-select" label-text="Select the page to display on the home route (/)"
-                        :value="homePageId" @cds-select-selected="onHomePageChange">
-                        <cds-select-item value="">No home page (default)</cds-select-item>
-                        <cds-select-item v-for="page in topLevelPages" :key="page.id" :value="page.id.toString()">
-                            {{ page.title }}
-                        </cds-select-item>
-                    </cds-select>
+            <div class="static-settings-form">
+                <div class="setting-row">
+                    <label for="home-page-select">Home Page</label>
+                    <div class="setting-input">
+                        <cds-select id="home-page-select" label-text="Select the page to display on the home route (/)"
+                            :value="homePageId" @cds-select-selected="onHomePageChange">
+                            <cds-select-item value="">No home page (default)</cds-select-item>
+                            <cds-select-item v-for="page in topLevelPages" :key="page.id" :value="page.id.toString()">
+                                {{ page.title }}
+                            </cds-select-item>
+                        </cds-select>
 
-                </div>
-            </div>
-
-            <div class="setting-row">
-                <label for="demo-toggle">Demo Mode</label>
-                <div class="setting-input">
-                    <cds-toggle id="demo-toggle" :checked="demoModeEnabled" @cds-toggle-changed="onDemoModeToggle">
-                        Enable demo mode to preload sample pages and link the starter dataset without tenant data
-                    </cds-toggle>
-                    <div class="hint">
-                        Starter assets: <a href="/sample-data/sample-sales.csv" target="_blank">sample-sales.csv</a> and
-                        <a href="/onboarding/sample-report.svg" target="_blank">sample report preview</a>.
                     </div>
                 </div>
-            </div>
 
-            <!-- save button -->
-                    <cds-button size="sm" @click="saveStaticSettings" style="margin-top: 1rem;">
-                        Save Static Settings
-                    </cds-button>
-        </div>
-    </section>
+                <div class="setting-row">
+                    <label for="demo-toggle">Demo Mode</label>
+                    <div class="setting-input">
+                        <cds-toggle id="demo-toggle" :checked="demoModeEnabled" @cds-toggle-changed="onDemoModeToggle">
+                            Enable demo mode to preload sample pages and link the starter dataset without tenant data
+                        </cds-toggle>
+                        <div class="hint">
+                            Starter assets: <a href="/sample-data/sample-sales.csv" target="_blank">sample-sales.csv</a>
+                            and
+                            <a href="/onboarding/sample-report.svg" target="_blank">sample report preview</a>.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- save button -->
+                <cds-button size="sm" @click="saveStaticSettings" style="margin-top: 1rem;">
+                    Save Static Settings
+                </cds-button>
+            </div>
+        </section>
 
         <!-- Regular Settings Section -->
         <section class="regular-settings-section">
@@ -304,8 +305,6 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-
-
 .header {
     display: flex;
     justify-content: space-between;

@@ -346,6 +346,26 @@ namespace ReportTree.Server
                 var (token, errorMessage) = await auth.LoginAsync(req.Username, req.Password);
                 return token != null ? Results.Ok(new LoginResponse(token)) : Results.BadRequest(new { Error = errorMessage });
             });
+            
+            // Global error handler
+            app.Map("/error", (HttpContext context) =>
+            {
+                var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+                var isDevelopment = app.Environment.IsDevelopment();
+                
+                return Results.Problem(
+                    title: "An error occurred",
+                    detail: isDevelopment ? exception?.Error.Message : "An unexpected error occurred. Please try again later.",
+                    statusCode: StatusCodes.Status500InternalServerError
+                );
+            });
+
+            // Initialize default settings
+            using (var scope = app.Services.CreateScope())
+            {
+                var settingsService = scope.ServiceProvider.GetRequiredService<SettingsService>();
+                settingsService.InitializeDefaultSettingsAsync().Wait();
+            }
 
             app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
             

@@ -168,10 +168,10 @@ function getIcon(iconName: string) {
           <!-- Add Child Button in Edit Mode -->
           <cds-side-nav-link v-if="editModeStore.isEditMode" href="javascript:void(0)" @click="openCreateModal(page.id)"
             class="add-child-link">
-          <Add20 slot="title-icon" />
-          Add Child Page
-        </cds-side-nav-link>
-      </cds-side-nav-menu>
+            <Add20 slot="title-icon" />
+            Add Child Page
+          </cds-side-nav-link>
+        </cds-side-nav-menu>
       </template>
 
       <cds-side-nav-link href="/help" @click="navigateTo('/help', $event)">
@@ -192,7 +192,7 @@ function getIcon(iconName: string) {
           @click="toggleEditMode" class="action-button">
           <span v-if="expanded">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
           <span v-if="!expanded" slot="tooltip-content">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages'
-            }}</span>
+          }}</span>
           <component :is="editModeStore.isEditMode ? Close20 : Edit20" slot="icon" />
         </cds-button>
 
