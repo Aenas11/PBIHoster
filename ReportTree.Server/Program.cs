@@ -109,11 +109,6 @@ namespace ReportTree.Server
             builder.Configuration.Bind("Security:ContentSecurityPolicy", contentSecurityPolicy);
 
             builder.Services.AddSingleton(contentSecurityPolicy);
-            
-            builder.Services.AddScoped<AuthService>();
-            builder.Services.AddScoped<PageAuthorizationService>();
-            builder.Services.AddScoped<SettingsService>();
-            builder.Services.AddScoped<AuditLogService>();
             builder.Services.AddScoped<IPowerBIDiagnosticsService, PowerBIDiagnosticsService>();
             
             // Add HttpContextAccessor for audit logging

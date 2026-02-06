@@ -26,11 +26,10 @@ watch([showFavorites, showRecents, maxItems], () => {
 <template>
     <div class="config-container">
         <cds-toggle :checked="showFavorites"
-            @cds-toggle-changed="(e: CustomEvent) => showFavorites = !!e.detail?.checked">
-            Show favorites
+            @cds-toggle-changed="(e: CustomEvent) => showFavorites = !!e.detail?.checked" label-text="Show favorites">
         </cds-toggle>
-        <cds-toggle :checked="showRecents" @cds-toggle-changed="(e: CustomEvent) => showRecents = !!e.detail?.checked">
-            Show recents
+        <cds-toggle :checked="showRecents" @cds-toggle-changed="(e: CustomEvent) => showRecents = !!e.detail?.checked"
+            label-text="Show recents">
         </cds-toggle>
         <cds-text-input label="Max items" type="number" :value="maxItems"
             @input="maxItems = ($event.target as HTMLInputElement).value" min="1" max="20" />
