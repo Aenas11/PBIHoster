@@ -175,23 +175,6 @@ Create reusable analytics hosting infrastructure as a platform component, with t
 
 ---
 
-## Feature Comparison
-
-|Feature|PBIHoster|Power BI Premium|Power BI Embedded|
-|---|---|---|---|
-|Embedded Licensing|Yes (App owns data)|Yes|Yes|
-|Custom Branding|✅ Full|⚪ Limited|⚪ No|
-|Self-Hosted Option|✅ Docker|❌|❌|
-|Cost Model|Open Source|Per capacity|Per token|
-|Hierarchical Navigation|✅|⚪|❌|
-|Group Management|✅|⚪|⚪|
-|Audit Logging|✅|✅|⚪|
-|RLS Support|✅|✅|✅|
-|Role-Based Access|✅|⚪|❌|
-|Open Source|✅ MIT License|❌|❌|
-
----
-
 ## Installation Requirements
 
 ### For Docker Deployment (Production)
