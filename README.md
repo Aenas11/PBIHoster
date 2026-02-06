@@ -8,6 +8,7 @@ A modern Power BI hosting solution with dynamic dashboard layouts, user authenti
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
 - [Release & Versioning](#release--versioning)
+- [Feature Plans](#feature-plans)
 - [Getting Started](#getting-started)
   - [Quick Start with Docker](#quick-start-with-docker)
   - [Development Setup](#development-setup)
@@ -85,6 +86,10 @@ PBIHoster (also known as ReportTree) provides a secure, customizable platform fo
 - **Semantic Versioning**: The root `VERSION` file controls the app version. Update it before merging to `main`.
 - **CI Artifacts**: The Docker publish workflow tags images as `v<VERSION>` and `latest`, aligning runtime artifacts with the version file.
 - **Release Notes & Changelog**: See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) for highlights and [`CHANGELOG.md`](CHANGELOG.md) for detailed history.
+
+## Feature Plans
+
+- Consolidated feature planning and documentation lives in [Features.md](Features.md).
 
 ## Getting Started
 
