@@ -71,6 +71,8 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IBrandingAssetRepository, LiteDbBrandingAssetRepository>();
             builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
             builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
+            builder.Services.AddSingleton<IDatasetRefreshScheduleRepository, LiteDbDatasetRefreshScheduleRepository>();
+            builder.Services.AddSingleton<IDatasetRefreshRunRepository, LiteDbDatasetRefreshRunRepository>();
             builder.Services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" })
                 .AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });
@@ -84,6 +86,10 @@ namespace ReportTree.Server
             builder.Services.AddScoped<PageAuthorizationService>();
             builder.Services.AddSingleton<IPowerBIService, PowerBIService>();
             builder.Services.AddSingleton<DemoContentService>();
+            builder.Services.AddSingleton<RefreshNotificationService>();
+            builder.Services.AddScoped<DatasetRefreshService>();
+            builder.Services.Configure<RefreshOptions>(builder.Configuration.GetSection("Refresh"));
+            builder.Services.AddHostedService<RefreshSchedulerHostedService>();
 
             // Configure Security Policies from Configuration
             var passwordPolicy = new PasswordPolicy();
@@ -169,6 +175,7 @@ namespace ReportTree.Server
             {
                 options.EnableForHttps = true;
             });
+            builder.Services.AddHttpClient();
 
             // JWT Auth
             var jwtKey = builder.Configuration["Jwt:Key"]!;

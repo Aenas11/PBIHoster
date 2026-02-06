@@ -75,6 +75,119 @@ Target Users: Large enterprises, regulated industries, MSPs, and SaaS vendors
 - Backend: Dataset refresh model, scheduler service, Power BI API integration
 - Frontend: Admin panel for refresh management
 
+##### Design (Proposed)
+
+**Goals**
+- Enable admins to trigger and schedule dataset refreshes safely.
+- Provide clear visibility into refresh health, history, and limits.
+- Respect Power BI service constraints and tenant capacity.
+
+**Non-Goals**
+- End-user self-service refresh (admin-only in v1).
+- Cross-tenant or cross-capacity orchestration.
+
+**User Roles and Permissions**
+- Admin only for create/update/delete schedules and manual triggers.
+- Editor/Viewer can view read-only history in v1 only if explicitly enabled later.
+
+**UX Flow (Admin Panel)**
+1. Data Refresh landing page with dataset list, last refresh status, next scheduled run.
+2. Manual refresh action with confirmation and inline status updates.
+3. Schedule editor with cron builder, time zone selector, retry policy, and notifications.
+4. History table with filters (dataset, status, date range) and export CSV.
+
+**Core Entities (LiteDB)**
+- DatasetRefreshSchedule
+  - Id (Guid)
+  - Name
+  - DatasetId
+  - ReportId (optional)
+  - PageId (optional)
+  - Enabled
+  - Cron (string, validated)
+  - TimeZone (IANA string)
+  - RetryCount (int)
+  - RetryBackoffSeconds (int)
+  - NotifyOnSuccess (bool)
+  - NotifyOnFailure (bool)
+  - NotifyTargets (list: email or webhook)
+  - CreatedByUserId
+  - CreatedAtUtc
+  - UpdatedAtUtc
+
+- DatasetRefreshRun
+  - Id (Guid)
+  - ScheduleId (nullable for manual)
+  - DatasetId
+  - TriggeredByUserId (nullable for system)
+  - RequestedAtUtc
+  - StartedAtUtc
+  - CompletedAtUtc
+  - Status (Queued | InProgress | Succeeded | Failed | Cancelled)
+  - FailureReason
+  - PowerBiRequestId
+  - PowerBiActivityId
+  - RetriesAttempted
+  - DurationMs
+
+**Backend Services**
+- DatasetRefreshService
+  - Validates schedule input, enforces concurrency limits, and triggers refresh.
+  - Uses Power BI REST API: POST /groups/{groupId}/datasets/{datasetId}/refreshes
+  - Polls refresh status via GET /groups/{groupId}/datasets/{datasetId}/refreshes
+
+- RefreshSchedulerHostedService
+  - Cron evaluation loop with in-memory queue.
+  - Computes next run using time zone conversion.
+  - Applies retry policy with exponential backoff.
+
+- RefreshNotificationService
+  - Sends email/webhook on success or failure.
+  - Includes run metadata and correlation IDs.
+
+- RefreshMetricsMiddleware
+  - Captures API latency and error rates for refresh endpoints.
+
+**API Endpoints**
+- POST /api/refreshes/datasets/{datasetId}/run (Admin)
+- GET /api/refreshes/datasets/{datasetId}/history (Admin)
+- GET /api/refreshes/schedules (Admin)
+- POST /api/refreshes/schedules (Admin)
+- PUT /api/refreshes/schedules/{id} (Admin)
+- DELETE /api/refreshes/schedules/{id} (Admin)
+- POST /api/refreshes/schedules/{id}/toggle (Admin)
+
+**Validation Rules**
+- Enforce max concurrent refreshes per dataset (default: 1).
+- Respect Power BI daily refresh limits per dataset.
+- Validate cron expressions and time zone identifiers.
+- Throttle manual triggers with a short cooldown window.
+
+**Power BI Constraints**
+- Handle 429 responses with retry-after.
+- Avoid refresh if one is already running for the dataset.
+- Respect tenant capacity constraints.
+
+**Auditing**
+- Log schedule creation, update, toggle, and deletion.
+- Log manual refresh triggers and failures.
+
+**Configuration (appsettings / env)**
+- Refresh__MaxConcurrentPerDataset (default: 1)
+- Refresh__ManualCooldownSeconds (default: 60)
+- Refresh__DefaultRetryCount (default: 2)
+- Refresh__DefaultRetryBackoffSeconds (default: 120)
+
+**Testing**
+- Unit tests for cron parsing and time zone conversion.
+- Integration tests for schedule CRUD and manual refresh.
+- Mock Power BI API responses for status polling.
+
+**Documentation Deliverables**
+- Admin guide: Data Refresh Management
+- API docs for all endpoints
+- Runbook for 429 handling and failures
+
 ##### Scope and Goals
 - Enable admins to trigger refreshes for datasets tied to pages and reports
 - Provide scheduled refreshes with calendars, time zones, and retry policies
