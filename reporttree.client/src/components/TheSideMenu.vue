@@ -255,7 +255,7 @@ const recentPages = computed(() =>
           @click="toggleEditMode" class="action-button">
           <span v-if="expanded">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages' }}</span>
           <span v-if="!expanded" slot="tooltip-content">{{ editModeStore.isEditMode ? 'Exit Edit Mode' : 'Edit Pages'
-            }}</span>
+          }}</span>
           <component :is="editModeStore.isEditMode ? Close20 : Edit20" slot="icon" />
         </cds-button>
 
