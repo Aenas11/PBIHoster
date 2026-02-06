@@ -155,7 +155,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 
 ### Reference
 - 📝 [**Changelog**](CHANGELOG.md) - Detailed history of all releases
-- 📢 [**Release Notes**](RELEASE_NOTES.md) - Highlights of latest release
+- 📢 [**Release Notes**](documentation/RELEASE_NOTES.md) - Highlights of latest release
 
 ---
 
@@ -457,7 +457,7 @@ When reporting bugs, please include:
 **Semantic Versioning**: Major.Minor.Patch (e.g., 0.3.0)
 
 - **CHANGELOG.md**: Detailed history of all releases
-- **RELEASE_NOTES.md**: Highlights of latest release
+- **documentation/RELEASE_NOTES.md**: Highlights of latest release
 - **ROADMAP.md**: Planned features and timeline
 
 ---

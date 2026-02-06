@@ -38,7 +38,7 @@ Complete guide to PBIHoster documentation. Choose your path based on your role a
 | Document | Purpose | Audience |
 |----------|---------|----------|
 | [README.md](README.md) | High-level overview, quick start, feature overview | Everyone |
-| [RELEASE_NOTES.md](RELEASE_NOTES.md) | Latest release highlights | Everyone |
+| [RELEASE_NOTES.md](documentation/RELEASE_NOTES.md) | Latest release highlights | Everyone |
 | [CHANGELOG.md](CHANGELOG.md) | Detailed version history | Everyone |
 
 ### Deployment & Operations
