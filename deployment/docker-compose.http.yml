@@ -26,6 +26,19 @@ services:
       - PowerBI__AuthorityUrl=${POWERBI_AUTHORITY_URL:-https://login.microsoftonline.com/{0}/}
       - PowerBI__ResourceUrl=${POWERBI_RESOURCE_URL:-https://analysis.windows.net/powerbi/api}
       - PowerBI__ApiUrl=${POWERBI_API_URL:-https://api.powerbi.com}
+      - Refresh__MaxConcurrentPerDataset=${REFRESH_MAX_CONCURRENT_PER_DATASET:-1}
+      - Refresh__ManualCooldownSeconds=${REFRESH_MANUAL_COOLDOWN_SECONDS:-60}
+      - Refresh__DefaultRetryCount=${REFRESH_DEFAULT_RETRY_COUNT:-2}
+      - Refresh__DefaultRetryBackoffSeconds=${REFRESH_DEFAULT_RETRY_BACKOFF_SECONDS:-120}
+      - Refresh__PollIntervalSeconds=${REFRESH_POLL_INTERVAL_SECONDS:-60}
+      - Email__Enabled=${EMAIL_ENABLED:-false}
+      - Email__Host=${EMAIL_HOST:-}
+      - Email__Port=${EMAIL_PORT:-587}
+      - Email__UseSsl=${EMAIL_USE_SSL:-true}
+      - Email__Username=${EMAIL_USERNAME:-}
+      - Email__Password=${EMAIL_PASSWORD:-}
+      - Email__FromAddress=${EMAIL_FROM_ADDRESS:-}
+      - Email__FromName=${EMAIL_FROM_NAME:-PBIHoster}
     volumes:
       - pbihoster_data:/data
 volumes:

@@ -18,7 +18,7 @@ public class LiteDbSettingsRepository : ISettingsRepository
     public Task<AppSetting?> GetByKeyAsync(string key)
     {
         var setting = _collection.FindOne(x => x.Key == key);
-        return Task.FromResult(setting);
+        return Task.FromResult<AppSetting?>(setting);
     }
 
     public Task<IEnumerable<AppSetting>> GetAllAsync()

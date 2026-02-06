@@ -41,10 +41,12 @@ function goToAdmin() {
             <p>No home page has been configured yet.</p>
             <p>Please configure a home page in the admin settings.</p>
             <p v-if="staticSettings.demoModeEnabled" class="demo-banner">
-                Demo mode is enabled — start from the <strong>Demo Overview</strong> page in the side navigation to see sample layouts and the quick-start dataset.
+                Demo mode is enabled — start from the <strong>Demo Overview</strong> page in the side navigation to see
+                sample layouts and the quick-start dataset.
             </p>
             <cds-button @click="goToAdmin">Go to Admin Panel</cds-button>
-            <cds-button kind="tertiary" href="/help" style="margin-left: 0.5rem;">View Help &amp; Walkthroughs</cds-button>
+            <cds-button kind="tertiary" href="/help" style="margin-left: 0.5rem;">View Help &amp;
+                Walkthroughs</cds-button>
         </div>
     </div>
 </template>

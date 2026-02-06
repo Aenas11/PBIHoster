@@ -4,6 +4,7 @@ import UsersManager from '../components/Admin/UsersManager.vue'
 import GroupsManager from '../components/Admin/GroupsManager.vue'
 import SettingsManager from '../components/Admin/SettingsManager.vue'
 import PowerBIDiagnosticsCard from '../components/Admin/PowerBIDiagnosticsCard.vue'
+import DataRefreshManager from '../components/Admin/DataRefreshManager.vue'
 </script>
 
 <template>
@@ -27,6 +28,7 @@ import PowerBIDiagnosticsCard from '../components/Admin/PowerBIDiagnosticsCard.v
             <div class="admin-panels">
                 <SettingsManager />
                 <PowerBIDiagnosticsCard />
+                <DataRefreshManager />
             </div>
         </div>
 
@@ -51,6 +53,7 @@ import PowerBIDiagnosticsCard from '../components/Admin/PowerBIDiagnosticsCard.v
 
 .admin-panels {
     display: flex;
+    flex-wrap: wrap;
     gap: 2rem;
     align-items: flex-start;
     margin-top: 2rem;

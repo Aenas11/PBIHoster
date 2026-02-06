@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useStaticSettingsStore } from '../stores/staticSettings'
 import '@carbon/web-components/es/components/tile/index.js';
 import '@carbon/web-components/es/components/text-input/index.js';
 import '@carbon/web-components/es/components/button/index.js';
@@ -9,6 +10,9 @@ import '@carbon/web-components/es/components/link/index.js';
 
 const router = useRouter()
 const auth = useAuthStore()
+const staticSettings = useStaticSettingsStore()
+const appName = computed(() => staticSettings.appName || 'ReportTree')
+const logoUrl = computed(() => staticSettings.logoUrl || '')
 
 const username = ref('')
 const password = ref('')
@@ -34,7 +38,10 @@ async function handleLogin() {
   <div class="login-container">
     <div class="login-card">
       <cds-tile>
-        <h2 style="margin-bottom: 1rem;">Login to ReportTree</h2>
+        <div class="login-brand">
+          <img v-if="logoUrl" :src="logoUrl" class="login-logo" alt="" aria-hidden="true" />
+          <h2>Login to {{ appName }}</h2>
+        </div>
 
         <cds-text-input :value="username" @input="username = ($event.target as HTMLInputElement).value" label="Username"
           placeholder="Enter username" style="margin-bottom: 1rem;"></cds-text-input>
@@ -71,5 +78,17 @@ async function handleLogin() {
   width: 100%;
   max-width: 400px;
   padding: 1rem;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.login-logo {
+  height: 32px;
+  width: auto;
 }
 </style>

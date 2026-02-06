@@ -148,5 +148,83 @@ public class SettingsService : ISettingsService
                 "System"
             );
         }
+
+        var appNameSetting = await GetSettingAsync("Branding.AppName");
+        if (appNameSetting == null)
+        {
+            await UpsertSettingAsync(
+                "Branding.AppName",
+                "ReportTree",
+                "Branding",
+                "Application display name",
+                false,
+                "System"
+            );
+        }
+
+        var footerTextSetting = await GetSettingAsync("Branding.FooterText");
+        if (footerTextSetting == null)
+        {
+            await UpsertSettingAsync(
+                "Branding.FooterText",
+                string.Empty,
+                "Branding",
+                "Footer text override",
+                false,
+                "System"
+            );
+        }
+
+        var footerLinkUrlSetting = await GetSettingAsync("Branding.FooterLinkUrl");
+        if (footerLinkUrlSetting == null)
+        {
+            await UpsertSettingAsync(
+                "Branding.FooterLinkUrl",
+                string.Empty,
+                "Branding",
+                "Footer link URL",
+                false,
+                "System"
+            );
+        }
+
+        var footerLinkLabelSetting = await GetSettingAsync("Branding.FooterLinkLabel");
+        if (footerLinkLabelSetting == null)
+        {
+            await UpsertSettingAsync(
+                "Branding.FooterLinkLabel",
+                string.Empty,
+                "Branding",
+                "Footer link label",
+                false,
+                "System"
+            );
+        }
+
+        var logoAssetSetting = await GetSettingAsync("Branding.LogoAssetId");
+        if (logoAssetSetting == null)
+        {
+            await UpsertSettingAsync(
+                "Branding.LogoAssetId",
+                string.Empty,
+                "Branding",
+                "Brand logo asset id",
+                false,
+                "System"
+            );
+        }
+
+        var faviconAssetSetting = await GetSettingAsync("Branding.FaviconAssetId");
+        if (faviconAssetSetting == null)
+        {
+            await UpsertSettingAsync(
+                "Branding.FaviconAssetId",
+                string.Empty,
+                "Branding",
+                "Favicon asset id",
+                false,
+                "System"
+            );
+        }
     }
 }

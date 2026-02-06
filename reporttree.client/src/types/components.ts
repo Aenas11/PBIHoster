@@ -74,6 +74,15 @@ export interface PowerBIWorkspaceComponentConfig {
 }
 
 /**
+ * Favorites component configuration
+ */
+export interface FavoritesComponentConfig {
+    showFavorites?: boolean
+    showRecents?: boolean
+    maxItems?: number
+}
+
+/**
  * Props for configuration components
  */
 export interface ComponentConfigProps {
