@@ -17,10 +17,10 @@ public class AuditController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 100)
+    public async Task<IActionResult> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 100, [FromQuery] string? actionType = null)
     {
-        var logs = await _auditLogService.GetLogsAsync(skip, take);
-        var count = await _auditLogService.GetCountAsync();
+        var logs = await _auditLogService.GetLogsAsync(skip, take, actionType);
+        var count = await _auditLogService.GetCountAsync(actionType);
         return Ok(new { logs, count });
     }
 

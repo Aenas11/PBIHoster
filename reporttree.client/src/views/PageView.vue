@@ -256,7 +256,10 @@ const getConfigComponent = (item: GridItemWithComponent) => {
             </div>
             <div v-if="configModalItem && getConfigComponent(configModalItem)" v-show="activeTab === 'component'"
               role="tabpanel">
-              <component :is="getConfigComponent(configModalItem)" v-model="configModalValue" />
+              <component 
+                :is="getConfigComponent(configModalItem)" 
+                v-model="configModalValue"
+                :component-type="configModalItem.componentType" />
             </div>
           </div>
         </div>

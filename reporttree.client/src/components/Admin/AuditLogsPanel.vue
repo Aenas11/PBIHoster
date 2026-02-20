@@ -33,12 +33,12 @@
             <cds-checkbox
                 label-text="RLS Changes Only"
                 :checked="rlsOnly"
-                @change="toggleRLSFilter"
+                @cds-checkbox-changed="toggleRLSFilter"
                 :disabled="loading">
             </cds-checkbox>
         </div>
 
-        <cds-table v-if="logs.length > 0" class="audit-table">
+        <cds-table v-if="!loading" class="audit-table">
             <cds-table-head>
                 <cds-table-header-row>
                     <cds-table-header-cell>Timestamp</cds-table-header-cell>
@@ -50,6 +50,8 @@
                 </cds-table-header-row>
             </cds-table-head>
             <cds-table-body>
+                <cds-table-row v-if="logs.length === 0">
+                </cds-table-row>
                 <cds-table-row v-for="log in logs" :key="log.id">
                     <cds-table-cell>{{ formatDate(log.timestamp) }}</cds-table-cell>
                     <cds-table-cell>{{ log.username }}</cds-table-cell>
@@ -67,7 +69,10 @@
             </cds-table-body>
         </cds-table>
 
-        <div v-else-if="!loading" class="empty-state">No audit logs found</div>
+        <div v-else-if="loading" class="loading-state">
+            <cds-loading></cds-loading>
+            <p>Loading audit logs...</p>
+        </div>
 
         <div class="pagination" v-if="showPagination">
             <cds-button kind="ghost" size="sm" @click="prevPage" :disabled="loading || !canPrev">
@@ -91,6 +96,7 @@ import '@carbon/web-components/es/components/text-input/index.js'
 import '@carbon/web-components/es/components/data-table/index.js'
 import '@carbon/web-components/es/components/tag/index.js'
 import '@carbon/web-components/es/components/checkbox/index.js'
+import '@carbon/web-components/es/components/loading/index.js'
 
 interface AuditLog {
     id: number
@@ -132,8 +138,8 @@ function onResourceInput(e: Event) {
     resourceFilter.value = (e.target as HTMLInputElement).value
 }
 
-function toggleRLSFilter(e: Event) {
-    rlsOnly.value = (e.target as HTMLInputElement).checked
+function toggleRLSFilter(e: CustomEvent) {
+    rlsOnly.value = e.detail.checked
     skip.value = 0
     load()
 }
@@ -224,9 +230,16 @@ onMounted(() => {
 
 .filters {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: 1fr 1fr auto;
     gap: 1rem;
     margin: 1rem 0 1.5rem;
+    align-items: end;
+}
+
+@media (max-width: 768px) {
+    .filters {
+        grid-template-columns: 1fr;
+    }
 }
 
 .pagination {
@@ -239,5 +252,22 @@ onMounted(() => {
 
 .muted {
     color: var(--cds-text-secondary);
+}
+
+.loading-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--cds-text-secondary);
+}
+
+.loading-state p {
+    margin-top: 1rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--cds-text-secondary);
+    font-style: italic;
 }
 </style>

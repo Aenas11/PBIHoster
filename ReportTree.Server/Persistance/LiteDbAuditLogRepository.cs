@@ -14,6 +14,7 @@ public class LiteDbAuditLogRepository : IAuditLogRepository
         _collection = _db.GetCollection<AuditLog>("auditlogs");
         _collection.EnsureIndex(x => x.Username);
         _collection.EnsureIndex(x => x.Resource);
+        _collection.EnsureIndex(x => x.Action);
         _collection.EnsureIndex(x => x.Timestamp);
     }
 
@@ -24,10 +25,16 @@ public class LiteDbAuditLogRepository : IAuditLogRepository
         return Task.CompletedTask;
     }
 
-    public Task<IEnumerable<AuditLog>> GetAllAsync(int skip = 0, int take = 100)
+    public Task<IEnumerable<AuditLog>> GetAllAsync(int skip = 0, int take = 100, string? actionType = null)
     {
-        var logs = _collection
-            .Query()
+        var query = _collection.Query();
+        
+        if (!string.IsNullOrEmpty(actionType))
+        {
+            query = query.Where(x => x.Action == actionType);
+        }
+        
+        var logs = query
             .OrderByDescending(x => x.Timestamp)
             .Skip(skip)
             .Limit(take)
@@ -59,8 +66,16 @@ public class LiteDbAuditLogRepository : IAuditLogRepository
         return Task.FromResult(logs);
     }
 
-    public Task<long> GetCountAsync()
+    public Task<long> GetCountAsync(string? actionType = null)
     {
-        return Task.FromResult((long)_collection.Count());
+        if (string.IsNullOrEmpty(actionType))
+        {
+            return Task.FromResult((long)_collection.Count());
+        }
+        
+        var count = _collection.Query()
+            .Where(x => x.Action == actionType)
+            .Count();
+        return Task.FromResult((long)count);
     }
 }

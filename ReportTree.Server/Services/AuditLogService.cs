@@ -37,9 +37,9 @@ public class AuditLogService
         await _repo.AddAsync(log);
     }
 
-    public async Task<IEnumerable<AuditLog>> GetLogsAsync(int skip = 0, int take = 100)
+    public async Task<IEnumerable<AuditLog>> GetLogsAsync(int skip = 0, int take = 100, string? actionType = null)
     {
-        return await _repo.GetAllAsync(skip, take);
+        return await _repo.GetAllAsync(skip, take, actionType);
     }
 
     public async Task<IEnumerable<AuditLog>> GetLogsByUsernameAsync(string username, int skip = 0, int take = 100)
@@ -52,8 +52,8 @@ public class AuditLogService
         return await _repo.GetByResourceAsync(resource, skip, take);
     }
 
-    public async Task<long> GetCountAsync()
+    public async Task<long> GetCountAsync(string? actionType = null)
     {
-        return await _repo.GetCountAsync();
+        return await _repo.GetCountAsync(actionType);
     }
 }
