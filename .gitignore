@@ -79,3 +79,4 @@ docker-compose.override.yml
 appsettings.Development.json
 *.db
 /website
+ReportTree.Server/wwwroot/

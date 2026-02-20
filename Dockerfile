@@ -25,6 +25,10 @@ RUN dotnet restore "./ReportTree.Server/ReportTree.Server.csproj"
 COPY . .
 WORKDIR "/src/reporttree.client"
 RUN npm install
+RUN npm run build
+# Copy frontend dist/ to backend wwwroot/ so it gets published
+RUN mkdir -p /src/ReportTree.Server/wwwroot && \
+    cp -r /src/reporttree.client/dist/* /src/ReportTree.Server/wwwroot/
 WORKDIR "/src/ReportTree.Server"
 RUN dotnet build "./ReportTree.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

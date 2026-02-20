@@ -760,20 +760,23 @@ public MyService(ILiteDatabase db) { ... }
 
 ## Development Build Troubleshooting
 
-### Docker Build Failure: `dotnet publish exit code 1`
+### Docker Build Failure: `npm run build exited with code -1`
 
-**Symptom**: Docker multi-stage build fails at the `dotnet publish` step with generic "exit code 1" error.
+**Symptom**: Docker multi-stage build fails at the `dotnet build` step with:
+```
+error MSB3073: The command "npm run build" exited with code -1. [reporttree.client.esproj]
+```
 
-**Root Cause**: Backend .NET project references a Vue 3 SPA project (`reporttree.client.esproj`), but the build wasn't configured to run npm build during publish.
+**Root Cause**: Backend .NET project contains a ProjectReference to the Vue SPA esproj file. This triggers the MSBuild JavaScript SDK to attempt building the frontend, which fails because npm execution isn't properly configured for automated SDK invocation in the Docker environment.
 
 **Solution**:
 
-1. **Enable SPA build script** in `reporttree.client/reporttree.client.esproj`:
-```xml
-<ShouldRunBuildScript>true</ShouldRunBuildScript>
-```
+1. **Remove ProjectReference from .csproj**:
+   - Edit `ReportTree.Server/ReportTree.Server.csproj`
+   - Remove the `<ProjectReference>` ItemGroup that references `reporttree.client.esproj`
+   - The frontend will be built separately in Dockerfile
 
-2. **Install npm dependencies in Dockerfile** before dotnet build:
+2. **Update Dockerfile to build frontend explicitly**:
 ```dockerfile
 FROM with-node AS build
 WORKDIR /src
@@ -782,24 +785,35 @@ COPY ["reporttree.client/reporttree.client.esproj", "reporttree.client/"]
 RUN dotnet restore "./ReportTree.Server/ReportTree.Server.csproj"
 COPY . .
 WORKDIR "/src/reporttree.client"
-RUN npm install                    # <-- Critical for Docker build
+RUN npm install      # Must install before build
+RUN npm run build    # Build frontend to dist/
 WORKDIR "/src/ReportTree.Server"
 RUN dotnet build "./ReportTree.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 ```
 
-3. **Test locally**:
-```bash
-cd ReportTree.Server
-dotnet publish ReportTree.Server.csproj -c Release
-# Should complete with frontend assets in bin/Release/net10.0/publish/wwwroot/
+3. **Set esproj to not try building npm** (optional, for development):
+```xml
+<!-- reporttree.client/reporttree.client.esproj -->
+<ShouldRunBuildScript>false</ShouldRunBuildScript>
 ```
 
 **Verification**:
 ```bash
-# Check that frontend assets are in publish output
+# Should complete without npm or esproj errors
+cd ReportTree.Server
+dotnet build -c Release
+
+# wwwroot/ should contain frontend assets
 ls bin/Release/net10.0/publish/wwwroot/assets/
-# Expected: CSS and JS bundles, index.html
+# Expected: CSS and JS bundles from Vite build
 ```
+
+**Why This Works**:
+- Frontend is built independently in a controlled environment
+- dist/ folder exists before .NET build runs
+- MSBuild JavaScript SDK never tries to run npm
+- Same end result: frontend assets included in publish output
+- Clearer, more debuggable build process
 
 ### Frontend Build: Sass Deprecation Warnings
 
@@ -835,9 +849,23 @@ npm install                 # Or use install for latest compatible
 2. Rebuild backend: `dotnet build`
 3. If issues persist: `dotnet clean && dotnet build`
 
+**SPA Proxy not working in development**:
+The .csproj still contains SPA proxy configuration for development:
+```xml
+<SpaRoot>..\reporttree.client</SpaRoot>
+<SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
+<SpaProxyServerUrl>https://localhost:58012</SpaProxyServerUrl>
+```
+
+To use in Visual Studio:
+1. Run `npm i` in reporttree.client/
+2. Run backend via VS (handles proxy automatically)
+3. Frontend will proxy from npm dev server during development
+
 ---
 
 ## Monitoring Best Practices
+
 
 
 ### Key Metrics to Track
