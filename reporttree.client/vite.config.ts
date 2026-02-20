@@ -49,6 +49,13 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./src', import.meta.url))
         }
     },
+    css: {
+        preprocessorOptions: {
+            scss: {
+                silenceDeprecations: ['if-function']
+            }
+        }
+    },
     server: {
         host: true,
         port: 5173,
