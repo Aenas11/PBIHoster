@@ -23,6 +23,8 @@ COPY ["ReportTree.Server/ReportTree.Server.csproj", "ReportTree.Server/"]
 COPY ["reporttree.client/reporttree.client.esproj", "reporttree.client/"]
 RUN dotnet restore "./ReportTree.Server/ReportTree.Server.csproj"
 COPY . .
+WORKDIR "/src/reporttree.client"
+RUN npm install
 WORKDIR "/src/ReportTree.Server"
 RUN dotnet build "./ReportTree.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

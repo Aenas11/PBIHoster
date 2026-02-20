@@ -758,7 +758,87 @@ public MyService(ILiteDatabase db) { ... }
 
 ---
 
+## Development Build Troubleshooting
+
+### Docker Build Failure: `dotnet publish exit code 1`
+
+**Symptom**: Docker multi-stage build fails at the `dotnet publish` step with generic "exit code 1" error.
+
+**Root Cause**: Backend .NET project references a Vue 3 SPA project (`reporttree.client.esproj`), but the build wasn't configured to run npm build during publish.
+
+**Solution**:
+
+1. **Enable SPA build script** in `reporttree.client/reporttree.client.esproj`:
+```xml
+<ShouldRunBuildScript>true</ShouldRunBuildScript>
+```
+
+2. **Install npm dependencies in Dockerfile** before dotnet build:
+```dockerfile
+FROM with-node AS build
+WORKDIR /src
+COPY ["ReportTree.Server/ReportTree.Server.csproj", "ReportTree.Server/"]
+COPY ["reporttree.client/reporttree.client.esproj", "reporttree.client/"]
+RUN dotnet restore "./ReportTree.Server/ReportTree.Server.csproj"
+COPY . .
+WORKDIR "/src/reporttree.client"
+RUN npm install                    # <-- Critical for Docker build
+WORKDIR "/src/ReportTree.Server"
+RUN dotnet build "./ReportTree.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
+```
+
+3. **Test locally**:
+```bash
+cd ReportTree.Server
+dotnet publish ReportTree.Server.csproj -c Release
+# Should complete with frontend assets in bin/Release/net10.0/publish/wwwroot/
+```
+
+**Verification**:
+```bash
+# Check that frontend assets are in publish output
+ls bin/Release/net10.0/publish/wwwroot/assets/
+# Expected: CSS and JS bundles, index.html
+```
+
+### Frontend Build: Sass Deprecation Warnings
+
+**Symptom**: npm build shows warnings from Carbon Design System about deprecated Sass `if()` function.
+
+**Solution** - Already in `vite.config.ts`:
+```typescript
+export default defineConfig({
+  plugins: [vue()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['if-function']
+      }
+    }
+  }
+})
+```
+
+This suppresses the deprecation warnings and allows the build to succeed. The warnings are non-breaking; Carbon Design System continues to work correctly despite the deprecation.
+
+### Local Development Setup Issues
+
+**npm install fails in `/reporttree.client`**:
+```bash
+cd reporttree.client
+npm ci --legacy-peer-deps  # Use CI for reproducible builds
+npm install                 # Or use install for latest compatible
+```
+
+**Backend build fails with missing frontend files**:
+1. Ensure `reporttree.client/dist/` exists: `npm run build`
+2. Rebuild backend: `dotnet build`
+3. If issues persist: `dotnet clean && dotnet build`
+
+---
+
 ## Monitoring Best Practices
+
 
 ### Key Metrics to Track
 
