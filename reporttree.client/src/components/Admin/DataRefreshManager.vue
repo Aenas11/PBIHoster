@@ -71,10 +71,10 @@
         <div v-if="selectedSchedule" class="history">
             <div class="history-header">
                 <h3>Refresh history - {{ selectedSchedule.name }}</h3>
-                <a :href="refreshService.exportHistoryUrl(selectedSchedule.datasetId, 'csv')"
-                    class="export-link" :aria-label="`Download refresh history for ${selectedSchedule.name} as CSV`" download>
-                    <cds-button size="sm" kind="ghost">Export CSV</cds-button>
-                </a>
+                <cds-button size="sm" kind="ghost" @click="exportHistory(selectedSchedule.datasetId)"
+                    :aria-label="`Download refresh history for ${selectedSchedule.name} as CSV`">
+                    Export CSV
+                </cds-button>
             </div>
 
             <cds-table v-if="history.length > 0">
@@ -489,6 +489,42 @@ async function remove(schedule: DatasetRefreshScheduleDto) {
     await loadSchedules()
 }
 
+async function exportHistory(datasetId: string) {
+    try {
+        const token = localStorage.getItem('token')
+        const headers: HeadersInit = {
+            'Accept': 'text/csv'
+        }
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+        }
+
+        const response = await fetch(
+            `/api/refreshes/datasets/${encodeURIComponent(datasetId)}/history/export?format=csv`,
+            { headers }
+        )
+
+        if (!response.ok) {
+            throw new Error(`Export failed: ${response.status} ${response.statusText}`)
+        }
+
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `refresh-history-${datasetId}-${Date.now()}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+
+        toast.success('Export complete', 'Refresh history downloaded')
+    } catch (error) {
+        console.error(error)
+        toast.error('Export failed', 'Could not download refresh history')
+    }
+}
+
 onMounted(async () => {
     try {
         await loadSchedules()
@@ -558,10 +594,6 @@ onMounted(async () => {
 
 .history-header h3 {
     margin: 0;
-}
-
-.export-link {
-    text-decoration: none;
 }
 
 .lookup {

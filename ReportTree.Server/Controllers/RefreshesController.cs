@@ -87,6 +87,8 @@ public class RefreshesController : ControllerBase
 
         if (string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
         {
+            await _auditLogService.LogAsync("DATASET_REFRESH_HISTORY_EXPORT", datasetId, $"Exported {dtos.Count} records as JSON");
+
             return Ok(dtos);
         }
 
