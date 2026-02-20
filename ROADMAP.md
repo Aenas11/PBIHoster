@@ -1,20 +1,18 @@
 # Product Roadmap & Implementation Plans
 
-## Current Version: 0.3.0 (2025-02-06)
+## Current Version: 0.4.0 (2026-02-20)
 
-### v0.3.0 Highlights
-- ✅ Semantic versioning via root `VERSION` file
-- ✅ Demo mode with sample pages and data
-- ✅ Onboarding walkthroughs (create pages, assign roles, configure themes)
-- ✅ Comprehensive audit logging
-- ✅ White-label customization (logo, app name, footer links)
-- ✅ Favorites and bookmarks system
-- ✅ Power BI embedding with RLS support
-- ✅ Role-based access control (Admin, Editor, Viewer)
-- ✅ Drag-and-drop page layout system
-- ✅ Custom theme management
-- ✅ JWT authentication with account lockout
-- ✅ Rate limiting and security headers
+### v0.4.0 Highlights (Phase 1: Quick Wins)
+- ✅ Data Refresh Management (scheduled & manual refresh with notifications)
+- ✅ Email notifications for dataset refresh (configurable SMTP)
+- ✅ Webhook support for refresh notifications
+- ✅ RLS audit logging (track permission changes)
+- ✅ RLS Management UI (component-level configuration)
+- ✅ Refresh history with CSV export
+- ✅ Cron-based scheduling with time zone support
+- ✅ Retry policy with exponential backoff
+- ✅ Token refresh endpoint (extend session without re-login)
+- All v0.3.0 features included
 
 ---
 
@@ -26,8 +24,10 @@ Based on corporate requirements, here's the consolidated view of enterprise-grad
 |---------|--------|---------|----------|
 | White-Label Customization | ✅ Complete | v0.3.0 | High |
 | Favorites & Bookmarks | ✅ Complete | v0.3.0 | High |
-| Data Refresh Management | 🚧 In Progress | v0.4.0 | High |
-| RLS Management UI | ⏳ Planned | v0.4.0 | High |
+| Data Refresh Management | ✅ Complete | v0.4.0 | High |
+| RLS Management UI | ✅ Complete | v0.4.0 | High |
+| RLS Audit Logging | ✅ Complete | v0.4.0 | High |
+| Token Refresh Endpoint | ✅ Complete | v0.4.0 | High |
 | Azure AD Groups Sync | ⏳ Planned | v0.5.0 | High |
 | Usage Analytics Dashboard | ⏳ Planned | v0.6.0 | High |
 | Performance Monitoring | ⏳ Planned | v0.6.0 | High |
@@ -38,7 +38,6 @@ Based on corporate requirements, here's the consolidated view of enterprise-grad
 | Multi-Tenancy | ⏳ Planned | v0.8.0 | Low |
 | Backup & Disaster Recovery | ⏳ Planned | v0.8.0 | High |
 | Database Abstraction | ⏳ Planned | v0.9.0 | High |
-| Power BI Testing & Documentation | ⏳ Planned | v0.4.0-v0.6.0 | High |
 
 ---
 
@@ -75,7 +74,7 @@ Based on corporate requirements, here's the consolidated view of enterprise-grad
 Goal: Enable power users to manage datasets and implement advanced features quickly.
 
 #### 1.1 Data Refresh Management
-- **Status**: Design complete, implementation in progress
+- **Status**: ✅ Complete (v0.4.0)
 - **Features**:
   - Manual dataset refresh triggering
   - Scheduled refresh with cron editor
@@ -91,27 +90,28 @@ Goal: Enable power users to manage datasets and implement advanced features quic
 - **Acceptance Criteria**:
   - [x] Cron expression parsing with validation
   - [x] Time zone support (IANA identifiers)
-  - [ ] UI for creating and managing schedules
-  - [ ] Email notification service integration
-  - [ ] Webhook support for external systems
-  - [ ] History export (CSV/JSON)
+  - [x] UI for creating and managing schedules
+  - [x] Email notification service integration
+  - [x] Webhook support for external systems
+  - [x] History export (CSV/JSON)
 
 #### 1.2 RLS (Row-Level Security) Management UI
-- **Status**: Backend partial, frontend pending
+- **Status**: ✅ Complete (v0.4.0)
 - **Features**:
-  - Visual interface for assigning RLS roles to users/groups
-  - Per-report and per-component RLS configuration
-  - Role mapping from external identity providers
-  - Testing & validation UI
+  - Visual interface for assigning RLS roles to components
+  - Per-component RLS configuration
+  - Role mapping from user identity
+  - RLS change audit logging
 - **Implementation**:
-  - Backend: Extend `Page` and `Layout` models for RLS metadata
-  - Frontend: RLS configuration panel in page editor
-  - Services: RLS role validation and assignment logic
+  - Backend: RLS change logging in PagesController.SaveLayout
+  - Frontend: RLS configuration in component editor + RLS Manager dashboard
+  - Services: RLS role extraction and audit logging
 - **Acceptance Criteria**:
-  - [ ] UI to assign RLS roles per page/component
-  - [ ] Support for dynamic RLS (user context-based)
-  - [ ] Test RLS effectiveness via Power BI
-  - [ ] Audit logging of RLS changes
+  - [x] UI to assign RLS roles per component
+  - [x] Support for dynamic RLS (user context-based)
+  - [x] Audit logging of RLS changes
+  - [x] Read-only RLS dashboard showing all configurations
+  - Note: Bulk edit UI planned for v0.4.1
 
 #### 1.3 Token Refresh Endpoint
 - **Status**: ✅ Implemented (JWT refresh)

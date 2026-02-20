@@ -2,7 +2,7 @@
 
 > A modern, secure Power BI hosting platform for embedding analytics into applications and portals. Built for ISVs, consultancies, and enterprises that need to manage Power BI reports with user authentication, role-based access control, and corporate branding.
 
-**Current Version**: v0.3.0 | **License**: MIT | **Status**: Actively Maintained
+**Current Version**: v0.4.0 | **License**: MIT | **Status**: Actively Maintained
 
 [![CI/CD](https://github.com/aenas11/pbihoster/workflows/CI%2FCD/badge.svg)](https://github.com/aenas11/pbihoster/actions)
 [![Security Scans](https://github.com/aenas11/pbihoster/workflows/Security%20Scans/badge.svg)](https://github.com/aenas11/pbihoster/actions)
@@ -105,10 +105,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 
 ### 📈 Power BI Integration
 - ✅ Secure embedding with "App owns the data" model
-- ✅ Row-Level Security (RLS) support
+- ✅ Row-Level Security (RLS) support with component-level configuration
 - ✅ Dynamic workspace selection
 - ✅ Report and dashboard embedding
-- ✅ Dataset refresh scheduling and history (Admin)
+- ✅ **Dataset Refresh Management** (Admin)
+  - ✅ Scheduled refresh with cron expressions and time zone support
+  - ✅ Manual refresh triggering with rate limiting
+  - ✅ Refresh history and status tracking
+  - ✅ Email and webhook notifications
+  - ✅ Retry policy with exponential backoff
+  - ✅ CSV export of refresh history
 
 ### 👥 User & Group Management
 - ✅ User profile management and password change
@@ -142,7 +148,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 
 ### User & Deployment
 - 🚀 [**Deployment Guide**](deployment/DEPLOYMENT.md) - Production setup, Power BI configuration, security checklist
-- 📖 [**User Guide**](README.md#user-guide) - Creating pages, managing users, configuring themes
+- � [**Email Setup Guide**](documentation/EMAIL_SETUP_GUIDE.md) - Configure SMTP for refresh notifications (Gmail, Office 365, SendGrid, etc.)
+- �📖 [**User Guide**](README.md#user-guide) - Creating pages, managing users, configuring themes
 - 🔒 [**Security Guide**](SECURITY.md) - Authentication, authorization, best practices
 - 📋 [**Operations & Troubleshooting**](TROUBLESHOOTING.md) - Monitoring, common issues, recovery
 

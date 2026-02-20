@@ -27,18 +27,23 @@ Target Users: Large enterprises, regulated industries, MSPs, and SaaS vendors
 
 ### Feature Roadmap
 
-#### Phase 1: Quick Wins (2-3 weeks)
-- [ ] RLS (Row-Level Security) Management UI
+#### Phase 1: Quick Wins (COMPLETED ✅ - v0.4.0)
+- [x] RLS (Row-Level Security) Management UI
 - [x] White-Label Customization
 - [x] Favorites and Bookmarks
-- [ ] Data Refresh Management
+- [x] Data Refresh Management
+- [x] Token Refresh Endpoint
+- [x] RLS Audit Logging
 
 #### Phase 2: SSO and Advanced Authentication (2-3 weeks)
 - [ ] Azure AD Groups Sync
+- [ ] OpenID Connect (OIDC) Integration
+- [ ] Multi-Factor Authentication (MFA)
 
 #### Phase 3: Analytics and Monitoring (2 weeks)
 - [ ] Usage Analytics Dashboard
 - [ ] Performance Monitoring
+- [ ] Health Monitoring & Alerting
 
 #### Phase 4: Collaboration and Governance (3 weeks)
 - [ ] Embedded Comments and Annotations

@@ -135,6 +135,106 @@ Once configured, editors can add Power BI components to pages. The backend handl
 - **Token errors**: Check system time, secret expiry, and Docker environment variable mapping.
 - **See logs**: `docker-compose logs -f pbihoster` for backend errors.
 
+## Email Configuration (Optional)
+
+Email notifications are used for dataset refresh schedules. If not configured, email features are disabled gracefully.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|---|
+| `EMAIL_ENABLED` | false | Enable email notifications |
+| `EMAIL_HOST` | | SMTP server hostname |
+| `EMAIL_PORT` | 587 | SMTP server port |
+| `EMAIL_FROM_ADDRESS` | | "From" email address (must be verified) |
+| `EMAIL_FROM_NAME` | PBIHoster | "From" display name |
+| `EMAIL_USE_SSL` | true | Use TLS/SSL encryption |
+| `EMAIL_USERNAME` | | SMTP authentication username |
+| `EMAIL_PASSWORD` | | SMTP authentication password |
+
+### Setup Examples
+
+#### Gmail (Recommended for Testing)
+```bash
+EMAIL_ENABLED=true
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_FROM_ADDRESS=your-email@gmail.com
+EMAIL_FROM_NAME="PBI Hoster"
+EMAIL_USE_SSL=true
+EMAIL_USERNAME=your-email@gmail.com
+EMAIL_PASSWORD=xxxx-xxxx-xxxx-xxxx  # Use App Password (16 chars), not your regular password
+```
+
+**Important**: Gmail requires:
+1. 2-Factor Authentication enabled
+2. App-specific password generated (not your regular password)
+3. See [EMAIL_SETUP_GUIDE.md](../documentation/EMAIL_SETUP_GUIDE.md) for detailed steps
+
+#### Office 365
+```bash
+EMAIL_ENABLED=true
+EMAIL_HOST=smtp.office365.com
+EMAIL_PORT=587
+EMAIL_FROM_ADDRESS=your-email@company.com
+EMAIL_FROM_NAME="PBI Hoster"
+EMAIL_USE_SSL=true
+EMAIL_USERNAME=your-email@company.com
+EMAIL_PASSWORD=your-password
+```
+
+#### Docker Compose Setup
+
+Edit your `.env` file:
+```bash
+EMAIL_ENABLED=true
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_FROM_ADDRESS=noreply@pbihoster.com
+EMAIL_FROM_NAME="PBI Hoster"
+EMAIL_USE_SSL=true
+EMAIL_USERNAME=smtp-user@gmail.com
+EMAIL_PASSWORD=your-app-password
+```
+
+The `docker-compose.yml` automatically maps these to `Email__*` environment variables.
+
+### Testing Email
+
+1. Restart PBIHoster: `docker-compose restart pbihoster`
+2. Log in as Admin
+3. Go to **Admin > Settings > Data Refresh**
+4. Create a new schedule with email notification targets
+5. Click **Run now** to trigger a test refresh
+6. Check your inbox
+
+See [EMAIL_SETUP_GUIDE.md](../documentation/EMAIL_SETUP_GUIDE.md) for:
+- Step-by-step setup for each provider (Gmail, Office 365, SendGrid, AWS SES)
+- Advanced configuration
+- Troubleshooting guide
+- Security best practices
+
+### Troubleshooting Email
+
+**Email not sent?**
+- Check `EMAIL_ENABLED=true`
+- Check all `EMAIL_*` variables are set
+- Review logs: `docker-compose logs pbihoster | grep -i email`
+- Verify SMTP credentials are correct
+- Check that refresh schedules are enabled and notification targets configured
+
+**Authentication failed?**
+- Gmail: Use **app-specific password** (not your regular password), must have 2FA enabled
+- Office 365: Use full corporate email, check with IT if SMTP auth is enabled
+- Other: Verify username/password format (some providers require special escaping)
+
+**No errors, but email still not received?**
+- Check spam/junk folder
+- Ask IT to whitelist sender domain (corporate filters)
+- Verify refresh schedule cron expression is correct
+- Check refresh actually executed (see audit logs)
+
+For comprehensive troubleshooting, see [documentation/EMAIL_SETUP_GUIDE.md](../documentation/EMAIL_SETUP_GUIDE.md).
 
 ### Essential Security Settings
 

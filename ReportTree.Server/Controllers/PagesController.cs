@@ -136,6 +136,8 @@ namespace ReportTree.Server.Controllers
             var page = await _repo.GetByIdAsync(id);
             if (page == null) return NotFound();
 
+            var oldLayout = page.Layout;
+            
             // Serialize the layout object to string for storage
             var layoutJson = JsonSerializer.Serialize(layout);
             page.Layout = layoutJson;
@@ -144,14 +146,43 @@ namespace ReportTree.Server.Controllers
             // Invalidate cache
             _cache.Remove(PAGES_CACHE_KEY);
 
-            // Audit log: check if any components have RLS enabled
+            // Audit log: track RLS changes in detail
             try
             {
-                var rlsComponents = ExtractRlsComponents(layoutJson);
-                if (rlsComponents.Count > 0)
+                var oldRlsComponents = ExtractRlsComponents(oldLayout ?? "[]");
+                var newRlsComponents = ExtractRlsComponents(layoutJson);
+                
+                var changes = new List<string>();
+                
+                // Check for new RLS enabled components
+                foreach (var newComp in newRlsComponents)
                 {
-                    var rlsDetail = string.Join("; ", rlsComponents.Select(c => $"component={c.Id}, roles=[{string.Join(",", c.Roles)}]"));
-                    await _auditLogService.LogAsync("PAGE_LAYOUT_RLS_UPDATED", id.ToString(), $"RLS configured on {rlsComponents.Count} component(s): {rlsDetail}");
+                    var oldComp = oldRlsComponents.FirstOrDefault(c => c.Id == newComp.Id);
+                    if (oldComp.Id == null)
+                    {
+                        // Previously had no RLS config
+                        changes.Add($"RLS_ENABLED: component={newComp.Id}, roles=[{string.Join(",", newComp.Roles)}]");
+                    }
+                    else if (!ListsEqual(oldComp.Roles, newComp.Roles))
+                    {
+                        // RLS roles changed
+                        changes.Add($"RLS_ROLES_CHANGED: component={newComp.Id}, from=[{string.Join(",", oldComp.Roles)}] to=[{string.Join(",", newComp.Roles)}]");
+                    }
+                }
+                
+                // Check for RLS disabled components
+                foreach (var oldComp in oldRlsComponents)
+                {
+                    if (!newRlsComponents.Any(c => c.Id == oldComp.Id))
+                    {
+                        changes.Add($"RLS_DISABLED: component={oldComp.Id}, was=[{string.Join(",", oldComp.Roles)}]");
+                    }
+                }
+                
+                if (changes.Count > 0)
+                {
+                    var changeDetail = string.Join("; ", changes);
+                    await _auditLogService.LogAsync("RLS_CONFIG_CHANGED", id.ToString(), changeDetail);
                 }
             }
             catch
@@ -184,6 +215,12 @@ namespace ReportTree.Server.Controllers
             }
             catch { /* ignore parse errors */ }
             return result;
+        }
+        
+        private static bool ListsEqual(List<string> list1, List<string> list2)
+        {
+            if (list1.Count != list2.Count) return false;
+            return list1.OrderBy(x => x).SequenceEqual(list2.OrderBy(x => x));
         }
 
         [HttpPost("{id}/clone")]

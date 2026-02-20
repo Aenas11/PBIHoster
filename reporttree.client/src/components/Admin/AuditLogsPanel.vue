@@ -30,6 +30,12 @@
                 placeholder="e.g., Page:123"
                 :disabled="loading"
             ></cds-text-input>
+            <cds-checkbox
+                label-text="RLS Changes Only"
+                :checked="rlsOnly"
+                @change="toggleRLSFilter"
+                :disabled="loading">
+            </cds-checkbox>
         </div>
 
         <cds-table v-if="logs.length > 0" class="audit-table">
@@ -84,6 +90,7 @@ import '@carbon/web-components/es/components/button/index.js'
 import '@carbon/web-components/es/components/text-input/index.js'
 import '@carbon/web-components/es/components/data-table/index.js'
 import '@carbon/web-components/es/components/tag/index.js'
+import '@carbon/web-components/es/components/checkbox/index.js'
 
 interface AuditLog {
     id: number
@@ -102,11 +109,12 @@ const logs = ref<AuditLog[]>([])
 const loading = ref(false)
 const usernameFilter = ref('')
 const resourceFilter = ref('')
+const rlsOnly = ref(false)
 const skip = ref(0)
 const take = 50
 const total = ref<number | null>(null)
 
-const showPagination = computed(() => !usernameFilter.value && !resourceFilter.value)
+const showPagination = computed(() => !usernameFilter.value && !resourceFilter.value && !rlsOnly.value)
 const canPrev = computed(() => skip.value > 0)
 const canNext = computed(() => total.value !== null && skip.value + take < total.value)
 const pageRangeLabel = computed(() => {
@@ -124,9 +132,16 @@ function onResourceInput(e: Event) {
     resourceFilter.value = (e.target as HTMLInputElement).value
 }
 
+function toggleRLSFilter(e: Event) {
+    rlsOnly.value = (e.target as HTMLInputElement).checked
+    skip.value = 0
+    load()
+}
+
 function resetFilters() {
     usernameFilter.value = ''
     resourceFilter.value = ''
+    rlsOnly.value = false
     skip.value = 0
     load()
 }
@@ -152,9 +167,12 @@ async function load() {
             return
         }
 
-        const response = await api.get<{ logs: AuditLog[]; count: number }>(
-            `/audit?skip=${skip.value}&take=${take}`
-        )
+        let url = `/audit?skip=${skip.value}&take=${take}`
+        if (rlsOnly.value) {
+            url += '&actionType=RLS_CONFIG_CHANGED'
+        }
+
+        const response = await api.get<{ logs: AuditLog[]; count: number }>(url)
         logs.value = response.logs
         total.value = response.count
     } catch (error) {
