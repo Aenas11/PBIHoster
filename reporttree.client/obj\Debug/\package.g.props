@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <PackageJsonName Condition="$(PackageJsonName) == ''">reporttree.client</PackageJsonName>
+    <PackageJsonVersion Condition="$(PackageJsonVersion) == ''">0.0.0</PackageJsonVersion>
+    <PackageJsonPrivate Condition="$(PackageJsonPrivate) == ''">true</PackageJsonPrivate>
+    <PackageJsonType Condition="$(PackageJsonType) == ''">module</PackageJsonType>
+    <PackageJsonEnginesNode Condition="$(PackageJsonEnginesNode) == ''">^20.19.0 || &gt;=22.12.0</PackageJsonEnginesNode>
+    <PackageJsonScriptsDev Condition="$(PackageJsonScriptsDev) == ''">vite</PackageJsonScriptsDev>
+    <PackageJsonScriptsBuild Condition="$(PackageJsonScriptsBuild) == ''">vue-tsc --noEmit &amp;&amp; vite build</PackageJsonScriptsBuild>
+    <PackageJsonScriptsTypeCheck Condition="$(PackageJsonScriptsTypeCheck) == ''">vue-tsc --noEmit</PackageJsonScriptsTypeCheck>
+    <PackageJsonScriptsPreview Condition="$(PackageJsonScriptsPreview) == ''">vite preview</PackageJsonScriptsPreview>
+    <PackageJsonScriptsLint Condition="$(PackageJsonScriptsLint) == ''">eslint . --fix --cache</PackageJsonScriptsLint>
+    <PackageJsonDependenciesCarbonIconsVue Condition="$(PackageJsonDependenciesCarbonIconsVue) == ''">^10.99.1</PackageJsonDependenciesCarbonIconsVue>
+    <PackageJsonDependenciesCarbonStyles Condition="$(PackageJsonDependenciesCarbonStyles) == ''">^1.96.0</PackageJsonDependenciesCarbonStyles>
+    <PackageJsonDependenciesCarbonThemes Condition="$(PackageJsonDependenciesCarbonThemes) == ''">^11.64.0</PackageJsonDependenciesCarbonThemes>
+    <PackageJsonDependenciesCarbonWebComponents Condition="$(PackageJsonDependenciesCarbonWebComponents) == ''">^2.44.0</PackageJsonDependenciesCarbonWebComponents>
+    <PackageJsonDependenciesGridLayoutPlus Condition="$(PackageJsonDependenciesGridLayoutPlus) == ''">^1.1.1</PackageJsonDependenciesGridLayoutPlus>
+    <PackageJsonDependenciesJwtDecode Condition="$(PackageJsonDependenciesJwtDecode) == ''">^4.0.0</PackageJsonDependenciesJwtDecode>
+    <PackageJsonDependenciesPinia Condition="$(PackageJsonDependenciesPinia) == ''">^3.0.4</PackageJsonDependenciesPinia>
+    <PackageJsonDependenciesPowerbiClient Condition="$(PackageJsonDependenciesPowerbiClient) == ''">^2.23.9</PackageJsonDependenciesPowerbiClient>
+    <PackageJsonDependenciesPowerbiModels Condition="$(PackageJsonDependenciesPowerbiModels) == ''">^2.0.1</PackageJsonDependenciesPowerbiModels>
+    <PackageJsonDependenciesVue Condition="$(PackageJsonDependenciesVue) == ''">^3.5.25</PackageJsonDependenciesVue>
+    <PackageJsonDependenciesVueRouter Condition="$(PackageJsonDependenciesVueRouter) == ''">^4.6.4</PackageJsonDependenciesVueRouter>
+    <PackageJsonDevdependenciesEslintJs Condition="$(PackageJsonDevdependenciesEslintJs) == ''">^9.39.1</PackageJsonDevdependenciesEslintJs>
+    <PackageJsonDevdependenciesTsconfigNode20 Condition="$(PackageJsonDevdependenciesTsconfigNode20) == ''">^20.1.8</PackageJsonDevdependenciesTsconfigNode20>
+    <PackageJsonDevdependenciesTypesNode Condition="$(PackageJsonDevdependenciesTypesNode) == ''">^25.0.2</PackageJsonDevdependenciesTypesNode>
+    <PackageJsonDevdependenciesVitejsPluginVue Condition="$(PackageJsonDevdependenciesVitejsPluginVue) == ''">^6.0.2</PackageJsonDevdependenciesVitejsPluginVue>
+    <PackageJsonDevdependenciesVueEslintConfigTypescript Condition="$(PackageJsonDevdependenciesVueEslintConfigTypescript) == ''">^14.6.0</PackageJsonDevdependenciesVueEslintConfigTypescript>
+    <PackageJsonDevdependenciesVueTsconfig Condition="$(PackageJsonDevdependenciesVueTsconfig) == ''">^0.8.1</PackageJsonDevdependenciesVueTsconfig>
+    <PackageJsonDevdependenciesEslint Condition="$(PackageJsonDevdependenciesEslint) == ''">^9.39.1</PackageJsonDevdependenciesEslint>
+    <PackageJsonDevdependenciesEslintPluginVue Condition="$(PackageJsonDevdependenciesEslintPluginVue) == ''">~10.5.1</PackageJsonDevdependenciesEslintPluginVue>
+    <PackageJsonDevdependenciesGlobals Condition="$(PackageJsonDevdependenciesGlobals) == ''">^16.5.0</PackageJsonDevdependenciesGlobals>
+    <PackageJsonDevdependenciesSass Condition="$(PackageJsonDevdependenciesSass) == ''">^1.97.0</PackageJsonDevdependenciesSass>
+    <PackageJsonDevdependenciesTypescript Condition="$(PackageJsonDevdependenciesTypescript) == ''">^5.9.3</PackageJsonDevdependenciesTypescript>
+    <PackageJsonDevdependenciesVite Condition="$(PackageJsonDevdependenciesVite) == ''">^7.2.4</PackageJsonDevdependenciesVite>
+    <PackageJsonDevdependenciesVitePluginVueDevtools Condition="$(PackageJsonDevdependenciesVitePluginVueDevtools) == ''">^8.0.5</PackageJsonDevdependenciesVitePluginVueDevtools>
+    <PackageJsonDevdependenciesVueTsc Condition="$(PackageJsonDevdependenciesVueTsc) == ''">^3.1.8</PackageJsonDevdependenciesVueTsc>
+  </PropertyGroup>
+</Project>

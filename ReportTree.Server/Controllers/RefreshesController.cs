@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -73,6 +74,45 @@ public class RefreshesController : ControllerBase
     {
         var runs = await _runRepository.GetByDatasetIdAsync(datasetId, skip, take);
         return Ok(runs.Select(ToDto));
+    }
+
+    [HttpGet("datasets/{datasetId}/history/export")]
+    public async Task<IActionResult> ExportHistory(
+        string datasetId,
+        [FromQuery] string format = "csv",
+        CancellationToken cancellationToken = default)
+    {
+        var runs = await _runRepository.GetByDatasetIdAsync(datasetId, 0, 1000);
+        var dtos = runs.Select(ToDto).ToList();
+
+        if (string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
+        {
+            return Ok(dtos);
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Id,ScheduleId,DatasetId,WorkspaceId,Status,RequestedAt,StartedAt,CompletedAt,DurationMs,RetriesAttempted,FailureReason,PowerBiRequestId");
+        foreach (var r in dtos)
+        {
+            sb.AppendLine(string.Join(',',
+                $"\"{r.Id}\"",
+                $"\"{r.ScheduleId}\"",
+                $"\"{r.DatasetId}\"",
+                $"\"{r.WorkspaceId}\"",
+                $"\"{r.Status}\"",
+                $"\"{r.RequestedAtUtc:O}\"",
+                $"\"{r.StartedAtUtc:O}\"",
+                $"\"{r.CompletedAtUtc:O}\"",
+                r.DurationMs?.ToString() ?? "",
+                r.RetriesAttempted.ToString(),
+                $"\"{(r.FailureReason ?? "").Replace("\"", "\"\"").Replace("\r", " ").Replace("\n", " ")}\"",
+                $"\"{r.PowerBiRequestId ?? ""}\""
+            ));
+        }
+
+        await _auditLogService.LogAsync("DATASET_REFRESH_HISTORY_EXPORT", datasetId, $"Exported {dtos.Count} records as {format}");
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv", $"refresh-history-{datasetId}.csv");
     }
 
     [HttpGet("schedules")]

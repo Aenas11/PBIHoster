@@ -6,6 +6,7 @@ import SettingsManager from '../components/Admin/SettingsManager.vue'
 import PowerBIDiagnosticsCard from '../components/Admin/PowerBIDiagnosticsCard.vue'
 import DataRefreshManager from '../components/Admin/DataRefreshManager.vue'
 import AuditLogsPanel from '../components/Admin/AuditLogsPanel.vue'
+import RLSManager from '../components/Admin/RLSManager.vue'
 </script>
 
 <template>
@@ -15,6 +16,7 @@ import AuditLogsPanel from '../components/Admin/AuditLogsPanel.vue'
         <cds-tabs value="tab-users">
             <cds-tab id="tab-users" target="panel-users" value="tab-users">Users & Groups</cds-tab>
             <cds-tab id="tab-settings" target="panel-settings" value="tab-settings">Settings</cds-tab>
+            <cds-tab id="tab-rls" target="panel-rls" value="tab-rls">RLS Management</cds-tab>
             <cds-tab id="tab-audit" target="panel-audit" value="tab-audit">Audit Logs</cds-tab>
         </cds-tabs>
 
@@ -30,6 +32,12 @@ import AuditLogsPanel from '../components/Admin/AuditLogsPanel.vue'
                 <SettingsManager />
                 <PowerBIDiagnosticsCard />
                 <DataRefreshManager />
+            </div>
+        </div>
+
+        <div id="panel-rls" role="tabpanel" aria-labelledby="tab-rls" hidden>
+            <div class="admin-panels">
+                <RLSManager />
             </div>
         </div>
 

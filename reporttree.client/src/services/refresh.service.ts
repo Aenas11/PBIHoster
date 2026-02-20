@@ -35,5 +35,9 @@ export const refreshService = {
     async getHistory(datasetId: string, skip = 0, take = 50): Promise<DatasetRefreshRunDto[]> {
         const params = new URLSearchParams({ skip: skip.toString(), take: take.toString() })
         return api.get<DatasetRefreshRunDto[]>(`/refreshes/datasets/${datasetId}/history?${params.toString()}`)
+    },
+
+    exportHistoryUrl(datasetId: string, format: 'csv' | 'json' = 'csv'): string {
+        return `/api/refreshes/datasets/${encodeURIComponent(datasetId)}/history/export?format=${format}`
     }
 }

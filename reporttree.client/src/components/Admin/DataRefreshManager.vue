@@ -69,7 +69,13 @@
         <div v-else class="empty-state">No schedules yet</div>
 
         <div v-if="selectedSchedule" class="history">
-            <h3>Refresh history - {{ selectedSchedule.name }}</h3>
+            <div class="history-header">
+                <h3>Refresh history - {{ selectedSchedule.name }}</h3>
+                <a :href="refreshService.exportHistoryUrl(selectedSchedule.datasetId, 'csv')"
+                    class="export-link" :aria-label="`Download refresh history for ${selectedSchedule.name} as CSV`" download>
+                    <cds-button size="sm" kind="ghost">Export CSV</cds-button>
+                </a>
+            </div>
 
             <cds-table v-if="history.length > 0">
                 <cds-table-head>
@@ -540,6 +546,22 @@ onMounted(async () => {
 
 .history {
     margin-top: 1.5rem;
+}
+
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.history-header h3 {
+    margin: 0;
+}
+
+.export-link {
+    text-decoration: none;
 }
 
 .lookup {

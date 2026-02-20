@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
 using ReportTree.Server.Services;
+using System.Text.Json;
 
 namespace ReportTree.Server.Controllers
 {
@@ -18,16 +19,18 @@ namespace ReportTree.Server.Controllers
         private readonly IMemoryCache _cache;
         private readonly SettingsService _settingsService;
         private readonly DemoContentService _demoContentService;
+        private readonly AuditLogService _auditLogService;
         private const string PAGES_CACHE_KEY = "all_pages";
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
         public PagesController(
-            IPageRepository repo, 
+            IPageRepository repo,
             PageAuthorizationService authService,
             AuthService authServiceCore,
             IMemoryCache cache,
             SettingsService settingsService,
-            DemoContentService demoContentService)
+            DemoContentService demoContentService,
+            AuditLogService auditLogService)
         {
             _repo = repo;
             _authService = authService;
@@ -35,6 +38,7 @@ namespace ReportTree.Server.Controllers
             _cache = cache;
             _settingsService = settingsService;
             _demoContentService = demoContentService;
+            _auditLogService = auditLogService;
         }
 
         [HttpGet]
@@ -131,15 +135,55 @@ namespace ReportTree.Server.Controllers
         {
             var page = await _repo.GetByIdAsync(id);
             if (page == null) return NotFound();
-            
+
             // Serialize the layout object to string for storage
-            page.Layout = System.Text.Json.JsonSerializer.Serialize(layout);
+            var layoutJson = JsonSerializer.Serialize(layout);
+            page.Layout = layoutJson;
             await _repo.UpdateAsync(page);
-            
+
             // Invalidate cache
             _cache.Remove(PAGES_CACHE_KEY);
-            
+
+            // Audit log: check if any components have RLS enabled
+            try
+            {
+                var rlsComponents = ExtractRlsComponents(layoutJson);
+                if (rlsComponents.Count > 0)
+                {
+                    var rlsDetail = string.Join("; ", rlsComponents.Select(c => $"component={c.Id}, roles=[{string.Join(",", c.Roles)}]"));
+                    await _auditLogService.LogAsync("PAGE_LAYOUT_RLS_UPDATED", id.ToString(), $"RLS configured on {rlsComponents.Count} component(s): {rlsDetail}");
+                }
+            }
+            catch
+            {
+                // Non-critical: swallow parsing errors so layout save is not affected
+            }
+
             return Ok(new { success = true, message = "Layout saved successfully" });
+        }
+
+        private static List<(string Id, List<string> Roles)> ExtractRlsComponents(string layoutJson)
+        {
+            var result = new List<(string, List<string>)>();
+            try
+            {
+                using var doc = JsonDocument.Parse(layoutJson);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array) return result;
+                foreach (var item in doc.RootElement.EnumerateArray())
+                {
+                    if (!item.TryGetProperty("componentConfig", out var config)) continue;
+                    if (!config.TryGetProperty("enableRLS", out var enableRls) || !enableRls.GetBoolean()) continue;
+                    var itemId = item.TryGetProperty("i", out var iEl) ? iEl.GetString() ?? "" : "";
+                    var roles = new List<string>();
+                    if (config.TryGetProperty("rlsRoles", out var rlsRoles) && rlsRoles.ValueKind == JsonValueKind.Array)
+                    {
+                        roles.AddRange(rlsRoles.EnumerateArray().Select(r => r.GetString() ?? "").Where(r => r.Length > 0));
+                    }
+                    result.Add((itemId, roles));
+                }
+            }
+            catch { /* ignore parse errors */ }
+            return result;
         }
 
         [HttpPost("{id}/clone")]
@@ -245,7 +289,7 @@ namespace ReportTree.Server.Controllers
                 }
             };
 
-            return System.Text.Json.JsonSerializer.Serialize(layout);
+            return JsonSerializer.Serialize(layout);
         }
     }
 
