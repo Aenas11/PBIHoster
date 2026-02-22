@@ -4,7 +4,7 @@
 
 **Current Version**: v0.4.0 | **License**: MIT | **Status**: Actively Maintained
 
-[![CI/CD](https://github.com/aenas11/pbihoster/workflows/CI%2FCD/badge.svg)](https://github.com/aenas11/pbihoster/actions)
+[![CI/CD](https://github.com/Aenas11/PBIHoster/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Aenas11/PBIHoster/actions/workflows/docker-publish.yml)
 [![Security Scans](https://github.com/aenas11/pbihoster/workflows/Security%20Scans/badge.svg)](https://github.com/aenas11/pbihoster/actions)
 
 ## Quick Links
