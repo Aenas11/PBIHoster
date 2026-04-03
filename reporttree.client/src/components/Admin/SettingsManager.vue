@@ -4,6 +4,7 @@ import { api } from '../../services/api'
 import { useToastStore } from '../../stores/toast'
 import { useStaticSettingsStore } from '../../stores/staticSettings'
 import { Add20, Edit20, TrashCan20 } from '@carbon/icons-vue'
+import ThemeManager from '../ThemeManager.vue'
 import '@carbon/web-components/es/components/button/index.js'
 import '@carbon/web-components/es/components/data-table/index.js'
 import '@carbon/web-components/es/components/modal/index.js'
@@ -455,6 +456,12 @@ onMounted(() => {
             </div>
         </section>
 
+        <section class="theme-settings-section">
+            <h3>Theme Management</h3>
+            <p class="section-description">Create and maintain custom Carbon token themes available in the header switcher</p>
+            <ThemeManager />
+        </section>
+
         <!-- Regular Settings Section -->
         <section class="regular-settings-section">
             <div class="header">
@@ -624,6 +631,26 @@ onMounted(() => {
 
 .regular-settings-section {
     margin-top: 2rem;
+}
+
+.theme-settings-section {
+    background: var(--cds-layer-01);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--cds-border-subtle-01);
+
+    h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.25rem;
+        color: var(--cds-text-primary);
+    }
+
+    .section-description {
+        margin: 0 0 1.5rem 0;
+        color: var(--cds-text-secondary);
+        font-size: 0.875rem;
+    }
 }
 
 .value {

@@ -1,16 +1,30 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import PowerBIDashboardEmbed from '../PowerBIDashboardEmbed.vue'
 import { powerBIService } from '../../services/powerbi.service'
 import { useToastStore } from '../../stores/toast'
+import { useThemeStore } from '../../stores/theme'
 import type { DashboardComponentProps } from '../../types/components'
 import type { EmbedTokenResponseDto } from '../../types/powerbi'
 
 const props = defineProps<DashboardComponentProps>()
 const toast = useToastStore()
+const themeStore = useThemeStore()
 
 const embedData = ref<EmbedTokenResponseDto | null>(null)
 const error = ref<string | null>(null)
+
+const syncWithAppTheme = computed(() => (props.config.syncWithAppTheme as boolean) ?? false)
+
+const mappedBackground = computed<'Default' | 'Transparent'>(() => {
+    if (!syncWithAppTheme.value) {
+        return (props.config.background as 'Default' | 'Transparent') ?? 'Transparent'
+    }
+
+    return themeStore.currentTheme === 'g90' || themeStore.currentTheme === 'g100'
+        ? 'Transparent'
+        : 'Default'
+})
 
 const getUserFriendlyError = (e: unknown): string => {
     if (e instanceof Error) {
@@ -31,7 +45,7 @@ const getUserFriendlyError = (e: unknown): string => {
 }
 
 const loadEmbedData = async () => {
-    const { workspaceId, dashboardId } = props.config
+    const { workspaceId, dashboardId, syncWithAppTheme } = props.config
     if (!workspaceId || !dashboardId) {
         if (workspaceId === undefined && dashboardId === undefined) return
         error.value = "Workspace and Dashboard not configured."
@@ -39,7 +53,12 @@ const loadEmbedData = async () => {
     }
 
     try {
-        embedData.value = await powerBIService.getDashboardEmbedToken(workspaceId as string, dashboardId as string)
+        embedData.value = await powerBIService.getDashboardEmbedToken(
+            workspaceId as string,
+            dashboardId as string,
+            undefined,
+            syncWithAppTheme as boolean | undefined
+        )
         error.value = null
     } catch (e: unknown) {
         const friendlyMessage = getUserFriendlyError(e)
@@ -63,7 +82,7 @@ watch(() => props.config, () => {
         <div v-if="error" class="error">{{ error }}</div>
         <PowerBIDashboardEmbed v-if="embedData" :embedUrl="embedData.embedUrl" :accessToken="embedData.accessToken"
             :dashboardId="props.config.dashboardId as string" :pageView="props.config.pageView as string"
-            :locale="props.config.locale as string" :background="props.config.background as any" />
+            :locale="props.config.locale as string" :background="mappedBackground" />
         <div v-else-if="!error && (props.config.workspaceId && props.config.dashboardId)" class="loading">Loading
             dashboard...</div>
         <div v-else-if="!error" class="placeholder">Please configure the dashboard.</div>

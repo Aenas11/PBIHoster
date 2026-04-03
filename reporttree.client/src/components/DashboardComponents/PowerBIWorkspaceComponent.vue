@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { powerBIService } from '../../services/powerbi.service'
 import PowerBIEmbed from '../PowerBIEmbed.vue'
+import { useThemeStore } from '../../stores/theme'
 import type { DashboardComponentProps } from '../../types/components'
 import type { ReportDto, EmbedTokenResponseDto } from '../../types/powerbi'
 import '@carbon/web-components/es/components/loading/index.js'
@@ -11,12 +12,27 @@ import '@carbon/web-components/es/components/tabs/index.js'
 const props = defineProps<DashboardComponentProps>()
 const route = useRoute()
 const router = useRouter()
+const themeStore = useThemeStore()
 
 const reports = ref<ReportDto[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const embedData = ref<EmbedTokenResponseDto | null>(null)
 const embedLoading = ref(false)
+
+const syncWithAppTheme = computed(() => (props.config.syncWithAppTheme as boolean) ?? false)
+
+const mappedContrastMode = computed(() => {
+    if (!syncWithAppTheme.value) return undefined
+    return themeStore.currentTheme === 'g90' || themeStore.currentTheme === 'g100'
+        ? 'HighContrastBlack'
+        : undefined
+})
+
+const mappedBackground = computed<'Default' | 'Transparent'>(() => {
+    if (!syncWithAppTheme.value) return 'Transparent'
+    return 'Transparent'
+})
 
 // Get reportId from query parameter
 const currentReportId = ref<string>((route.query.reportId as string) || '')
@@ -53,7 +69,7 @@ async function loadReports() {
 }
 
 async function loadEmbedToken(reportId: string) {
-    const { workspaceId, enableRLS, rlsRoles } = props.config
+    const { workspaceId, enableRLS, rlsRoles, syncWithAppTheme } = props.config
     if (!workspaceId || !reportId) return
 
     embedLoading.value = true
@@ -63,7 +79,8 @@ async function loadEmbedToken(reportId: string) {
             reportId,
             undefined, // pageId
             enableRLS as boolean | undefined,
-            rlsRoles as string[] | undefined
+            rlsRoles as string[] | undefined,
+            syncWithAppTheme as boolean | undefined
         )
     } catch (e: unknown) {
         console.error('Failed to load embed token:', e)
@@ -124,7 +141,8 @@ onMounted(() => {
                     <cds-loading></cds-loading>
                 </div>
                 <PowerBIEmbed v-else-if="embedData" :embed-url="embedData.embedUrl"
-                    :access-token="embedData.accessToken" :report-id="currentReportId" embed-type="report" />
+                    :access-token="embedData.accessToken" :report-id="currentReportId" embed-type="report"
+                    :background="mappedBackground" :contrast-mode="mappedContrastMode" />
             </div>
         </div>
     </div>

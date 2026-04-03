@@ -7,6 +7,7 @@ import type { ComponentConfigProps } from '../../types/components'
 import { ref, onMounted, watch } from 'vue'
 import { powerBIService } from '../../services/powerbi.service'
 import type { WorkspaceDto } from '../../types/powerbi'
+import '@carbon/web-components/es/components/toggle/index.js';
 
 const props = defineProps<ComponentConfigProps>()
 const emit = defineEmits<{
@@ -15,8 +16,21 @@ const emit = defineEmits<{
 
 const workspaces = ref<WorkspaceDto[]>([])
 const selectedWorkspace = ref(props.modelValue.workspaceId as string || '')
+const syncWithAppTheme = ref(props.modelValue.syncWithAppTheme as boolean ?? false)
 const enableRLS = ref(props.modelValue.enableRLS as boolean ?? false)
 const rlsRolesInput = ref((props.modelValue.rlsRoles as string[] || []).join(', '))
+
+const hydrateFromModel = (model: Record<string, unknown>) => {
+    selectedWorkspace.value = (model.workspaceId as string) || ''
+    syncWithAppTheme.value = (model.syncWithAppTheme as boolean) ?? false
+    enableRLS.value = (model.enableRLS as boolean) ?? false
+    rlsRolesInput.value = ((model.rlsRoles as string[]) || []).join(', ')
+}
+
+const onToggleChanged = (e: CustomEvent<{ checked?: boolean; value?: boolean }>) => {
+    const value = e.detail?.checked ?? e.detail?.value
+    return value ?? false
+}
 
 const loadWorkspaces = async () => {
     try {
@@ -30,9 +44,17 @@ onMounted(async () => {
     await loadWorkspaces()
 })
 
-watch([selectedWorkspace, enableRLS, rlsRolesInput], () => {
+watch([selectedWorkspace, syncWithAppTheme, enableRLS, rlsRolesInput], () => {
     updateConfig()
 })
+
+watch(
+    () => props.modelValue,
+    (newValue) => {
+        hydrateFromModel(newValue)
+    },
+    { deep: true, immediate: true }
+)
 
 const updateConfig = () => {
     // Parse comma-separated RLS roles
@@ -44,6 +66,7 @@ const updateConfig = () => {
     emit('update:modelValue', {
         ...props.modelValue,
         workspaceId: selectedWorkspace.value,
+        syncWithAppTheme: syncWithAppTheme.value,
         enableRLS: enableRLS.value,
         rlsRoles: rlsRoles.length > 0 ? rlsRoles : undefined
     })
@@ -62,10 +85,18 @@ const updateConfig = () => {
             All reports from this workspace will be displayed with tabs.
         </div>
 
+        <cds-toggle label-text="Sync with app theme" :checked="syncWithAppTheme"
+            @cds-toggle-changed="(e: CustomEvent<{ checked?: boolean; value?: boolean }>) => { syncWithAppTheme = onToggleChanged(e) }">
+            <span slot="label-text"
+                title="Safe mode only adjusts embed chrome (background/contrast). It does not recolor report visuals unless the report theme supports it.">
+                Sync embed appearance with app theme (safe mode)
+            </span>
+        </cds-toggle>
+
         <div class="rls-section">
             <h4 class="section-title">Row-Level Security (RLS)</h4>
             <cds-toggle label-text="Enable Row-Level Security" :checked="enableRLS"
-                @cds-toggle-changed="(e: any) => { enableRLS = e.detail.checked }">
+                @cds-toggle-changed="(e: CustomEvent<{ checked?: boolean; value?: boolean }>) => { enableRLS = onToggleChanged(e) }">
                 <span slot="label-text">Enable Row-Level Security</span>
             </cds-toggle>
 

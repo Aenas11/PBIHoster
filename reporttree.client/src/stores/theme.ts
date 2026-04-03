@@ -97,14 +97,38 @@ export const useThemeStore = defineStore('theme', () => {
         }
     }
 
-    // Save custom theme to backend
-    async function saveCustomTheme(theme: Omit<CustomTheme, 'id'>) {
+    // Create custom theme in backend and cache it locally.
+    async function createCustomTheme(theme: Omit<CustomTheme, 'id'>) {
         try {
             const savedTheme = await api.post<CustomTheme>('/themes', theme)
-            customThemes.value.push(savedTheme)
+            const existingIndex = customThemes.value.findIndex(t => t.id === savedTheme.id)
+            if (existingIndex >= 0) {
+                customThemes.value[existingIndex] = savedTheme
+            } else {
+                customThemes.value.push(savedTheme)
+            }
             return savedTheme
         } catch (error) {
-            console.error('Failed to save custom theme', error)
+            console.error('Failed to create custom theme', error)
+            throw error
+        }
+    }
+
+    // Update custom theme in backend and cache it locally.
+    async function updateCustomTheme(themeId: string, theme: Omit<CustomTheme, 'id'>) {
+        try {
+            const updatedTheme = await api.put<CustomTheme>(`/themes/${themeId}`, theme)
+            const existingIndex = customThemes.value.findIndex(t => t.id === themeId)
+            if (existingIndex >= 0) {
+                customThemes.value[existingIndex] = updatedTheme
+            }
+            if (customTheme.value?.id === themeId) {
+                customTheme.value = updatedTheme
+                localStorage.setItem('customTheme', JSON.stringify(updatedTheme))
+            }
+            return updatedTheme
+        } catch (error) {
+            console.error('Failed to update custom theme', error)
             throw error
         }
     }
@@ -140,7 +164,8 @@ export const useThemeStore = defineStore('theme', () => {
         setTheme,
         setCustomTheme,
         loadCustomThemes,
-        saveCustomTheme,
+        createCustomTheme,
+        updateCustomTheme,
         deleteCustomTheme,
         initTheme
     }

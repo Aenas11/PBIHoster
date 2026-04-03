@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useEditModeStore } from '@/stores/editMode'
 import { useStaticSettingsStore } from '@/stores/staticSettings'
 import '@carbon/web-components/es/components/tag/index.js'
-// import ThemeSwitcher from './ThemeSwitcher.vue'
+import ThemeSwitcher from './ThemeSwitcher.vue'
 
 defineProps<{
   isSideNavExpanded: boolean
@@ -46,8 +46,7 @@ function goToProfile() {
 
 
     <div class="cds--header__global" v-if="authStore.isAuthenticated">
-      <!-- Theme Switcher -->
-      <!-- <ThemeSwitcher /> -->
+      <ThemeSwitcher />
 
       <cds-header-global-action aria-label="App Switcher" tooltip-text="Tools Panel" tooltip-alignment="right"
         @click="emit('toggleToolsPanel')" :disabled="!editModeStore.isEditMode">

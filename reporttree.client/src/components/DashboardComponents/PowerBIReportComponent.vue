@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import PowerBIReportEmbed from '../PowerBIReportEmbed.vue'
 import { powerBIService } from '../../services/powerbi.service'
 import { useToastStore } from '../../stores/toast'
+import { useThemeStore } from '../../stores/theme'
 import type { DashboardComponentProps } from '../../types/components'
 import type { EmbedTokenResponseDto } from '../../types/powerbi'
 
 const props = defineProps<DashboardComponentProps>()
 const toast = useToastStore()
+const themeStore = useThemeStore()
 
 const embedData = ref<EmbedTokenResponseDto | null>(null)
 const error = ref<string | null>(null)
@@ -15,6 +17,22 @@ const refreshTimer = ref<number | null>(null)
 const isRefreshing = ref(false)
 const retryCount = ref(0)
 const maxRetries = 3
+
+const syncWithAppTheme = computed(() => (props.config.syncWithAppTheme as boolean) ?? false)
+
+const mappedContrastMode = computed(() => {
+    if (!syncWithAppTheme.value) return undefined
+    return themeStore.currentTheme === 'g90' || themeStore.currentTheme === 'g100'
+        ? 'HighContrastBlack'
+        : undefined
+})
+
+const mappedBackground = computed<'Default' | 'Transparent'>(() => {
+    if (!syncWithAppTheme.value) {
+        return (props.config.background as 'Default' | 'Transparent') ?? 'Transparent'
+    }
+    return 'Transparent'
+})
 
 const getUserFriendlyError = (e: unknown): string => {
     if (e instanceof Error) {
@@ -38,7 +56,7 @@ const getUserFriendlyError = (e: unknown): string => {
 }
 
 const loadEmbedData = async (isRetry = false) => {
-    const { workspaceId, reportId, enableRLS, rlsRoles } = props.config
+    const { workspaceId, reportId, enableRLS, rlsRoles, syncWithAppTheme } = props.config
     if (!workspaceId || !reportId) {
         // Don't show error if just initialized empty
         if (workspaceId === undefined && reportId === undefined) return
@@ -53,7 +71,8 @@ const loadEmbedData = async (isRetry = false) => {
             reportId as string,
             undefined, // pageId - not needed for component embed
             enableRLS as boolean | undefined,
-            rlsRoles as string[] | undefined
+            rlsRoles as string[] | undefined,
+            syncWithAppTheme as boolean | undefined
         )
         error.value = null
         retryCount.value = 0 // Reset on success
@@ -124,7 +143,7 @@ watch(() => props.config, () => {
         <PowerBIReportEmbed v-if="embedData" :embedUrl="embedData.embedUrl" :accessToken="embedData.accessToken"
             :reportId="props.config.reportId as string" :filterPaneEnabled="props.config.filterPaneEnabled as boolean"
             :navContentPaneEnabled="props.config.navContentPaneEnabled as boolean"
-            :background="props.config.background as any" />
+            :background="mappedBackground" :contrastMode="mappedContrastMode" />
         <div v-else-if="!error && (props.config.workspaceId && props.config.reportId)" class="loading">Loading report...
         </div>
         <div v-else-if="!error" class="placeholder">Please configure the report.</div>

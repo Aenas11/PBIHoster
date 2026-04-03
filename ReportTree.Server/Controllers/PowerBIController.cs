@@ -81,14 +81,14 @@ namespace ReportTree.Server.Controllers
 
                 if (!_pageAuthorizationService.CanAccessPage(page, User))
                 {
-                    await _auditLogService.LogAsync("EMBED_REPORT", request.ResourceId.ToString(), $"Access denied for page {request.PageId}", false);
+                    await _auditLogService.LogAsync("EMBED_REPORT", request.ResourceId.ToString(), $"Access denied for page {request.PageId}; syncWithAppTheme={request.SyncWithAppTheme}", false);
                     return Forbid();
                 }
             }
             else if (!User.IsInRole("Admin") && !User.IsInRole("Editor"))
             {
                 // If no PageId provided, only Admin/Editor can request tokens
-                await _auditLogService.LogAsync("EMBED_REPORT", request.ResourceId.ToString(), "Access denied (no page context)", false);
+                await _auditLogService.LogAsync("EMBED_REPORT", request.ResourceId.ToString(), $"Access denied (no page context); syncWithAppTheme={request.SyncWithAppTheme}", false);
                 return Forbid("PageId is required for non-admin users.");
             }
 
@@ -119,7 +119,7 @@ namespace ReportTree.Server.Controllers
             
             var result = await _powerBIService.GetReportEmbedTokenAsync(request.WorkspaceId, request.ResourceId, identities, cancellationToken);
             var context = request.PageId.HasValue ? $"page {request.PageId}" : "admin preview";
-            await _auditLogService.LogAsync("EMBED_REPORT", request.ResourceId.ToString(), $"Embed token generated for {context}");
+            await _auditLogService.LogAsync("EMBED_REPORT", request.ResourceId.ToString(), $"Embed token generated for {context}; syncWithAppTheme={request.SyncWithAppTheme}");
             return Ok(result);
         }
 
@@ -137,23 +137,23 @@ namespace ReportTree.Server.Controllers
 
                 if (!_pageAuthorizationService.CanAccessPage(page, User))
                 {
-                    await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), $"Access denied for page {request.PageId}", false);
+                    await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), $"Access denied for page {request.PageId}; syncWithAppTheme={request.SyncWithAppTheme}", false);
                     return Forbid();
                 }
                 
                 var result = await _powerBIService.GetDashboardEmbedTokenAsync(request.WorkspaceId, request.ResourceId, cancellationToken);
-                await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), $"Embed token generated for page {request.PageId}");
+                await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), $"Embed token generated for page {request.PageId}; syncWithAppTheme={request.SyncWithAppTheme}");
                 return Ok(result);
             }
 
             if (User.IsInRole("Admin") || User.IsInRole("Editor"))
             {
                 var result = await _powerBIService.GetDashboardEmbedTokenAsync(request.WorkspaceId, request.ResourceId, cancellationToken);
-                await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), "Embed token generated for admin preview");
+                await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), $"Embed token generated for admin preview; syncWithAppTheme={request.SyncWithAppTheme}");
                 return Ok(result);
             }
 
-            await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), "Access denied (no page context)", false);
+            await _auditLogService.LogAsync("EMBED_DASHBOARD", request.ResourceId.ToString(), $"Access denied (no page context); syncWithAppTheme={request.SyncWithAppTheme}", false);
             return Forbid("PageId is required for non-admin users.");
         }
 

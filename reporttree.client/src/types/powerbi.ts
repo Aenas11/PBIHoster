@@ -28,6 +28,7 @@ export interface EmbedTokenRequestDto {
     pageId?: number
     enableRLS?: boolean
     rlsRoles?: string[]
+    syncWithAppTheme?: boolean
 }
 
 export interface EmbedTokenResponseDto {

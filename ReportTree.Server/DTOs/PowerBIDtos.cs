@@ -37,6 +37,7 @@ namespace ReportTree.Server.DTOs
         public int? PageId { get; set; } // Optional, for authorization check
         public bool EnableRLS { get; set; } // Enable Row Level Security
         public List<string>? RLSRoles { get; set; } // RLS roles to apply
+        public bool? SyncWithAppTheme { get; set; } // Optional UI hint from client
     }
 
     public class EmbedTokenResponseDto

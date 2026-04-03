@@ -23,6 +23,11 @@ namespace ReportTree.Server
     {
         public static void Main(string[] args)
         {
+            if (PasswordResetCommand.TryRun(args))
+            {
+                return;
+            }
+
             var builder = WebApplication.CreateBuilder(args);
 
             var keyVaultUri = builder.Configuration["KEY_VAULT_URI"] ?? builder.Configuration["AZURE_KEY_VAULT_URI"];

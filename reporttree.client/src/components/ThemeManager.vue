@@ -53,7 +53,7 @@ async function saveTheme() {
 
         if (editingTheme.value) {
             // Update existing theme
-            await themeStore.saveCustomTheme({
+            await themeStore.updateCustomTheme(editingTheme.value.id, {
                 name: themeName.value,
                 tokens,
                 organizationId: organizationId.value || undefined,
@@ -61,7 +61,7 @@ async function saveTheme() {
             })
         } else {
             // Create new theme
-            await themeStore.saveCustomTheme({
+            await themeStore.createCustomTheme({
                 name: themeName.value,
                 tokens,
                 organizationId: organizationId.value || undefined,

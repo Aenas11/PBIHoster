@@ -44,6 +44,7 @@ const components: ComponentDefinition[] = [
             filterPaneEnabled: false,
             navContentPaneEnabled: false,
             background: 'Transparent',
+            syncWithAppTheme: false,
             enableRLS: false,
             rlsRoles: []
         },
@@ -61,6 +62,7 @@ const components: ComponentDefinition[] = [
             dashboardId: '',
             filterPaneEnabled: false,
             background: 'Transparent',
+            syncWithAppTheme: false,
             pageView: 'fitToWidth',
             locale: 'en-US'
         },
@@ -75,6 +77,7 @@ const components: ComponentDefinition[] = [
         configComponent: markRaw(PowerBIWorkspaceComponentConfigure),
         defaultConfig: {
             workspaceId: '',
+            syncWithAppTheme: false,
             enableRLS: false,
             rlsRoles: []
         },

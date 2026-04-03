@@ -60,6 +60,24 @@ watch(() => [props.embedUrl, props.accessToken], () => {
     embedReport()
 })
 
+watch(() => [
+    props.pageView,
+    props.filterPaneEnabled,
+    props.filterPaneExpanded,
+    props.navContentPaneEnabled,
+    props.pageNavPosition,
+    props.bookmarksVisible,
+    props.actionBarVisible,
+    props.statusBarVisible,
+    props.locale,
+    props.visualRenderedEvents,
+    props.hideErrors,
+    props.contrastMode,
+    props.background
+], () => {
+    embedReport()
+})
+
 watch(() => props.mobileLayout, (newVal) => {
     if (embed && props.embedType === 'report') {
         const report = embed as pbi.Report

@@ -103,6 +103,27 @@ watch(() => [props.embedUrl, props.accessToken], () => {
     embedContent()
 })
 
+// Re-embed when visual settings affecting theme/chrome change.
+watch(
+    () => [
+        props.filterPaneEnabled,
+        props.filterPaneExpanded,
+        props.navContentPaneEnabled,
+        props.pageNavPosition,
+        props.bookmarksVisible,
+        props.actionBarVisible,
+        props.statusBarVisible,
+        props.locale,
+        props.visualRenderedEvents,
+        props.hideErrors,
+        props.contrastMode,
+        props.background
+    ],
+    () => {
+        embedContent()
+    }
+)
+
 // Switch layout when mobile layout changes
 watch(() => props.mobileLayout, (newVal) => {
     const embed = getEmbedInstance()

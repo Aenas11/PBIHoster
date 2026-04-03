@@ -422,6 +422,7 @@ See [**DATABASE.md**](DATABASE.md) for complete schema documentation and query e
 - 🐛 **[GitHub Issues](https://github.com/aenas11/pbihoster/issues)** - Bug reports and feature requests
 - 💬 **[GitHub Discussions](https://github.com/aenas11/pbihoster/discussions)** - Ask questions, share ideas
 - 🛠️ **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and resolutions
+- 🔑 **[Admin Password Recovery](TROUBLESHOOTING.md#forgot-admin-password)** - CLI steps when admin credentials are lost
 
 ### Contributing
 

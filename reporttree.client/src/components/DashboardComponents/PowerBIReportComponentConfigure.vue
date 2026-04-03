@@ -20,8 +20,20 @@ const selectedReport = ref(props.modelValue.reportId as string || '')
 const filterPaneEnabled = ref(props.modelValue.filterPaneEnabled as boolean ?? false)
 const navContentPaneEnabled = ref(props.modelValue.navContentPaneEnabled as boolean ?? false)
 const selectedBackground = ref(props.modelValue.background as string || 'Transparent')
+const syncWithAppTheme = ref(props.modelValue.syncWithAppTheme as boolean ?? false)
 const enableRLS = ref(props.modelValue.enableRLS as boolean ?? false)
 const rlsRolesInput = ref((props.modelValue.rlsRoles as string[] || []).join(', '))
+
+const hydrateFromModel = (model: Record<string, unknown>) => {
+    selectedWorkspace.value = (model.workspaceId as string) || ''
+    selectedReport.value = (model.reportId as string) || ''
+    filterPaneEnabled.value = (model.filterPaneEnabled as boolean) ?? false
+    navContentPaneEnabled.value = (model.navContentPaneEnabled as boolean) ?? false
+    selectedBackground.value = (model.background as string) || 'Transparent'
+    syncWithAppTheme.value = (model.syncWithAppTheme as boolean) ?? false
+    enableRLS.value = (model.enableRLS as boolean) ?? false
+    rlsRolesInput.value = ((model.rlsRoles as string[]) || []).join(', ')
+}
 
 const loadWorkspaces = async () => {
     try {
@@ -59,9 +71,22 @@ watch(selectedWorkspace, async (newVal) => {
     updateConfig()
 })
 
-watch([selectedReport, filterPaneEnabled, navContentPaneEnabled, selectedBackground, enableRLS, rlsRolesInput], () => {
+watch([selectedReport, filterPaneEnabled, navContentPaneEnabled, selectedBackground, syncWithAppTheme, enableRLS, rlsRolesInput], () => {
     updateConfig()
 })
+
+watch(
+    () => props.modelValue,
+    async (newValue) => {
+        hydrateFromModel(newValue)
+        if (selectedWorkspace.value) {
+            await loadReports(selectedWorkspace.value)
+        } else {
+            reports.value = []
+        }
+    },
+    { deep: true, immediate: true }
+)
 
 const updateConfig = () => {
     // Parse comma-separated RLS roles
@@ -77,9 +102,15 @@ const updateConfig = () => {
         filterPaneEnabled: filterPaneEnabled.value,
         navContentPaneEnabled: navContentPaneEnabled.value,
         background: selectedBackground.value,
+        syncWithAppTheme: syncWithAppTheme.value,
         enableRLS: enableRLS.value,
         rlsRoles: rlsRoles.length > 0 ? rlsRoles : undefined
     })
+}
+
+const onToggleChanged = (e: CustomEvent<{ checked?: boolean; value?: boolean }>) => {
+    const value = e.detail?.checked ?? e.detail?.value
+    return value ?? false
 }
 </script>
 
@@ -98,12 +129,12 @@ const updateConfig = () => {
         </cds-select>
 
         <cds-toggle label-text="Show Filter Pane" :checked="filterPaneEnabled"
-            @cds-toggle-changed="(e: any) => { filterPaneEnabled = e.detail.checked }">
+            @cds-toggle-changed="(e: CustomEvent<{ checked?: boolean; value?: boolean }>) => { filterPaneEnabled = onToggleChanged(e) }">
             <span slot="label-text">Show Filter Pane</span>
         </cds-toggle>
 
         <cds-toggle label-text="Show Page Navigation" :checked="navContentPaneEnabled"
-            @cds-toggle-changed="(e: any) => { navContentPaneEnabled = e.detail.checked }">
+            @cds-toggle-changed="(e: CustomEvent<{ checked?: boolean; value?: boolean }>) => { navContentPaneEnabled = onToggleChanged(e) }">
             <span slot="label-text">Show Page Navigation</span>
         </cds-toggle>
 
@@ -113,10 +144,18 @@ const updateConfig = () => {
             <cds-select-item value="Default">Default (White)</cds-select-item>
         </cds-select>
 
+        <cds-toggle label-text="Sync with app theme" :checked="syncWithAppTheme"
+            @cds-toggle-changed="(e: CustomEvent<{ checked?: boolean; value?: boolean }>) => { syncWithAppTheme = onToggleChanged(e) }">
+            <span slot="label-text"
+                title="Safe mode only adjusts embed chrome (background/contrast). It does not recolor Power BI visuals unless the report itself has a matching theme.">
+                Sync embed appearance with app theme (safe mode)
+            </span>
+        </cds-toggle>
+
         <div class="rls-section">
             <h4 class="section-title">Row-Level Security (RLS)</h4>
             <cds-toggle label-text="Enable Row-Level Security" :checked="enableRLS"
-                @cds-toggle-changed="(e: any) => { enableRLS = e.detail.checked }">
+                @cds-toggle-changed="(e: CustomEvent<{ checked?: boolean; value?: boolean }>) => { enableRLS = onToggleChanged(e) }">
                 <span slot="label-text">Enable Row-Level Security</span>
             </cds-toggle>
 

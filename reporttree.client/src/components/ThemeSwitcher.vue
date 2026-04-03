@@ -6,8 +6,7 @@ import { ColorSwitch20 } from '@carbon/icons-vue'
 
 const themeStore = useThemeStore()
 
-function changeTheme(event: CustomEvent) {
-    const value = event.detail.item.getAttribute('value');
+function changeTheme(value: string) {
     if (!value) return;
 
     // Check if it's a custom theme
@@ -24,15 +23,16 @@ function changeTheme(event: CustomEvent) {
 
     <cds-overflow-menu class="theme-switcher" flipped aria-label="Theme switcher">
         <ColorSwitch20 />
-        <cds-overflow-menu-body @cds-overflow-menu-item-select="changeTheme">
-            <cds-overflow-menu-item value="white">White</cds-overflow-menu-item>
-            <cds-overflow-menu-item value="g10">Gray 10</cds-overflow-menu-item>
-            <cds-overflow-menu-item value="g90">Gray 90</cds-overflow-menu-item>
-            <cds-overflow-menu-item value="g100">Gray 100</cds-overflow-menu-item>
+        <cds-overflow-menu-body>
+            <cds-overflow-menu-item value="white" @click="changeTheme('white')">White</cds-overflow-menu-item>
+            <cds-overflow-menu-item value="g10" @click="changeTheme('g10')">Gray 10</cds-overflow-menu-item>
+            <cds-overflow-menu-item value="g90" @click="changeTheme('g90')">Gray 90</cds-overflow-menu-item>
+            <cds-overflow-menu-item value="g100" @click="changeTheme('g100')">Gray 100</cds-overflow-menu-item>
 
             <template v-if="themeStore.customThemes.length > 0">
                 <cds-overflow-menu-item disabled divider>Custom Themes</cds-overflow-menu-item>
-                <cds-overflow-menu-item v-for="theme in themeStore.customThemes" :key="theme.id" :value="theme.name">
+                <cds-overflow-menu-item v-for="theme in themeStore.customThemes" :key="theme.id" :value="theme.name"
+                    @click="changeTheme(theme.name)">
                     {{ theme.name }}
                 </cds-overflow-menu-item>
             </template>

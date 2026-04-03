@@ -43,6 +43,11 @@ const { isLoading, error, embedContent } = usePowerBIEmbed({
 watch(() => [props.embedUrl, props.accessToken], () => {
     embedContent()
 })
+
+// Re-embed when dashboard visual settings change.
+watch(() => [props.pageView, props.locale, props.background], () => {
+    embedContent()
+})
 </script>
 
 <template>

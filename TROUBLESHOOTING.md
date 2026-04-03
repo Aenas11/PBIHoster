@@ -387,6 +387,51 @@ RATE_LIMIT_AUTH_PERIOD=1m
 
 ---
 
+### Forgot Admin Password
+
+#### Symptom
+You can no longer sign in with an Admin account and cannot use in-app user management to change credentials.
+
+#### Resolution (CLI Recovery)
+
+Run from the backend project folder:
+
+```bash
+cd /path/to/PBIHoster/ReportTree.Server
+
+# 1) List current admin users
+dotnet run -- --list-admins
+
+# 2) Reset password for a specific admin user
+dotnet run -- --reset-password --username admin --new-password 'NewStrongPassword123!'
+```
+
+#### Password Requirements
+
+The reset command enforces configured password policy (`Security:PasswordPolicy`), which defaults to:
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one digit
+- At least one special character
+
+#### If Database Path Is Non-Default
+
+If your LiteDB file is not the default `reporttree.db`, provide the connection string explicitly:
+
+```bash
+dotnet run -- --reset-password \
+  --username admin \
+  --new-password 'NewStrongPassword123!' \
+  --db 'Filename=/data/reporttree.db;Connection=shared'
+```
+
+#### Notes
+- Successful reset also clears the lockout entry for that username.
+- This method updates only credentials and lockout state; reports, pages, and settings are unchanged.
+
+---
+
 ### Database File Corruption
 
 #### Symptom

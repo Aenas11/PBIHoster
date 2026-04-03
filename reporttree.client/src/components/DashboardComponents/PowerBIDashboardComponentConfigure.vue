@@ -5,6 +5,7 @@ import type { ComponentConfigProps } from '../../types/components'
 import { ref, onMounted, watch } from 'vue'
 import { powerBIService } from '../../services/powerbi.service'
 import type { WorkspaceDto, DashboardDto } from '../../types/powerbi'
+import '@carbon/web-components/es/components/toggle/index.js';
 
 const props = defineProps<ComponentConfigProps>()
 const emit = defineEmits<{
@@ -19,6 +20,19 @@ const selectedDashboard = ref((props.modelValue.dashboardId as string) || '')
 // Dashboard Display Settings - pageView values per https://learn.microsoft.com/en-us/javascript/api/overview/powerbi/embed-dashboard
 // Valid values: 'fitToWidth', 'oneColumn', 'actualSize'
 const selectedPageView = ref((props.modelValue.pageView as string | undefined) ?? 'fitToWidth')
+const syncWithAppTheme = ref(props.modelValue.syncWithAppTheme as boolean ?? false)
+
+const hydrateFromModel = (model: Record<string, unknown>) => {
+    selectedWorkspace.value = (model.workspaceId as string) || ''
+    selectedDashboard.value = (model.dashboardId as string) || ''
+    selectedPageView.value = (model.pageView as string | undefined) ?? 'fitToWidth'
+    syncWithAppTheme.value = (model.syncWithAppTheme as boolean) ?? false
+}
+
+const onToggleChanged = (e: CustomEvent<{ checked?: boolean; value?: boolean }>) => {
+    const value = e.detail?.checked ?? e.detail?.value
+    return value ?? false
+}
 
 const loadWorkspaces = async () => {
     try {
@@ -55,16 +69,30 @@ watch(selectedWorkspace, async (newVal) => {
     updateConfig()
 })
 
-watch([selectedDashboard, selectedPageView], () => {
+watch([selectedDashboard, selectedPageView, syncWithAppTheme], () => {
     updateConfig()
 })
+
+watch(
+    () => props.modelValue,
+    async (newValue) => {
+        hydrateFromModel(newValue)
+        if (selectedWorkspace.value) {
+            await loadDashboards(selectedWorkspace.value)
+        } else {
+            dashboards.value = []
+        }
+    },
+    { deep: true, immediate: true }
+)
 
 const updateConfig = () => {
     emit('update:modelValue', {
         ...props.modelValue,
         workspaceId: selectedWorkspace.value,
         dashboardId: selectedDashboard.value,
-        pageView: selectedPageView.value
+        pageView: selectedPageView.value,
+        syncWithAppTheme: syncWithAppTheme.value
     })
 }
 </script>
@@ -94,6 +122,14 @@ const updateConfig = () => {
             <cds-select-item value="actualSize" :selected="selectedPageView === 'actualSize'">Actual Size (Full
                 Size)</cds-select-item>
         </cds-select>
+
+        <cds-toggle label-text="Sync with app theme" :checked="syncWithAppTheme"
+            @cds-toggle-changed="(e: CustomEvent<{ checked?: boolean; value?: boolean }>) => { syncWithAppTheme = onToggleChanged(e) }">
+            <span slot="label-text"
+                title="Safe mode only adjusts embed chrome (background/contrast). It does not recolor Power BI visuals unless the dashboard theme matches.">
+                Sync embed appearance with app theme (safe mode)
+            </span>
+        </cds-toggle>
     </div>
 </template>
 

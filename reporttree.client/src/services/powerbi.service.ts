@@ -31,7 +31,8 @@ export const powerBIService = {
         reportId: string,
         pageId?: number,
         enableRLS?: boolean,
-        rlsRoles?: string[]
+        rlsRoles?: string[],
+        syncWithAppTheme?: boolean
     ): Promise<EmbedTokenResponseDto> {
         const request: EmbedTokenRequestDto = {
             workspaceId,
@@ -39,17 +40,19 @@ export const powerBIService = {
             resourceType: 'Report',
             pageId,
             enableRLS,
-            rlsRoles
+            rlsRoles,
+            syncWithAppTheme
         }
         return api.post<EmbedTokenResponseDto>('/powerbi/embed/report', request)
     },
 
-    async getDashboardEmbedToken(workspaceId: string, dashboardId: string, pageId?: number): Promise<EmbedTokenResponseDto> {
+    async getDashboardEmbedToken(workspaceId: string, dashboardId: string, pageId?: number, syncWithAppTheme?: boolean): Promise<EmbedTokenResponseDto> {
         const request: EmbedTokenRequestDto = {
             workspaceId,
             resourceId: dashboardId,
             resourceType: 'Dashboard',
-            pageId
+            pageId,
+            syncWithAppTheme
         }
         return api.post<EmbedTokenResponseDto>('/powerbi/embed/dashboard', request)
     },
