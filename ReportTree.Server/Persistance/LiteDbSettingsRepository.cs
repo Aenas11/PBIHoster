@@ -41,7 +41,24 @@ public class LiteDbSettingsRepository : ISettingsRepository
         {
             setting.Id = existing.Id;
         }
-        _collection.Upsert(setting);
+
+        try
+        {
+            _collection.Upsert(setting);
+        }
+        catch (LiteException ex) when (ex.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase))
+        {
+            // A concurrent writer inserted the same logical key; retry as an update.
+            var current = _collection.FindOne(x => x.Key == setting.Key);
+            if (current is null)
+            {
+                throw;
+            }
+
+            setting.Id = current.Id;
+            _collection.Update(setting);
+        }
+
         return Task.CompletedTask;
     }
 
