@@ -10,6 +10,7 @@ using ReportTree.Server.HealthChecks;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -95,6 +96,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<RefreshNotificationService>();
             builder.Services.AddScoped<DatasetRefreshService>();
             builder.Services.AddScoped<OidcAuthService>();
+            builder.Services.AddScoped<ExternalGroupSyncService>();
             builder.Services.Configure<RefreshOptions>(builder.Configuration.GetSection("Refresh"));
             builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
             builder.Services.AddSingleton<EmailService>();
@@ -431,6 +433,63 @@ namespace ReportTree.Server
             {
                 var providers = await oidcAuthService.GetEnabledProvidersAsync();
                 return Results.Ok(providers);
+            }).AllowAnonymous();
+
+            app.MapGet("/api/auth/external/challenge/{providerId}", async (
+                string providerId,
+                string? returnUrl,
+                IExternalAuthProviderRepository providerRepository) =>
+            {
+                var provider = await providerRepository.GetByIdAsync(providerId);
+                if (provider == null || !provider.Enabled)
+                {
+                    return Results.NotFound(new { Error = "External auth provider not found" });
+                }
+
+                var normalizedReturnUrl = ExternalAuthUrlValidator.NormalizeReturnUrl(returnUrl);
+                var redirectUri = $"/api/auth/external/callback/{provider.Id}?returnUrl={Uri.EscapeDataString(normalizedReturnUrl)}";
+
+                var properties = new AuthenticationProperties
+                {
+                    RedirectUri = redirectUri
+                };
+
+                return Results.Challenge(properties, new[] { provider.Scheme });
+            }).AllowAnonymous();
+
+            app.MapGet("/api/auth/external/callback/{providerId}", async (
+                string providerId,
+                string? returnUrl,
+                HttpContext context,
+                IExternalAuthProviderRepository providerRepository,
+                AuthService authService) =>
+            {
+                const string externalCookieScheme = "ExternalOidcCookie";
+
+                var normalizedReturnUrl = ExternalAuthUrlValidator.NormalizeReturnUrl(returnUrl);
+                var provider = await providerRepository.GetByIdAsync(providerId);
+                if (provider == null || !provider.Enabled)
+                {
+                    return Results.Redirect($"{normalizedReturnUrl}#authError=provider_not_found");
+                }
+
+                var authResult = await context.AuthenticateAsync(externalCookieScheme);
+                if (!authResult.Succeeded || authResult.Principal == null)
+                {
+                    await context.SignOutAsync(externalCookieScheme);
+                    return Results.Redirect($"{normalizedReturnUrl}#authError=external_auth_failed");
+                }
+
+                var (token, errorMessage) = await authService.LoginExternalAsync(provider, authResult.Principal);
+                await context.SignOutAsync(externalCookieScheme);
+
+                if (token == null)
+                {
+                    var safeError = string.IsNullOrWhiteSpace(errorMessage) ? "external_login_failed" : Uri.EscapeDataString(errorMessage);
+                    return Results.Redirect($"{normalizedReturnUrl}#authError={safeError}");
+                }
+
+                return Results.Redirect($"{normalizedReturnUrl}#token={Uri.EscapeDataString(token)}");
             }).AllowAnonymous();
             
             // Global error handler

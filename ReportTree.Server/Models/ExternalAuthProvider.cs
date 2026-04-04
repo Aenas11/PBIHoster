@@ -34,8 +34,25 @@ public class ExternalAuthProvider
 
     public string DefaultRole { get; set; } = "Viewer";
 
+    public bool GroupSyncEnabled { get; set; }
+
+    public string GroupClaimType { get; set; } = "groups";
+
+    public bool RemoveUnmappedGroupMemberships { get; set; }
+
+    public List<ExternalGroupMapping> GroupMappings { get; set; } = new();
+
     public string Scheme => $"oidc:{Id}";
 
     public string GetCallbackPathOrDefault() =>
         string.IsNullOrWhiteSpace(CallbackPath) ? $"/signin-oidc-{Id}" : CallbackPath;
+}
+
+public class ExternalGroupMapping
+{
+    [Required]
+    public string ExternalGroup { get; set; } = string.Empty;
+
+    [Required]
+    public string InternalGroup { get; set; } = string.Empty;
 }

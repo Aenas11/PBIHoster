@@ -96,6 +96,8 @@ Response 200 OK:
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | GET | `/auth/external/providers` | ❌ No | List enabled external auth providers (safe metadata only) |
+| GET | `/auth/external/challenge/{providerId}` | ❌ No | Start OIDC challenge for a configured provider |
+| GET | `/auth/external/callback/{providerId}` | ❌ No | Complete OIDC login and redirect with token in URL fragment |
 | POST | `/auth/login` | ❌ No | Login with username/password |
 | POST | `/auth/register` | ❌ No | Register new user (first user becomes Admin) |
 | POST | `/auth/logout` | ✅ Yes | **Not implemented** (client-side logout only) |

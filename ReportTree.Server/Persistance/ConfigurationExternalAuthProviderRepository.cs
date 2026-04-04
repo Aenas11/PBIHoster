@@ -37,6 +37,9 @@ public class ConfigurationExternalAuthProviderRepository : IExternalAuthProvider
             provider.ClientId = provider.ClientId.Trim();
             provider.ClientSecret = provider.ClientSecret?.Trim() ?? string.Empty;
             provider.CallbackPath = provider.GetCallbackPathOrDefault();
+                provider.GroupClaimType = string.IsNullOrWhiteSpace(provider.GroupClaimType)
+                    ? "groups"
+                    : provider.GroupClaimType.Trim();
 
             if (string.IsNullOrWhiteSpace(provider.Id))
             {
@@ -75,16 +78,72 @@ public class ConfigurationExternalAuthProviderRepository : IExternalAuthProvider
                     throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:Scopes must include 'openid'.");
                 }
 
+                if (!IsAllowedRole(provider.DefaultRole))
+                {
+                    throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:DefaultRole must be one of Admin, Editor, Viewer.");
+                }
+
                 provider.Scopes = provider.Scopes
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .Select(s => s.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
+
+                provider.DefaultRole = NormalizeRole(provider.DefaultRole);
+
+                if (provider.GroupSyncEnabled)
+                {
+                    var mappingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var mappingTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var mapping in provider.GroupMappings)
+                    {
+                        mapping.ExternalGroup = mapping.ExternalGroup.Trim();
+                        mapping.InternalGroup = mapping.InternalGroup.Trim();
+
+                        if (string.IsNullOrWhiteSpace(mapping.ExternalGroup) || string.IsNullOrWhiteSpace(mapping.InternalGroup))
+                        {
+                            throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:GroupMappings entries must include ExternalGroup and InternalGroup.");
+                        }
+
+                        if (!mappingKeys.Add(mapping.ExternalGroup))
+                        {
+                            throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:GroupMappings has duplicate ExternalGroup '{mapping.ExternalGroup}'.");
+                        }
+
+                        mappingTargets.Add(mapping.InternalGroup);
+                    }
+
+                    if (provider.GroupMappings.Count == 0)
+                    {
+                        throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:GroupSyncEnabled requires at least one GroupMappings entry.");
+                    }
+                }
             }
 
             normalized.Add(provider);
         }
 
         return normalized;
+    }
+
+    private static bool IsAllowedRole(string role) =>
+        string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(role, "Editor", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(role, "Viewer", StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeRole(string role)
+    {
+        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Admin";
+        }
+
+        if (string.Equals(role, "Editor", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Editor";
+        }
+
+        return "Viewer";
     }
 }
