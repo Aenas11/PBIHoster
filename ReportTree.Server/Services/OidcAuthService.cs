@@ -1,20 +1,21 @@
 using ReportTree.Server.DTOs;
-using ReportTree.Server.Persistance;
 
 namespace ReportTree.Server.Services;
 
 public class OidcAuthService
 {
-    private readonly IExternalAuthProviderRepository _providerRepository;
+    private readonly ExternalAuthConfigurationService _externalAuthConfigurationService;
 
-    public OidcAuthService(IExternalAuthProviderRepository providerRepository)
+    public OidcAuthService(ExternalAuthConfigurationService externalAuthConfigurationService)
     {
-        _providerRepository = providerRepository;
+        _externalAuthConfigurationService = externalAuthConfigurationService;
     }
 
     public async Task<IReadOnlyList<ExternalAuthProviderSummaryResponse>> GetEnabledProvidersAsync()
     {
-        var providers = await _providerRepository.GetEnabledAsync();
+        var providers = (await _externalAuthConfigurationService.GetEffectiveProvidersAsync())
+            .Where(p => p.Enabled)
+            .ToList();
 
         return providers
             .Select(provider => new ExternalAuthProviderSummaryResponse(

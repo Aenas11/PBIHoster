@@ -138,4 +138,22 @@ public class SettingsController : ControllerBase
         await _auditLogService.LogAsync("DELETE", $"Setting:{key}", "Deleted setting");
         return Ok();
     }
+
+    [HttpGet("external-auth/providers")]
+    public async Task<IActionResult> GetExternalAuthProviders([FromServices] ExternalAuthConfigurationService externalAuthConfigurationService)
+    {
+        var configs = await externalAuthConfigurationService.GetAdminConfigsAsync();
+        return Ok(configs);
+    }
+
+    [HttpPut("external-auth/providers")]
+    public async Task<IActionResult> UpsertExternalAuthProviders(
+        [FromBody] ExternalAuthAdminConfigUpdateRequest request,
+        [FromServices] ExternalAuthConfigurationService externalAuthConfigurationService)
+    {
+        var username = User.Identity?.Name ?? "Unknown";
+        await externalAuthConfigurationService.SaveAdminConfigsAsync(request, username);
+        await _auditLogService.LogAsync("UPDATE", "Setting:Security.ExternalAuth.ProviderOverrides", "Updated external auth mapping overrides");
+        return Ok();
+    }
 }

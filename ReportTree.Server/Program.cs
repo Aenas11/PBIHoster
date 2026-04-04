@@ -97,6 +97,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<RefreshNotificationService>();
             builder.Services.AddScoped<DatasetRefreshService>();
             builder.Services.AddScoped<OidcAuthService>();
+            builder.Services.AddScoped<ExternalAuthConfigurationService>();
             builder.Services.AddScoped<ExternalGroupSyncService>();
             builder.Services.AddScoped<ExternalRoleMappingService>();
             builder.Services.AddScoped<UsageTrackingService>();
@@ -441,9 +442,9 @@ namespace ReportTree.Server
             app.MapGet("/api/auth/external/challenge/{providerId}", async (
                 string providerId,
                 string? returnUrl,
-                IExternalAuthProviderRepository providerRepository) =>
+                ExternalAuthConfigurationService externalAuthConfigurationService) =>
             {
-                var provider = await providerRepository.GetByIdAsync(providerId);
+                var provider = await externalAuthConfigurationService.GetEffectiveProviderByIdAsync(providerId);
                 if (provider == null || !provider.Enabled)
                 {
                     return Results.NotFound(new { Error = "External auth provider not found" });
@@ -464,13 +465,13 @@ namespace ReportTree.Server
                 string providerId,
                 string? returnUrl,
                 HttpContext context,
-                IExternalAuthProviderRepository providerRepository,
+                ExternalAuthConfigurationService externalAuthConfigurationService,
                 AuthService authService) =>
             {
                 const string externalCookieScheme = "ExternalOidcCookie";
 
                 var normalizedReturnUrl = ExternalAuthUrlValidator.NormalizeReturnUrl(returnUrl);
-                var provider = await providerRepository.GetByIdAsync(providerId);
+                var provider = await externalAuthConfigurationService.GetEffectiveProviderByIdAsync(providerId);
                 if (provider == null || !provider.Enabled)
                 {
                     return Results.Redirect($"{normalizedReturnUrl}#authError=provider_not_found");

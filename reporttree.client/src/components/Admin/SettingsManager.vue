@@ -28,10 +28,41 @@ interface Page {
     parentId?: number
 }
 
+interface ExternalGroupMapping {
+    externalGroup: string
+    internalGroup: string
+}
+
+interface ExternalRoleMapping {
+    externalRole: string
+    internalRole: string
+}
+
+interface ExternalAuthProviderResponse {
+    providerId: string
+    displayName: string
+    enabled: boolean
+    defaultRole: string
+    groupSyncEnabled: boolean
+    groupClaimType: string
+    removeUnmappedGroupMemberships: boolean
+    groupMappings: ExternalGroupMapping[]
+    roleSyncEnabled: boolean
+    roleClaimType: string
+    roleMappings: ExternalRoleMapping[]
+}
+
+interface ExternalAuthProviderAdmin extends ExternalAuthProviderResponse {
+    groupMappingsText: string
+    roleMappingsText: string
+}
+
 const toastStore = useToastStore()
 const staticSettingsStore = useStaticSettingsStore()
 const settings = ref<Setting[]>([])
 const pages = ref<Page[]>([])
+const externalAuthProviders = ref<ExternalAuthProviderAdmin[]>([])
+const externalAuthLoading = ref(false)
 const loading = ref(false)
 const showModal = ref(false)
 const isEditing = ref(false)
@@ -113,6 +144,27 @@ async function loadSettings() {
     }
 }
 
+async function loadExternalAuthProviders() {
+    externalAuthLoading.value = true
+    try {
+        const providers = await api.get<ExternalAuthProviderResponse[]>('/settings/external-auth/providers')
+        externalAuthProviders.value = providers.map(provider => ({
+            ...provider,
+            groupMappingsText: provider.groupMappings
+                .map(mapping => `${mapping.externalGroup}=${mapping.internalGroup}`)
+                .join('\n'),
+            roleMappingsText: provider.roleMappings
+                .map(mapping => `${mapping.externalRole}=${mapping.internalRole}`)
+                .join('\n')
+        }))
+    } catch (error) {
+        console.error('Failed to load external auth providers:', error)
+        externalAuthProviders.value = []
+    } finally {
+        externalAuthLoading.value = false
+    }
+}
+
 async function loadPages() {
     try {
         pages.value = await api.get<Page[]>('/pages')
@@ -169,6 +221,119 @@ async function saveStaticSettings() {
     } catch (error) {
         console.error('Failed to save static settings:', error)
         toastStore.error('Error', 'Failed to save static settings')
+    }
+}
+
+function parsePairLines(text: string): Array<{ left: string, right: string }> {
+    return text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => {
+            const separator = line.indexOf('=')
+            if (separator <= 0 || separator === line.length - 1) {
+                return { left: '', right: '' }
+            }
+
+            return {
+                left: line.slice(0, separator).trim(),
+                right: line.slice(separator + 1).trim()
+            }
+        })
+        .filter(pair => pair.left.length > 0 && pair.right.length > 0)
+}
+
+function onExternalDefaultRoleChange(providerId: string, event: Event) {
+    const value = (event.target as HTMLSelectElement).value
+    const provider = externalAuthProviders.value.find(p => p.providerId === providerId)
+    if (provider) {
+        provider.defaultRole = value
+    }
+}
+
+function onExternalGroupSyncToggle(providerId: string, event: CustomEvent) {
+    const provider = externalAuthProviders.value.find(p => p.providerId === providerId)
+    if (!provider) {
+        return
+    }
+
+    provider.groupSyncEnabled = Boolean(event.detail?.checked ?? event.detail?.value)
+}
+
+function onExternalGroupClaimTypeInput(providerId: string, event: Event) {
+    const provider = externalAuthProviders.value.find(p => p.providerId === providerId)
+    if (provider) {
+        provider.groupClaimType = (event.target as HTMLInputElement).value
+    }
+}
+
+function onExternalRemoveUnmappedToggle(providerId: string, event: CustomEvent) {
+    const provider = externalAuthProviders.value.find(p => p.providerId === providerId)
+    if (!provider) {
+        return
+    }
+
+    provider.removeUnmappedGroupMemberships = Boolean(event.detail?.checked ?? event.detail?.value)
+}
+
+function onExternalGroupMappingsInput(providerId: string, event: Event) {
+    const provider = externalAuthProviders.value.find(p => p.providerId === providerId)
+    if (provider) {
+        provider.groupMappingsText = (event.target as HTMLTextAreaElement).value
+    }
+}
+
+function onExternalRoleSyncToggle(providerId: string, event: CustomEvent) {
+    const provider = externalAuthProviders.value.find(p => p.providerId === providerId)
+    if (!provider) {
+        return
+    }
+
+    provider.roleSyncEnabled = Boolean(event.detail?.checked ?? event.detail?.value)
+}
+
+function onExternalRoleClaimTypeInput(providerId: string, event: Event) {
+    const provider = externalAuthProviders.value.find(p => p.providerId === providerId)
+    if (provider) {
+        provider.roleClaimType = (event.target as HTMLInputElement).value
+    }
+}
+
+function onExternalRoleMappingsInput(providerId: string, event: Event) {
+    const provider = externalAuthProviders.value.find(p => p.providerId === providerId)
+    if (provider) {
+        provider.roleMappingsText = (event.target as HTMLTextAreaElement).value
+    }
+}
+
+async function saveExternalAuthMappings() {
+    try {
+        const payload = {
+            providers: externalAuthProviders.value.map(provider => ({
+                providerId: provider.providerId,
+                defaultRole: provider.defaultRole,
+                groupSyncEnabled: provider.groupSyncEnabled,
+                groupClaimType: provider.groupClaimType || 'groups',
+                removeUnmappedGroupMemberships: provider.removeUnmappedGroupMemberships,
+                groupMappings: parsePairLines(provider.groupMappingsText).map(pair => ({
+                    externalGroup: pair.left,
+                    internalGroup: pair.right
+                })),
+                roleSyncEnabled: provider.roleSyncEnabled,
+                roleClaimType: provider.roleClaimType || 'roles',
+                roleMappings: parsePairLines(provider.roleMappingsText).map(pair => ({
+                    externalRole: pair.left,
+                    internalRole: pair.right
+                }))
+            }))
+        }
+
+        await api.put('/settings/external-auth/providers', payload)
+        toastStore.success('Success', 'External auth mapping settings saved')
+        await loadExternalAuthProviders()
+    } catch (error) {
+        console.error('Failed to save external auth mappings:', error)
+        toastStore.error('Error', 'Failed to save external auth mappings')
     }
 }
 
@@ -337,6 +502,7 @@ async function handleDeleteFavicon() {
 onMounted(() => {
     loadSettings()
     loadPages()
+    loadExternalAuthProviders()
 })
 </script>
 
@@ -460,6 +626,81 @@ onMounted(() => {
             <h3>Theme Management</h3>
             <p class="section-description">Create and maintain custom Carbon token themes available in the header switcher</p>
             <ThemeManager />
+        </section>
+
+        <section class="external-auth-section">
+            <h3>External Authentication Mapping</h3>
+            <p class="section-description">
+                Configure claim-based role and group mappings for external identity providers.
+                Provider credentials and OIDC connection details remain config/env-only and are intentionally not editable here.
+            </p>
+
+            <div v-if="externalAuthLoading" class="hint">Loading external providers...</div>
+
+            <div v-else-if="externalAuthProviders.length === 0" class="hint">
+                No external providers found. Enable providers in server configuration first.
+            </div>
+
+            <div v-else class="external-provider-list">
+                <div v-for="provider in externalAuthProviders" :key="provider.providerId" class="external-provider-card">
+                    <div class="external-provider-header">
+                        <h4>{{ provider.displayName }}</h4>
+                        <span class="category-badge">{{ provider.enabled ? 'Enabled' : 'Disabled' }}</span>
+                    </div>
+
+                    <div class="setting-row compact">
+                        <label>Default Role</label>
+                        <div class="setting-input">
+                            <cds-select :value="provider.defaultRole" label-text="Default fallback role"
+                                @change="onExternalDefaultRoleChange(provider.providerId, $event)">
+                                <cds-select-item value="Viewer">Viewer</cds-select-item>
+                                <cds-select-item value="Editor">Editor</cds-select-item>
+                                <cds-select-item value="Admin">Admin</cds-select-item>
+                            </cds-select>
+                        </div>
+                    </div>
+
+                    <div class="setting-row compact">
+                        <label>Group Mapping</label>
+                        <div class="setting-input">
+                            <cds-toggle :checked="provider.groupSyncEnabled"
+                                @cds-toggle-changed="onExternalGroupSyncToggle(provider.providerId, $event)">
+                                Enable external group to internal group synchronization
+                            </cds-toggle>
+                            <cds-text-input label="Group claim type" :value="provider.groupClaimType"
+                                @input="onExternalGroupClaimTypeInput(provider.providerId, $event)"
+                                placeholder="groups"></cds-text-input>
+                            <cds-toggle :checked="provider.removeUnmappedGroupMemberships"
+                                @cds-toggle-changed="onExternalRemoveUnmappedToggle(provider.providerId, $event)">
+                                Remove managed group memberships when claims are no longer present
+                            </cds-toggle>
+                            <cds-textarea label="Group mappings (ExternalGroup=InternalGroup, one per line)"
+                                :value="provider.groupMappingsText"
+                                @input="onExternalGroupMappingsInput(provider.providerId, $event)"
+                                placeholder="entra-group-id=Sales"></cds-textarea>
+                        </div>
+                    </div>
+
+                    <div class="setting-row compact">
+                        <label>Role Mapping</label>
+                        <div class="setting-input">
+                            <cds-toggle :checked="provider.roleSyncEnabled"
+                                @cds-toggle-changed="onExternalRoleSyncToggle(provider.providerId, $event)">
+                                Enable external role to internal role synchronization
+                            </cds-toggle>
+                            <cds-text-input label="Role claim type" :value="provider.roleClaimType"
+                                @input="onExternalRoleClaimTypeInput(provider.providerId, $event)"
+                                placeholder="roles"></cds-text-input>
+                            <cds-textarea label="Role mappings (ExternalRole=InternalRole, one per line)"
+                                :value="provider.roleMappingsText"
+                                @input="onExternalRoleMappingsInput(provider.providerId, $event)"
+                                placeholder="PBIHoster-Editors=Editor"></cds-textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <cds-button size="sm" @click="saveExternalAuthMappings">Save External Auth Mappings</cds-button>
+            </div>
         </section>
 
         <!-- Regular Settings Section -->
@@ -651,6 +892,56 @@ onMounted(() => {
         color: var(--cds-text-secondary);
         font-size: 0.875rem;
     }
+}
+
+.external-auth-section {
+    background: var(--cds-layer-01);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--cds-border-subtle-01);
+
+    h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.25rem;
+        color: var(--cds-text-primary);
+    }
+
+    .section-description {
+        margin: 0 0 1rem 0;
+        color: var(--cds-text-secondary);
+        font-size: 0.875rem;
+    }
+}
+
+.external-provider-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.external-provider-card {
+    border: 1px solid var(--cds-border-subtle-01);
+    border-radius: 8px;
+    padding: 1rem;
+    background: var(--cds-layer-02);
+}
+
+.external-provider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+
+    h4 {
+        margin: 0;
+        color: var(--cds-text-primary);
+    }
+}
+
+.setting-row.compact {
+    grid-template-columns: 180px 1fr;
+    margin-bottom: 0.75rem;
 }
 
 .value {
