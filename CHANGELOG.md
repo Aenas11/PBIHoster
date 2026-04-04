@@ -3,7 +3,16 @@
 All notable changes to this project will be documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Placeholder for upcoming changes.
+### Added
+- Completed external authentication Section 2 delivery:
+	- OIDC provider discovery, challenge, and callback endpoints.
+	- External claim-to-role and claim-to-group sync services.
+	- Frontend SSO login and callback handling.
+	- Admin non-secret external mapping configuration endpoints and UI.
+- Added backend integration tests for external auth admin mapping settings endpoints.
+
+### Changed
+- Updated project documentation to reflect implemented external auth architecture, security boundaries, and admin mapping behavior.
 
 ## [0.3.0] - 2025-02-11
 ### Added

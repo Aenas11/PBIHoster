@@ -85,6 +85,10 @@ The API follows a hybrid pattern:
 
 **Key Services**:
 - **AuthService**: JWT generation, user authentication
+- **OidcAuthService**: External provider discovery for login UX
+- **ExternalAuthConfigurationService**: Merges config/env providers with admin-managed non-secret mapping overrides
+- **ExternalGroupSyncService**: Maps external group claims to internal groups during external login
+- **ExternalRoleMappingService**: Resolves internal roles from external claims with default-role fallback
 - **TokenService**: JWT token operations
 - **PageAuthorizationService**: Role-based access control for pages
 - **PowerBIService**: Azure AD authentication and Power BI API calls
@@ -191,9 +195,16 @@ public class AuditLog
 
 2. **External Authentication** (OIDC/OAuth2 - Optional)
    ```
-   User initiates login → External provider flow → Backend exchanges code for ID token
-   → JWT generated → Session established
+  Frontend calls /api/auth/external/challenge/{providerId}
+  → OIDC challenge (provider-specific scheme)
+  → temporary external cookie callback
+  → backend provisions/updates local user and applies role/group mapping
+  → backend issues local JWT
+  → callback redirects to SPA with token fragment
    ```
+
+External auth provider secrets and protocol connection settings remain environment/config managed.
+Admin UI/API can only edit non-secret mapping behavior (default role, claim types, role/group mappings, membership removal policy).
 
 ### Authorization Model
 

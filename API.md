@@ -100,8 +100,14 @@ Response 200 OK:
 | GET | `/auth/external/callback/{providerId}` | ❌ No | Complete OIDC login and redirect with token in URL fragment |
 | POST | `/auth/login` | ❌ No | Login with username/password |
 | POST | `/auth/register` | ❌ No | Register new user (first user becomes Admin) |
-| POST | `/auth/logout` | ✅ Yes | **Not implemented** (client-side logout only) |
 | POST | `/auth/refresh` | ✅ Yes | Refresh JWT using current session |
+
+#### External Challenge and Callback Notes
+
+- `GET /api/auth/external/challenge/{providerId}` accepts optional query `returnUrl`.
+- `returnUrl` is strictly normalized to local relative paths to prevent open redirects.
+- `GET /api/auth/external/callback/{providerId}` redirects to `returnUrl#token=<jwt>` on success.
+- On failure, callback redirects with `returnUrl#authError=<error>`.
 
 ### Pages (`/pages`)
 
@@ -251,6 +257,8 @@ Content-Type: application/json
 | GET | `/settings/category/{category}` | ✅ Yes | Admin | List settings by category |
 | PUT | `/settings` | ✅ Yes | Admin | Create or update setting |
 | DELETE | `/settings/{key}` | ✅ Yes | Admin | Delete setting |
+| GET | `/settings/external-auth/providers` | ✅ Yes | Admin | Get effective external auth non-secret mapping configuration |
+| PUT | `/settings/external-auth/providers` | ✅ Yes | Admin | Update external auth non-secret mapping overrides |
 | GET | `/settings/static` | ❌ No | Public | Get public app settings (branding + version) |
 
 #### Update Setting (Admin)
@@ -268,6 +276,42 @@ Content-Type: application/json
 }
 
 Response 200 OK
+```
+
+#### External Auth Mapping Overrides (Admin)
+
+This endpoint only manages non-secret mapping behavior. Provider credentials and protocol connection values remain configuration/environment managed.
+
+```http
+PUT /api/settings/external-auth/providers
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "providers": [
+    {
+      "providerId": "entra",
+      "defaultRole": "Viewer",
+      "groupSyncEnabled": true,
+      "groupClaimType": "groups",
+      "removeUnmappedGroupMemberships": false,
+      "groupMappings": [
+        {
+          "externalGroup": "entra-sales",
+          "internalGroup": "Sales"
+        }
+      ],
+      "roleSyncEnabled": true,
+      "roleClaimType": "roles",
+      "roleMappings": [
+        {
+          "externalRole": "PBIHoster-Editors",
+          "internalRole": "Editor"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ### Themes (`/themes`)

@@ -97,6 +97,14 @@ JWT_EXPIRY_HOURS=8
 - **Real IP Detection**: Rate limiting and audit logs use real client IP
 - **Caddy Integration**: Pre-configured for Caddy reverse proxy with HTTPS
 
+### 8. External Authentication Security (OIDC)
+- **Provider secret boundary**: `Authority`, `ClientId`, `ClientSecret`, callback path, and protocol settings are configuration/environment managed and not writable via admin API.
+- **Open redirect protection**: External login `returnUrl` is normalized to local relative routes only.
+- **Short-lived external cookie**: OIDC callback uses a dedicated short-lived cookie scheme and clears the cookie after callback processing.
+- **Safe provider discovery**: Public provider discovery endpoint only returns `id`, `displayName`, and auth `scheme`.
+- **Role/group allowlist normalization**: External mappings are normalized and restricted to internal roles `Admin|Editor|Viewer`.
+- **Least privilege fallback**: When mappings do not resolve, users fall back to configured default role.
+
 ### 8. Audit Logging
 - **Comprehensive Tracking**: All security events logged
 - **Event Types**: Login attempts, password changes, lockouts, failed auth
@@ -166,6 +174,7 @@ All other security settings have production-ready defaults but can be customized
 - **Environment-first**: All secrets (JWT signing key, Power BI credentials) are read from environment variables at startup. The app will refuse to boot if any are missing or using default/weak placeholders.
 - **Azure Key Vault ready**: Set `KEY_VAULT_URI` (or `AZURE_KEY_VAULT_URI`) to load secrets directly from a vault via managed identity. Ensure secret names match configuration keys, e.g. `Jwt--Key`, `PowerBI--ClientSecret`.
 - **Deployment safety**: Keep secrets out of `appsettings.json` and git. Validate deployments by checking container logs for `Missing or insecure secrets` errors before exposing endpoints.
+- **External auth credentials**: Keep external provider client secrets in environment variables or Key Vault. Do not manage provider secrets in admin UI.
 
 ### Key Rotation Procedure
 1. **Prepare new secrets**: Generate a new 256-bit JWT key (`openssl rand -base64 32`) and, if applicable, a new Power BI client secret or certificate.

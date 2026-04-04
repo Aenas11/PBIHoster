@@ -17,26 +17,22 @@ Stores user account information, authentication, and profile data.
 ```csharp
 {
   "_id": ObjectId,
-  "Id": Guid,
+  "Id": int,
   "Username": string (unique),
   "Email": string,
-  "PasswordHash": string (nullable for external users),
+  "PasswordHash": string,
   "Roles": List<string>,           // ["Admin", "Editor", "Viewer"]
-  "FavoritePageIds": List<Guid>,
-  "AuthProvider": string,           // "Local", "AzureAd", "Okta", etc.
-  "ExternalUserId": string,
+  "FavoritePageIds": List<int>,
+  "RecentPageIds": List<int>,
+  "HomeFavoritesSeeded": bool,
   "CreatedAt": DateTime,
-  "UpdatedAt": DateTime,
-  "LastLoginAt": DateTime (nullable),
-  "IsLocked": bool,
-  "LockedUntil": DateTime (nullable)
+  "LastLogin": DateTime (nullable)
 }
 ```
 
 **Indexes**:
 - Username (unique)
 - Email
-- AuthProvider + ExternalUserId (unique when both non-null)
 
 **Usage**:
 - User authentication and profile management
@@ -131,6 +127,7 @@ Stores application configuration and settings that can be managed via the admin 
 - `App.DemoModeEnabled` → Show demo pages
 - `App.CompanyName` → Application name
 - `Email.SmtpServer` → Email configuration
+- `Security.ExternalAuth.ProviderOverrides` -> Stored non-secret external auth role/group mapping overrides
 
 **Power BI Settings**: Stored in environment variables (not in AppSetting), e.g. `PowerBI__TenantId`, `PowerBI__ClientId`, `PowerBI__ClientSecret`.
 

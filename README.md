@@ -86,7 +86,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 - ✅ API rate limiting (prevents brute force and DoS)
 - ✅ Comprehensive audit logging (all user actions)
 - ✅ CORS protection and security headers
-- ✅ Support for external identity providers (OIDC/OAuth2) - [Planned](ROADMAP.md#phase-2-advanced-authentication-2-3-weeks---v050)
+- ✅ External identity provider login (OIDC/OAuth2) with local JWT issuance
+- ✅ External claim-to-role and claim-to-group mapping controls for admins (non-secret settings only)
 
 ### 📊 Content Management
 - ✅ Hierarchical page tree (unlimited nesting for organizing reports)
