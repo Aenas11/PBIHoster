@@ -7,6 +7,7 @@ import PowerBIDiagnosticsCard from '../components/Admin/PowerBIDiagnosticsCard.v
 import DataRefreshManager from '../components/Admin/DataRefreshManager.vue'
 import AuditLogsPanel from '../components/Admin/AuditLogsPanel.vue'
 import RLSManager from '../components/Admin/RLSManager.vue'
+import AnalyticsDashboard from '../components/Admin/AnalyticsDashboard.vue'
 </script>
 
 <template>
@@ -18,6 +19,7 @@ import RLSManager from '../components/Admin/RLSManager.vue'
             <cds-tab id="tab-settings" target="panel-settings" value="tab-settings">Settings</cds-tab>
             <cds-tab id="tab-rls" target="panel-rls" value="tab-rls">RLS Management</cds-tab>
             <cds-tab id="tab-audit" target="panel-audit" value="tab-audit">Audit Logs</cds-tab>
+            <cds-tab id="tab-analytics" target="panel-analytics" value="tab-analytics">Analytics</cds-tab>
         </cds-tabs>
 
         <div id="panel-users" role="tabpanel" aria-labelledby="tab-users">
@@ -44,6 +46,12 @@ import RLSManager from '../components/Admin/RLSManager.vue'
         <div id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>
             <div class="admin-panels">
                 <AuditLogsPanel />
+            </div>
+        </div>
+
+        <div id="panel-analytics" role="tabpanel" aria-labelledby="tab-analytics" hidden>
+            <div class="admin-panels">
+                <AnalyticsDashboard />
             </div>
         </div>
     </div>

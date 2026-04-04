@@ -1,3 +1,5 @@
+import { api } from './api'
+
 type UsageEventType = 'page_view' | 'report_view' | 'widget_interaction'
 
 interface UsageEventPayload {
@@ -5,6 +7,23 @@ interface UsageEventPayload {
   path?: string
   deviceType?: 'mobile' | 'tablet' | 'desktop' | 'unknown'
   metadata?: Record<string, string>
+}
+
+export interface EventTypeCount {
+  eventType: string
+  count: number
+}
+
+export interface PathCount {
+  path: string
+  count: number
+}
+
+export interface UsageSummaryResponse {
+  totalEvents: number
+  uniqueUsers: number
+  eventTypes: EventTypeCount[]
+  topPaths: PathCount[]
 }
 
 function detectDeviceType(): 'mobile' | 'tablet' | 'desktop' | 'unknown' {
@@ -51,4 +70,9 @@ export async function trackPageView(path: string) {
       deviceType: detectDeviceType()
     }
   ])
+}
+
+export async function getAnalyticsSummary(days = 30): Promise<UsageSummaryResponse> {
+  const safeDays = Math.min(90, Math.max(1, days))
+  return api.get<UsageSummaryResponse>(`/analytics/summary?days=${safeDays}`)
 }
