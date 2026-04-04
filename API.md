@@ -169,6 +169,33 @@ Response 201 Created:
 }
 ```
 
+### Analytics (`/analytics`)
+
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| POST | `/analytics/events` | ❌ No | Public/All | Ingest usage analytics events (best-effort, batched) |
+| GET | `/analytics/summary?days=30` | ✅ Yes | Admin | Get aggregated analytics summary for the period |
+
+#### Ingest Usage Events
+
+```http
+POST /api/analytics/events
+Content-Type: application/json
+
+{
+  "events": [
+    {
+      "eventType": "page_view",
+      "path": "/page/12",
+      "deviceType": "desktop",
+      "metadata": {
+        "source": "router"
+      }
+    }
+  ]
+}
+```
+
 ### Users & Profile (`/admin/users`, `/profile`, `/directory`)
 
 **Admin User Management** (`/admin/users`)

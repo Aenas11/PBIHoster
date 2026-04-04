@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { trackPageView } from '../services/analytics.service'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: () => import('../views/RegisterView.vue')
+    },
+    {
+      path: '/auth/callback',
+      name: 'auth-callback',
+      component: () => import('../views/AuthCallbackView.vue')
     },
     {
       path: '/admin',
@@ -121,6 +127,11 @@ router.beforeEach(async (to, from, next) => {
   }
 
   next()
+})
+
+router.afterEach((to) => {
+  const fullPath = to.fullPath || '/'
+  void trackPageView(fullPath)
 })
 
 export default router

@@ -40,6 +40,9 @@ public class ConfigurationExternalAuthProviderRepository : IExternalAuthProvider
                 provider.GroupClaimType = string.IsNullOrWhiteSpace(provider.GroupClaimType)
                     ? "groups"
                     : provider.GroupClaimType.Trim();
+                provider.RoleClaimType = string.IsNullOrWhiteSpace(provider.RoleClaimType)
+                    ? "roles"
+                    : provider.RoleClaimType.Trim();
 
             if (string.IsNullOrWhiteSpace(provider.Id))
             {
@@ -117,6 +120,37 @@ public class ConfigurationExternalAuthProviderRepository : IExternalAuthProvider
                     if (provider.GroupMappings.Count == 0)
                     {
                         throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:GroupSyncEnabled requires at least one GroupMappings entry.");
+                    }
+                }
+
+                if (provider.RoleSyncEnabled)
+                {
+                    var roleKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var mapping in provider.RoleMappings)
+                    {
+                        mapping.ExternalRole = mapping.ExternalRole.Trim();
+                        mapping.InternalRole = NormalizeRole(mapping.InternalRole);
+
+                        if (string.IsNullOrWhiteSpace(mapping.ExternalRole) || string.IsNullOrWhiteSpace(mapping.InternalRole))
+                        {
+                            throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:RoleMappings entries must include ExternalRole and InternalRole.");
+                        }
+
+                        if (!roleKeys.Add(mapping.ExternalRole))
+                        {
+                            throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:RoleMappings has duplicate ExternalRole '{mapping.ExternalRole}'.");
+                        }
+
+                        if (!IsAllowedRole(mapping.InternalRole))
+                        {
+                            throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:RoleMappings internal roles must be one of Admin, Editor, Viewer.");
+                        }
+                    }
+
+                    if (provider.RoleMappings.Count == 0)
+                    {
+                        throw new InvalidOperationException($"Security:ExternalAuth:Providers:{provider.Id}:RoleSyncEnabled requires at least one RoleMappings entry.");
                     }
                 }
             }

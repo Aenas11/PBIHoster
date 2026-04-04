@@ -42,6 +42,12 @@ public class ExternalAuthProvider
 
     public List<ExternalGroupMapping> GroupMappings { get; set; } = new();
 
+    public bool RoleSyncEnabled { get; set; }
+
+    public string RoleClaimType { get; set; } = "roles";
+
+    public List<ExternalRoleMapping> RoleMappings { get; set; } = new();
+
     public string Scheme => $"oidc:{Id}";
 
     public string GetCallbackPathOrDefault() =>
@@ -55,4 +61,13 @@ public class ExternalGroupMapping
 
     [Required]
     public string InternalGroup { get; set; } = string.Empty;
+}
+
+public class ExternalRoleMapping
+{
+    [Required]
+    public string ExternalRole { get; set; } = string.Empty;
+
+    [Required]
+    public string InternalRole { get; set; } = string.Empty;
 }

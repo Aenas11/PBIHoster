@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useStaticSettingsStore } from '../stores/staticSettings'
+import { authService, type ExternalAuthProviderSummary } from '../services/auth.service'
 import '@carbon/web-components/es/components/tile/index.js';
 import '@carbon/web-components/es/components/text-input/index.js';
 import '@carbon/web-components/es/components/button/index.js';
 import '@carbon/web-components/es/components/link/index.js';
 
 const router = useRouter()
+const currentPath = window.location.pathname + window.location.search
 const auth = useAuthStore()
 const staticSettings = useStaticSettingsStore()
 const appName = computed(() => staticSettings.appName || 'ReportTree')
@@ -18,6 +20,26 @@ const username = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+const externalProviders = ref<ExternalAuthProviderSummary[]>([])
+const loadingProviders = ref(false)
+const externalLoginLoadingId = ref('')
+
+onMounted(async () => {
+  const params = new URLSearchParams(window.location.search)
+  const callbackError = params.get('error')
+  if (callbackError) {
+    error.value = callbackError
+  }
+
+  loadingProviders.value = true
+  try {
+    externalProviders.value = await authService.getExternalProviders()
+  } catch {
+    externalProviders.value = []
+  } finally {
+    loadingProviders.value = false
+  }
+})
 
 async function handleLogin() {
   loading.value = true
@@ -31,6 +53,12 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
+}
+
+function handleExternalLogin(provider: ExternalAuthProviderSummary) {
+  externalLoginLoadingId.value = provider.id
+  const callbackReturn = `/auth/callback?next=${encodeURIComponent(currentPath === '/login' ? '/' : currentPath)}`
+  authService.startExternalLogin(provider.id, callbackReturn)
 }
 </script>
 
@@ -59,6 +87,22 @@ async function handleLogin() {
           <cds-button @click="handleLogin" :disabled="loading">
             {{ loading ? 'Logging in...' : 'Login' }}
           </cds-button>
+        </div>
+
+        <div v-if="loadingProviders" class="external-auth-loading">Checking external sign-in options...</div>
+
+        <div v-if="externalProviders.length > 0" class="external-auth">
+          <p class="external-auth-title">Or continue with</p>
+          <div class="external-auth-buttons">
+            <cds-button
+              v-for="provider in externalProviders"
+              :key="provider.id"
+              kind="secondary"
+              :disabled="!!externalLoginLoadingId"
+              @click="handleExternalLogin(provider)">
+              {{ externalLoginLoadingId === provider.id ? `Redirecting to ${provider.displayName}...` : `Sign in with ${provider.displayName}` }}
+            </cds-button>
+          </div>
         </div>
       </cds-tile>
     </div>
@@ -90,5 +134,28 @@ async function handleLogin() {
 .login-logo {
   height: 32px;
   width: auto;
+}
+
+.external-auth-loading {
+  margin-top: 1rem;
+  color: var(--cds-text-secondary, #525252);
+  font-size: 0.875rem;
+}
+
+.external-auth {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--cds-border-subtle-01, #e0e0e0);
+  padding-top: 1rem;
+}
+
+.external-auth-title {
+  margin: 0 0 0.75rem 0;
+  color: var(--cds-text-secondary, #525252);
+  font-size: 0.875rem;
+}
+
+.external-auth-buttons {
+  display: grid;
+  gap: 0.5rem;
 }
 </style>

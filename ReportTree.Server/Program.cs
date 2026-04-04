@@ -80,6 +80,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IDatasetRefreshScheduleRepository, LiteDbDatasetRefreshScheduleRepository>();
             builder.Services.AddSingleton<IDatasetRefreshRunRepository, LiteDbDatasetRefreshRunRepository>();
             builder.Services.AddSingleton<IExternalAuthProviderRepository, ConfigurationExternalAuthProviderRepository>();
+            builder.Services.AddSingleton<IUsageEventRepository, LiteDbUsageEventRepository>();
             builder.Services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" })
                 .AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });
@@ -97,6 +98,8 @@ namespace ReportTree.Server
             builder.Services.AddScoped<DatasetRefreshService>();
             builder.Services.AddScoped<OidcAuthService>();
             builder.Services.AddScoped<ExternalGroupSyncService>();
+            builder.Services.AddScoped<ExternalRoleMappingService>();
+            builder.Services.AddScoped<UsageTrackingService>();
             builder.Services.Configure<RefreshOptions>(builder.Configuration.GetSection("Refresh"));
             builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
             builder.Services.AddSingleton<EmailService>();

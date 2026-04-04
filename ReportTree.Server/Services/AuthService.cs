@@ -17,6 +17,7 @@ public class AuthService
     private readonly PasswordPolicy _passwordPolicy;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ExternalGroupSyncService _externalGroupSyncService;
+    private readonly ExternalRoleMappingService _externalRoleMappingService;
 
     public AuthService(
         IUserRepository repo, 
@@ -25,7 +26,8 @@ public class AuthService
         PasswordValidator passwordValidator,
         PasswordPolicy passwordPolicy,
         IHttpContextAccessor httpContextAccessor,
-        ExternalGroupSyncService externalGroupSyncService)
+        ExternalGroupSyncService externalGroupSyncService,
+        ExternalRoleMappingService externalRoleMappingService)
     {
         _repo = repo;
         _tokenService = tokenService;
@@ -34,6 +36,7 @@ public class AuthService
         _passwordPolicy = passwordPolicy;
         _httpContextAccessor = httpContextAccessor;
         _externalGroupSyncService = externalGroupSyncService;
+        _externalRoleMappingService = externalRoleMappingService;
     }
 
     public async Task<(bool Success, List<string> Errors)> RegisterAsync(string username, string password, List<string> roles)
@@ -149,6 +152,8 @@ public class AuthService
         var username = BuildExternalUsername(normalizedProviderId, subject);
         var user = await _repo.GetByUsernameAsync(username);
 
+        var resolvedRoles = _externalRoleMappingService.ResolveRoles(provider, principal);
+
         if (user == null)
         {
             var email = principal.FindFirstValue(ClaimTypes.Email)
@@ -160,7 +165,7 @@ public class AuthService
                 Username = username,
                 Email = email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
-                Roles = new List<string> { NormalizeDefaultRole(provider.DefaultRole) },
+                Roles = resolvedRoles,
                 CreatedAt = DateTime.UtcNow,
                 LastLogin = DateTime.UtcNow
             };
@@ -174,6 +179,11 @@ public class AuthService
             if (!string.IsNullOrWhiteSpace(email))
             {
                 user.Email = email;
+            }
+
+            if (provider.RoleSyncEnabled)
+            {
+                user.Roles = resolvedRoles;
             }
 
             if (user.Roles.Count == 0)
@@ -237,20 +247,5 @@ public class AuthService
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{providerId}:{subject}"));
         var hash = Convert.ToHexString(bytes).ToLowerInvariant()[..20];
         return $"oidc_{providerId}_{hash}";
-    }
-
-    private static string NormalizeDefaultRole(string defaultRole)
-    {
-        if (string.Equals(defaultRole, "Admin", StringComparison.OrdinalIgnoreCase))
-        {
-            return "Admin";
-        }
-
-        if (string.Equals(defaultRole, "Editor", StringComparison.OrdinalIgnoreCase))
-        {
-            return "Editor";
-        }
-
-        return "Viewer";
     }
 }
