@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import PowerBIDashboardEmbed from '../PowerBIDashboardEmbed.vue'
 import { powerBIService } from '../../services/powerbi.service'
 import { useToastStore } from '../../stores/toast'
 import { useThemeStore } from '../../stores/theme'
+import { reportClientError } from '../../services/monitoring'
 import type { DashboardComponentProps } from '../../types/components'
 import type { EmbedTokenResponseDto } from '../../types/powerbi'
+import '@carbon/web-components/es/components/button/index.js'
 
 const props = defineProps<DashboardComponentProps>()
 const toast = useToastStore()
 const themeStore = useThemeStore()
 
 const embedData = ref<EmbedTokenResponseDto | null>(null)
-const error = ref<string | null>(null)
+const runtimeError = ref<string | null>(null)
+const retryCount = ref(0)
+const maxRetries = 2
+const retryTimer = ref<number | null>(null)
 
 const syncWithAppTheme = computed(() => (props.config.syncWithAppTheme as boolean) ?? false)
 
@@ -25,6 +30,28 @@ const mappedBackground = computed<'Default' | 'Transparent'>(() => {
         ? 'Transparent'
         : 'Default'
 })
+
+const configError = computed(() => {
+    const { workspaceId, dashboardId } = props.config
+    if (!workspaceId || !dashboardId) {
+        return 'Please configure both Workspace and Dashboard IDs.'
+    }
+    return null
+})
+
+const showLoading = computed(() => !runtimeError.value && !configError.value && !embedData.value)
+
+const shouldRetry = (e: unknown) => {
+    const message = e instanceof Error ? e.message : String(e)
+    return /Network|fetch|timeout|429|5\d\d/i.test(message)
+}
+
+const clearRetryTimer = () => {
+    if (retryTimer.value) {
+        clearTimeout(retryTimer.value)
+        retryTimer.value = null
+    }
+}
 
 const getUserFriendlyError = (e: unknown): string => {
     if (e instanceof Error) {
@@ -44,11 +71,12 @@ const getUserFriendlyError = (e: unknown): string => {
     return 'Failed to load dashboard. Please try again later.'
 }
 
-const loadEmbedData = async () => {
+const loadEmbedData = async (isRetry = false) => {
     const { workspaceId, dashboardId, syncWithAppTheme } = props.config
     if (!workspaceId || !dashboardId) {
-        if (workspaceId === undefined && dashboardId === undefined) return
-        error.value = "Workspace and Dashboard not configured."
+        embedData.value = null
+        runtimeError.value = null
+        clearRetryTimer()
         return
     }
 
@@ -59,17 +87,50 @@ const loadEmbedData = async () => {
             undefined,
             syncWithAppTheme as boolean | undefined
         )
-        error.value = null
+        runtimeError.value = null
+        retryCount.value = 0
+        clearRetryTimer()
+        if (isRetry) {
+            toast.success('Dashboard Loaded', 'Successfully reconnected to Power BI')
+        }
     } catch (e: unknown) {
         const friendlyMessage = getUserFriendlyError(e)
-        error.value = friendlyMessage
-        toast.error('Dashboard Load Failed', friendlyMessage, 7000)
+        runtimeError.value = friendlyMessage
+        embedData.value = null
+        if (retryCount.value < maxRetries && !isRetry && shouldRetry(e)) {
+            retryCount.value++
+            clearRetryTimer()
+            retryTimer.value = window.setTimeout(() => loadEmbedData(true), 1500 * retryCount.value)
+        } else {
+            toast.error('Dashboard Load Failed', friendlyMessage, 7000)
+            await reportClientError({
+                message: friendlyMessage,
+                info: 'PowerBIDashboardComponent token/embed failed after retries',
+                context: {
+                    componentId: props.id,
+                    workspaceId: workspaceId as string,
+                    dashboardId: dashboardId as string,
+                    retryCount: retryCount.value
+                }
+            })
+            retryCount.value = 0
+        }
         console.error('Power BI Dashboard Error:', e)
     }
 }
 
+const retryNow = () => {
+    retryCount.value = 0
+    clearRetryTimer()
+    loadEmbedData(true)
+}
+
 onMounted(() => {
     loadEmbedData()
+})
+
+onUnmounted(() => {
+    clearRetryTimer()
 })
 
 watch(() => props.config, () => {
@@ -79,13 +140,15 @@ watch(() => props.config, () => {
 
 <template>
     <div class="component-wrapper">
-        <div v-if="error" class="error">{{ error }}</div>
+        <div v-if="configError" class="state-message state-message--config">{{ configError }}</div>
+        <div v-else-if="runtimeError" class="state-message state-message--error">
+            <span>{{ runtimeError }}</span>
+            <cds-button size="sm" kind="tertiary" @click="retryNow">Retry</cds-button>
+        </div>
         <PowerBIDashboardEmbed v-if="embedData" :embedUrl="embedData.embedUrl" :accessToken="embedData.accessToken"
             :dashboardId="props.config.dashboardId as string" :pageView="props.config.pageView as string"
             :locale="props.config.locale as string" :background="mappedBackground" />
-        <div v-else-if="!error && (props.config.workspaceId && props.config.dashboardId)" class="loading">Loading
-            dashboard...</div>
-        <div v-else-if="!error" class="placeholder">Please configure the dashboard.</div>
+        <div v-else-if="showLoading" class="state-message state-message--loading">Loading dashboard...</div>
     </div>
 </template>
 
@@ -97,19 +160,25 @@ watch(() => props.config, () => {
     flex-direction: column;
 }
 
-.error {
-    color: #da1e28;
-    padding: 1rem;
-}
-
-.loading,
-.placeholder {
+.state-message {
     padding: 1rem;
     color: #525252;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0.75rem;
     height: 100%;
     background-color: #f4f4f4;
+}
+
+.state-message--error {
+    color: #da1e28;
+    background: #fff0f1;
+    justify-content: space-between;
+}
+
+.state-message--config {
+    color: #8a3c00;
+    background: #fff8e1;
 }
 </style>

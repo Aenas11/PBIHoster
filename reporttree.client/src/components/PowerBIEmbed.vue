@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as pbi from 'powerbi-client'
 import { models } from 'powerbi-client'
 import '@carbon/web-components/es/components/loading/index.js';
+import '@carbon/web-components/es/components/button/index.js';
 
 const props = defineProps<{
     embedUrl: string
@@ -98,24 +99,12 @@ const embedReport = () => {
     // Determine page navigation position
     const pageNavPosition = props.pageNavPosition === 'Left' ? models.PageNavigationPosition.Left : models.PageNavigationPosition.Bottom
 
-    // Determine contrast mode
-    let contrast = models.ContrastMode.None
-    switch (props.contrastMode) {
-        case 'HighContrast1':
-            contrast = models.ContrastMode.HighContrast1
-            break
-        case 'HighContrast2':
-            contrast = models.ContrastMode.HighContrast2
-            break
-        case 'HighContrastBlack':
-            contrast = models.ContrastMode.HighContrastBlack
-            break
-        case 'HighContrastWhite':
-            contrast = models.ContrastMode.HighContrastWhite
-            break
-        default:
-            contrast = models.ContrastMode.None
-    }
+    const contrast = {
+        HighContrast1: models.ContrastMode.HighContrast1,
+        HighContrast2: models.ContrastMode.HighContrast2,
+        HighContrastBlack: models.ContrastMode.HighContrastBlack,
+        HighContrastWhite: models.ContrastMode.HighContrastWhite
+    }[props.contrastMode ?? ''] ?? models.ContrastMode.None
 
 
     const config: pbi.IEmbedConfiguration = {
@@ -230,7 +219,8 @@ const embedReport = () => {
             <cds-loading active />
         </div>
         <div v-if="error" class="error-message">
-            {{ error }}
+            <div>{{ error }}</div>
+            <cds-button size="sm" kind="tertiary" @click="embedReport">Retry</cds-button>
         </div>
         <div ref="embedContainer" class="powerbi-container"></div>
     </div>
@@ -269,5 +259,9 @@ const embedReport = () => {
     color: #da1e28;
     background-color: #fff0f1;
     border: 1px solid #ffb3b8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
 }
 </style>

@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { models, Report } from 'powerbi-client'
 import '@carbon/web-components/es/components/loading/index.js'
+import '@carbon/web-components/es/components/button/index.js'
 import { usePowerBIEmbed } from '../composables/usePowerBIEmbed'
 
 const props = defineProps<{
@@ -141,7 +142,8 @@ watch(() => props.mobileLayout, (newVal) => {
             <cds-loading active />
         </div>
         <div v-if="error" class="error-message">
-            {{ error }}
+            <div>{{ error }}</div>
+            <cds-button size="sm" kind="tertiary" @click="embedContent">Retry</cds-button>
         </div>
         <div ref="embedContainer" class="powerbi-container"></div>
     </div>
@@ -180,5 +182,9 @@ watch(() => props.mobileLayout, (newVal) => {
     color: #da1e28;
     background-color: #fff0f1;
     border: 1px solid #ffb3b8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
 }
 </style>

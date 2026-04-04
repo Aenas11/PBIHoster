@@ -59,6 +59,7 @@ export async function reportClientError(options: {
   message: string
   stack?: string
   info?: string
+  context?: Record<string, unknown>
 }) {
   await sendToSink({
     ...options,

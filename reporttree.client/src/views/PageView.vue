@@ -197,8 +197,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
       <div class="page-title">{{ currentPage?.title || 'Page' }}</div>
       <div class="page-actions" v-if="authStore.isAuthenticated">
         <cds-button kind="ghost" size="sm" @click="toggleFavorite">
-          <component :is="isFavorite ? StarFilled20 : Star20" slot="icon" />
-          {{ isFavorite ? 'Favorited' : 'Favorite' }}
+          <component :is="isFavorite ? StarFilled20 : Star20" slot="icon" />          
         </cds-button>
       </div>
     </div>
