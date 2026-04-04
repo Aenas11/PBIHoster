@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using ReportTree.Server.DTOs;
 using ReportTree.Server.Models;
@@ -15,16 +16,20 @@ public class UsageTrackingService
     };
 
     private readonly IUsageEventRepository _usageEventRepository;
+    private readonly MetricsService? _metricsService;
 
-    public UsageTrackingService(IUsageEventRepository usageEventRepository)
+    public UsageTrackingService(IUsageEventRepository usageEventRepository, MetricsService? metricsService = null)
     {
         _usageEventRepository = usageEventRepository;
+        _metricsService = metricsService;
     }
 
     public async Task<int> RecordAsync(IEnumerable<UsageEventRequest> events, string username)
     {
-        var normalizedEvents = events
-            .Take(200)
+        var stopwatch = Stopwatch.StartNew();
+
+        var incoming = events.Take(200).ToList();
+        var normalizedEvents = incoming
             .Where(e => AllowedEventTypes.Contains(e.EventType))
             .Select(e => new UsageEvent
             {
@@ -37,6 +42,11 @@ public class UsageTrackingService
             .ToList();
 
         await _usageEventRepository.AddRangeAsync(normalizedEvents);
+
+        stopwatch.Stop();
+        var rejected = incoming.Count - normalizedEvents.Count;
+        _metricsService?.RecordAnalyticsIngest(normalizedEvents.Count, Math.Max(0, rejected), stopwatch.Elapsed.TotalMilliseconds);
+
         return normalizedEvents.Count;
     }
 
@@ -104,7 +114,11 @@ public class UsageTrackingService
             .Take(20)
             .ToDictionary(
                 kvp => kvp.Key.Length > 64 ? kvp.Key[..64] : kvp.Key,
-                kvp => (kvp.Value ?? string.Empty).Length > 256 ? kvp.Value[..256] : kvp.Value ?? string.Empty,
+                kvp =>
+                {
+                    var value = kvp.Value ?? string.Empty;
+                    return value.Length > 256 ? value[..256] : value;
+                },
                 StringComparer.OrdinalIgnoreCase
             );
 

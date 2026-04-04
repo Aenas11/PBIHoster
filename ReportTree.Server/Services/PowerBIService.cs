@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Identity.Client;
 using Microsoft.PowerBI.Api;
 using Microsoft.PowerBI.Api.Models;
@@ -16,6 +17,7 @@ namespace ReportTree.Server.Services
         private readonly IConfiguration _configuration;
         private readonly ILogger<PowerBIService> _logger;
         private readonly IMemoryCache _cache;
+        private readonly MetricsService _metricsService;
         private IConfidentialClientApplication? _msalClient;
         private PowerBIConfiguration? _config;
         private DateTime _tokenExpiration;
@@ -23,11 +25,12 @@ namespace ReportTree.Server.Services
         private readonly SemaphoreSlim _tokenLock = new SemaphoreSlim(1, 1);
         private static readonly TimeSpan EmbedTokenCacheBuffer = TimeSpan.FromMinutes(2);
 
-        public PowerBIService(IConfiguration configuration, ILogger<PowerBIService> logger, IMemoryCache cache)
+        public PowerBIService(IConfiguration configuration, ILogger<PowerBIService> logger, IMemoryCache cache, MetricsService metricsService)
         {
             _configuration = configuration;
             _logger = logger;
             _cache = cache;
+            _metricsService = metricsService;
         }
 
         private void LoadConfiguration()
@@ -245,6 +248,7 @@ namespace ReportTree.Server.Services
 
         public async Task<EmbedTokenResponseDto> GetReportEmbedTokenAsync(Guid workspaceId, Guid reportId, List<RLSIdentityDto>? identities = null, CancellationToken cancellationToken = default)
         {
+            var stopwatch = Stopwatch.StartNew();
             var cacheKey = BuildReportEmbedCacheKey(workspaceId, reportId, identities);
             if (_cache.TryGetValue(cacheKey, out EmbedTokenResponseDto? cachedToken) && cachedToken != null)
             {
@@ -293,6 +297,8 @@ namespace ReportTree.Server.Services
                     Expiration = embedTokenV2.Expiration
                 };
                 CacheEmbedToken(cacheKey, response);
+                stopwatch.Stop();
+                _metricsService.RecordEmbedTokenGenerated("report", stopwatch.Elapsed.TotalMilliseconds);
                 return response;
             }
             catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)
@@ -316,6 +322,8 @@ namespace ReportTree.Server.Services
                 Expiration = embedToken.Expiration
             };
             CacheEmbedToken(cacheKey, responseV1);
+            stopwatch.Stop();
+            _metricsService.RecordEmbedTokenGenerated("report", stopwatch.Elapsed.TotalMilliseconds);
             return responseV1;
             }
             catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)
@@ -347,6 +355,7 @@ namespace ReportTree.Server.Services
 
         public async Task<EmbedTokenResponseDto> GetDashboardEmbedTokenAsync(Guid workspaceId, Guid dashboardId, CancellationToken cancellationToken = default)
         {
+            var stopwatch = Stopwatch.StartNew();
             var cacheKey = BuildDashboardEmbedCacheKey(workspaceId, dashboardId);
             if (_cache.TryGetValue(cacheKey, out EmbedTokenResponseDto? cachedToken) && cachedToken != null)
             {
@@ -373,6 +382,8 @@ namespace ReportTree.Server.Services
                     Expiration = embedToken.Expiration
                 };
                 CacheEmbedToken(cacheKey, response);
+                stopwatch.Stop();
+                _metricsService.RecordEmbedTokenGenerated("dashboard", stopwatch.Elapsed.TotalMilliseconds);
                 return response;
             }
             catch (HttpOperationException ex) when (ex.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)

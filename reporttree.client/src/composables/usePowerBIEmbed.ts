@@ -1,11 +1,14 @@
 import { ref, onMounted, onUnmounted, type Ref } from 'vue'
 import * as pbi from 'powerbi-client'
+import { trackReportView, trackWidgetInteraction } from '../services/analytics.service'
 
 export interface PowerBIEmbedOptions {
     embedContainer: Ref<HTMLElement | null>
     embedUrl: string
     accessToken: string
     onConfigReady: (service: pbi.service.Service) => pbi.IEmbedConfiguration
+    trackPath?: string
+    trackMetadata?: Record<string, string>
 }
 
 export function usePowerBIEmbed(options: PowerBIEmbedOptions) {
@@ -13,6 +16,7 @@ export function usePowerBIEmbed(options: PowerBIEmbedOptions) {
     const error = ref<string | null>(null)
     let embed: pbi.Embed | undefined
     let powerbi: pbi.service.Service
+    let embedStartedAt = 0
 
     const getUserFriendlyError = (detail: { message?: string, detailedMessage?: string, errorCode?: string }): string => {
         if (detail.errorCode) {
@@ -39,6 +43,13 @@ export function usePowerBIEmbed(options: PowerBIEmbedOptions) {
         embedInstance.on('rendered', () => {
             console.log('Power BI Rendered')
             isLoading.value = false
+            const loadMs = embedStartedAt > 0 ? Math.max(0, Date.now() - embedStartedAt) : 0
+            const path = options.trackPath || window.location.pathname
+            void trackReportView(path, {
+                embedType: String(embedInstance.config?.type ?? 'unknown'),
+                loadMs: String(loadMs),
+                ...(options.trackMetadata ?? {})
+            })
         })
 
         embedInstance.on('error', (event: pbi.service.ICustomEvent<unknown>) => {
@@ -46,6 +57,13 @@ export function usePowerBIEmbed(options: PowerBIEmbedOptions) {
             const detail = event.detail as { message?: string, detailedMessage?: string, errorCode?: string }
             error.value = getUserFriendlyError(detail)
             isLoading.value = false
+            const path = options.trackPath || window.location.pathname
+            void trackWidgetInteraction(path, {
+                action: 'powerbi_embed_error',
+                embedType: String(embedInstance.config?.type ?? 'unknown'),
+                errorCode: detail.errorCode ?? 'unknown',
+                ...(options.trackMetadata ?? {})
+            })
         })
     }
 
@@ -56,6 +74,7 @@ export function usePowerBIEmbed(options: PowerBIEmbedOptions) {
 
         isLoading.value = true
         error.value = null
+        embedStartedAt = Date.now()
 
         // Reset existing embed
         if (powerbi && options.embedContainer.value) {

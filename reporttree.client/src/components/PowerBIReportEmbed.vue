@@ -30,6 +30,10 @@ const { isLoading, error, embedContent, getEmbedInstance, getPowerBIService } = 
     embedContainer,
     embedUrl: props.embedUrl,
     accessToken: props.accessToken,
+    trackMetadata: {
+        reportId: props.reportId,
+        component: 'PowerBIReportEmbed'
+    },
     onConfigReady: (service) => {
         // Determine page navigation position
         const pageNavPosition = props.pageNavPosition === 'Left'

@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as pbi from 'powerbi-client'
 import { models } from 'powerbi-client'
+import { trackReportView, trackWidgetInteraction } from '../services/analytics.service'
 import '@carbon/web-components/es/components/loading/index.js';
 import '@carbon/web-components/es/components/button/index.js';
 
@@ -31,6 +32,7 @@ const isLoading = ref(true)
 const error = ref<string | null>(null)
 let embed: pbi.Embed | undefined
 let powerbi: pbi.service.Service
+let embedStartedAt = 0
 
 onMounted(() => {
     // Initialize Power BI service
@@ -92,6 +94,7 @@ const embedReport = () => {
 
     isLoading.value = true
     error.value = null
+    embedStartedAt = Date.now()
 
     // Reset existing
     powerbi.reset(embedContainer.value)
@@ -165,6 +168,13 @@ const embedReport = () => {
         embed.on('rendered', () => {
             console.log('Power BI Rendered')
             isLoading.value = false
+            const loadMs = embedStartedAt > 0 ? Math.max(0, Date.now() - embedStartedAt) : 0
+            void trackReportView(window.location.pathname, {
+                embedType: props.embedType,
+                reportId: props.reportId,
+                component: 'PowerBIEmbed',
+                loadMs: String(loadMs)
+            })
         })
 
         embed.on('error', (event: pbi.service.ICustomEvent<unknown>) => {
@@ -192,6 +202,13 @@ const embedReport = () => {
 
             error.value = errorMsg
             isLoading.value = false
+            void trackWidgetInteraction(window.location.pathname, {
+                action: 'powerbi_embed_error',
+                embedType: props.embedType,
+                reportId: props.reportId,
+                component: 'PowerBIEmbed',
+                error: errorMsg
+            })
         })
     } catch (e: unknown) {
         console.error('Exception embedding Power BI', e)
@@ -209,6 +226,13 @@ const embedReport = () => {
 
         error.value = errorMsg
         isLoading.value = false
+        void trackWidgetInteraction(window.location.pathname, {
+            action: 'powerbi_embed_exception',
+            embedType: props.embedType,
+            reportId: props.reportId,
+            component: 'PowerBIEmbed',
+            error: errorMsg
+        })
     }
 }
 </script>

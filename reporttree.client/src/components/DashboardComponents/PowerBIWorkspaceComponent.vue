@@ -5,6 +5,7 @@ import { powerBIService } from '../../services/powerbi.service'
 import PowerBIEmbed from '../PowerBIEmbed.vue'
 import { useThemeStore } from '../../stores/theme'
 import { reportClientError } from '../../services/monitoring'
+import { trackWidgetInteraction } from '../../services/analytics.service'
 import type { DashboardComponentProps } from '../../types/components'
 import type { ReportDto, EmbedTokenResponseDto } from '../../types/powerbi'
 import '@carbon/web-components/es/components/loading/index.js'
@@ -177,6 +178,11 @@ function selectReport(reportId: string) {
     // Update query parameter
     router.push({
         query: { ...route.query, reportId }
+    })
+    void trackWidgetInteraction(window.location.pathname, {
+        action: 'workspace_report_selected',
+        reportId,
+        component: 'PowerBIWorkspaceComponent'
     })
     loadEmbedToken(reportId)
 }

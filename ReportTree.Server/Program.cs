@@ -89,6 +89,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<SettingsService>();
             builder.Services.AddSingleton<ISettingsService>(sp => sp.GetRequiredService<SettingsService>());
             builder.Services.AddSingleton<BrandingService>();
+            builder.Services.AddSingleton<MetricsService>();
             builder.Services.AddScoped<AuditLogService>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<PageAuthorizationService>();
@@ -291,6 +292,7 @@ namespace ReportTree.Server
                         .AddHttpClientInstrumentation()
                         .AddRuntimeInstrumentation()
                         .AddProcessInstrumentation()
+                        .AddMeter(MetricsService.MeterName)
                         .AddPrometheusExporter();
                 });
 

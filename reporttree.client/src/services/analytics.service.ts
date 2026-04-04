@@ -62,14 +62,34 @@ async function sendEvents(events: UsageEventPayload[]) {
   }
 }
 
+async function trackEvent(event: UsageEventPayload) {
+  await sendEvents([event])
+}
+
 export async function trackPageView(path: string) {
-  await sendEvents([
-    {
-      eventType: 'page_view',
-      path,
-      deviceType: detectDeviceType()
-    }
-  ])
+  await trackEvent({
+    eventType: 'page_view',
+    path,
+    deviceType: detectDeviceType()
+  })
+}
+
+export async function trackReportView(path: string, metadata?: Record<string, string>) {
+  await trackEvent({
+    eventType: 'report_view',
+    path,
+    deviceType: detectDeviceType(),
+    metadata
+  })
+}
+
+export async function trackWidgetInteraction(path: string, metadata?: Record<string, string>) {
+  await trackEvent({
+    eventType: 'widget_interaction',
+    path,
+    deviceType: detectDeviceType(),
+    metadata
+  })
 }
 
 export async function getAnalyticsSummary(days = 30): Promise<UsageSummaryResponse> {

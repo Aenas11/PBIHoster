@@ -20,6 +20,10 @@ const { isLoading, error, embedContent } = usePowerBIEmbed({
     embedContainer,
     embedUrl: props.embedUrl,
     accessToken: props.accessToken,
+    trackMetadata: {
+        dashboardId: props.dashboardId,
+        component: 'PowerBIDashboardEmbed'
+    },
     onConfigReady: () => {
         return {
             type: 'dashboard',
