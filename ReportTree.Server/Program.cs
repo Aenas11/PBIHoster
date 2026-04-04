@@ -78,6 +78,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
             builder.Services.AddSingleton<IDatasetRefreshScheduleRepository, LiteDbDatasetRefreshScheduleRepository>();
             builder.Services.AddSingleton<IDatasetRefreshRunRepository, LiteDbDatasetRefreshRunRepository>();
+            builder.Services.AddSingleton<IExternalAuthProviderRepository, ConfigurationExternalAuthProviderRepository>();
             builder.Services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" })
                 .AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });
@@ -93,6 +94,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<DemoContentService>();
             builder.Services.AddSingleton<RefreshNotificationService>();
             builder.Services.AddScoped<DatasetRefreshService>();
+            builder.Services.AddScoped<OidcAuthService>();
             builder.Services.Configure<RefreshOptions>(builder.Configuration.GetSection("Refresh"));
             builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
             builder.Services.AddSingleton<EmailService>();
@@ -184,12 +186,16 @@ namespace ReportTree.Server
             var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ReportTree";
             var jwtExpiryHours = builder.Configuration.GetValue<int>("Jwt:ExpiryHours", 8);
             var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtKey));
+            var externalAuthOptions = new ExternalAuthOptions();
+            builder.Configuration.Bind("Security:ExternalAuth", externalAuthOptions);
 
-            builder.Services.AddAuthentication(options =>
+            var authBuilder = builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
+            });
+
+            authBuilder.AddJwtBearer(options =>
             {
                 options.RequireHttpsMetadata = false;
                 options.SaveToken = true;
@@ -202,6 +208,51 @@ namespace ReportTree.Server
                     ValidateLifetime = true
                 };
             });
+
+            if (externalAuthOptions.Enabled)
+            {
+                const string externalCookieScheme = "ExternalOidcCookie";
+
+                authBuilder.AddCookie(externalCookieScheme, options =>
+                {
+                    options.Cookie.Name = "__Host-pbihoster-ext";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+                    options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                    options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+                    options.SlidingExpiration = false;
+                });
+
+                foreach (var provider in externalAuthOptions.Providers.Where(p => p.Enabled))
+                {
+                    authBuilder.AddOpenIdConnect(provider.Scheme, options =>
+                    {
+                        options.SignInScheme = externalCookieScheme;
+                        options.Authority = provider.Authority;
+                        options.ClientId = provider.ClientId;
+                        options.ClientSecret = provider.ClientSecret;
+                        options.CallbackPath = provider.GetCallbackPathOrDefault();
+                        options.ResponseType = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.Code;
+                        options.UsePkce = true;
+                        options.RequireHttpsMetadata = provider.RequireHttpsMetadata;
+                        options.SaveTokens = false;
+                        options.GetClaimsFromUserInfoEndpoint = true;
+                        options.Scope.Clear();
+
+                        foreach (var scope in provider.Scopes.Distinct(StringComparer.OrdinalIgnoreCase))
+                        {
+                            options.Scope.Add(scope);
+                        }
+
+                        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            NameClaimType = System.Security.Claims.ClaimTypes.Name,
+                            RoleClaimType = System.Security.Claims.ClaimTypes.Role
+                        };
+                    });
+                }
+            }
 
             builder.Services.AddAuthorization(options =>
             {
@@ -375,6 +426,12 @@ namespace ReportTree.Server
                 var token = tokenService.Generate(user);
                 return Results.Ok(new LoginResponse(token));
             }).RequireAuthorization();
+
+            app.MapGet("/api/auth/external/providers", async (OidcAuthService oidcAuthService) =>
+            {
+                var providers = await oidcAuthService.GetEnabledProvidersAsync();
+                return Results.Ok(providers);
+            }).AllowAnonymous();
             
             // Global error handler
             app.Map("/error", (HttpContext context) =>

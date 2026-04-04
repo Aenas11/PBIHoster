@@ -21,3 +21,9 @@ public record LoginRequest(
 );
 
 public record LoginResponse(string Token);
+
+public record ExternalAuthProviderSummaryResponse(
+    string Id,
+    string DisplayName,
+    string Scheme
+);

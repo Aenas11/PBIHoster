@@ -26,6 +26,7 @@ public static class SecretValidator
         }
 
         ValidatePowerBiConfiguration(configuration, missingSecrets);
+        ValidateExternalAuthConfiguration(configuration, missingSecrets, isDevelopment);
 
         if (missingSecrets.Count > 0)
         {
@@ -69,6 +70,48 @@ public static class SecretValidator
             if (string.IsNullOrWhiteSpace(certificateThumbprint) && string.IsNullOrWhiteSpace(certificatePath))
             {
                 missingSecrets.Add("PowerBI:CertificateThumbprint or PowerBI:CertificatePath");
+            }
+        }
+    }
+
+    private static void ValidateExternalAuthConfiguration(IConfiguration configuration, List<string> missingSecrets, bool isDevelopment)
+    {
+        var externalAuthSection = configuration.GetSection("Security:ExternalAuth");
+        var enabled = externalAuthSection.GetValue<bool>("Enabled");
+
+        if (!enabled)
+        {
+            return;
+        }
+
+        var providers = externalAuthSection.GetSection("Providers").Get<List<ExternalAuthProvider>>() ?? new List<ExternalAuthProvider>();
+
+        if (providers.Count == 0)
+        {
+            missingSecrets.Add("Security:ExternalAuth:Providers");
+            return;
+        }
+
+        foreach (var provider in providers.Where(p => p.Enabled))
+        {
+            if (string.IsNullOrWhiteSpace(provider.Id))
+            {
+                missingSecrets.Add("Security:ExternalAuth:Providers[*]:Id");
+            }
+
+            if (string.IsNullOrWhiteSpace(provider.Authority))
+            {
+                missingSecrets.Add($"Security:ExternalAuth:Providers:{provider.Id}:Authority");
+            }
+
+            if (string.IsNullOrWhiteSpace(provider.ClientId))
+            {
+                missingSecrets.Add($"Security:ExternalAuth:Providers:{provider.Id}:ClientId");
+            }
+
+            if (!isDevelopment && string.IsNullOrWhiteSpace(provider.ClientSecret))
+            {
+                missingSecrets.Add($"Security:ExternalAuth:Providers:{provider.Id}:ClientSecret");
             }
         }
     }

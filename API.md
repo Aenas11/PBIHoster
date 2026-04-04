@@ -71,12 +71,31 @@ There is no server-side logout endpoint. Clients should delete the stored JWT to
 
 Tokens expire after configured duration (default: 8 hours). Use the refresh endpoint to obtain a new JWT before expiry.
 
+### External Authentication Discovery
+
+When external identity providers are enabled, the API exposes a read-only discovery endpoint for login UI.
+This endpoint never returns secrets (client secret, signing credentials, or token endpoint details).
+
+```http
+GET /api/auth/external/providers
+
+Response 200 OK:
+[
+  {
+    "id": "entra",
+    "displayName": "Microsoft Entra ID",
+    "scheme": "oidc:entra"
+  }
+]
+```
+
 ## Endpoints by Resource
 
 ### Authentication (`/auth`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
+| GET | `/auth/external/providers` | ❌ No | List enabled external auth providers (safe metadata only) |
 | POST | `/auth/login` | ❌ No | Login with username/password |
 | POST | `/auth/register` | ❌ No | Register new user (first user becomes Admin) |
 | POST | `/auth/logout` | ✅ Yes | **Not implemented** (client-side logout only) |
