@@ -93,7 +93,7 @@ The API follows a hybrid pattern:
 - **TokenService**: JWT token operations
 - **PageAuthorizationService**: Role-based access control for pages
 - **PowerBIService**: Azure AD authentication and Power BI API calls
-- **SettingsService**: Configuration management with encryption
+- **SettingsService**: Configuration management with encryption and governance feature toggles
 - **AuditLogService**: Comprehensive logging of user actions
 - **CommentsController + ICommentRepository**: Threaded comments with owner/admin moderation and page-access checks
 - **PagesController + IPageVersionRepository**: Layout version history snapshots and rollback workflow
@@ -193,6 +193,7 @@ public class AuditLog
 
 - `App.DemoModeEnabled`: controls demo content visibility.
 - `App.CommentsEnabled`: controls comments availability globally. When disabled, the frontend hides comments UI and backend comments endpoints return `404 Not Found`.
+- `App.EnforceSensitivityLabels`: requires a valid sensitivity label (`Public`, `Internal`, `Confidential`, `Restricted`) during page create/update operations.
 
 ## Authentication & Authorization
 

@@ -45,6 +45,7 @@ public class SettingsController : ControllerBase
         staticSettings["HomePageId"] = await _settingsService.GetValueAsync("App.HomePageId");
         staticSettings["DemoModeEnabled"] = (await _settingsService.IsDemoModeEnabledAsync()).ToString();
         staticSettings["CommentsEnabled"] = (await _settingsService.IsCommentsEnabledAsync()).ToString();
+        staticSettings["EnforceSensitivityLabels"] = (await _settingsService.IsSensitivityLabelEnforcedAsync()).ToString();
         var appName = await _settingsService.GetValueAsync("Branding.AppName");
         var footerText = await _settingsService.GetValueAsync("Branding.FooterText");
         var footerLinkUrl = await _settingsService.GetValueAsync("Branding.FooterLinkUrl");

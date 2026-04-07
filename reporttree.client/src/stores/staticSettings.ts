@@ -5,6 +5,7 @@ export const useStaticSettingsStore = defineStore('staticSettings', () => {
     const homePageId = ref<string>('')
     const demoModeEnabled = ref(false)
     const commentsEnabled = ref(true)
+    const enforceSensitivityLabels = ref(false)
     const version = ref('0.0.0')
     const appName = ref('ReportTree')
     const footerText = ref('')
@@ -45,6 +46,13 @@ export const useStaticSettingsStore = defineStore('staticSettings', () => {
             } else {
                 commentsEnabled.value = !!commentsRaw
             }
+
+            const enforceRaw = data.EnforceSensitivityLabels ?? data.enforceSensitivityLabels
+            if (typeof enforceRaw === 'string') {
+                enforceSensitivityLabels.value = enforceRaw.toLowerCase() === 'true'
+            } else {
+                enforceSensitivityLabels.value = !!enforceRaw
+            }
         } catch (error) {
             console.error('Static settings load failed', error)
         } finally {
@@ -56,6 +64,7 @@ export const useStaticSettingsStore = defineStore('staticSettings', () => {
         homePageId,
         demoModeEnabled,
         commentsEnabled,
+        enforceSensitivityLabels,
         version,
         appName,
         footerText,

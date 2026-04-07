@@ -8,6 +8,7 @@ namespace ReportTree.Server.Models
         public int? ParentId { get; set; }
         public int Order { get; set; }
         public bool IsPublic { get; set; }
+        public string SensitivityLabel { get; set; } = "Internal";
         public string Layout { get; set; } = "[]";
         public List<string> AllowedUsers { get; set; } = new();
         public List<string> AllowedGroups { get; set; } = new();

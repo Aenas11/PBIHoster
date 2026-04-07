@@ -24,6 +24,13 @@ namespace ReportTree.Server.Controllers
         private readonly IPageVersionRepository _pageVersionRepo;
         private const string PAGES_CACHE_KEY = "all_pages";
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+        private static readonly HashSet<string> AllowedSensitivityLabels = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Public",
+            "Internal",
+            "Confidential",
+            "Restricted"
+        };
 
         public PagesController(
             IPageRepository repo,
@@ -99,12 +106,22 @@ namespace ReportTree.Server.Controllers
         [Authorize(Roles = "Admin,Editor")]
         public async Task<ActionResult<Page>> Post([FromBody] Page page)
         {
+            var normalizedLabel = await ValidateAndNormalizeSensitivityLabelAsync(page.SensitivityLabel);
+            if (normalizedLabel == null)
+            {
+                return BadRequest(new { error = "Invalid or missing sensitivity label." });
+            }
+
+            page.SensitivityLabel = normalizedLabel;
+
             var id = await _repo.CreateAsync(page);
             page.Id = id;
-            
+
             // Invalidate cache
             _cache.Remove(PAGES_CACHE_KEY);
-            
+
+            await _auditLogService.LogAsync("SET_SENSITIVITY_LABEL", id.ToString(), $"label={page.SensitivityLabel}; action=create");
+
             return CreatedAtAction(nameof(Get), new { id = page.Id }, page);
         }
 
@@ -113,11 +130,34 @@ namespace ReportTree.Server.Controllers
         public async Task<IActionResult> Put(int id, [FromBody] Page page)
         {
             if (id != page.Id) return BadRequest();
+
+            var existing = await _repo.GetByIdAsync(id);
+            if (existing == null)
+            {
+                return NotFound();
+            }
+
+            var normalizedLabel = await ValidateAndNormalizeSensitivityLabelAsync(page.SensitivityLabel);
+            if (normalizedLabel == null)
+            {
+                return BadRequest(new { error = "Invalid or missing sensitivity label." });
+            }
+
+            page.SensitivityLabel = normalizedLabel;
+
             await _repo.UpdateAsync(page);
-            
+
+            if (!string.Equals(existing.SensitivityLabel, page.SensitivityLabel, StringComparison.OrdinalIgnoreCase))
+            {
+                await _auditLogService.LogAsync(
+                    "SET_SENSITIVITY_LABEL",
+                    id.ToString(),
+                    $"from={existing.SensitivityLabel}; to={page.SensitivityLabel}; action=update");
+            }
+
             // Invalidate cache
             _cache.Remove(PAGES_CACHE_KEY);
-            
+
             return NoContent();
         }
 
@@ -280,6 +320,25 @@ namespace ReportTree.Server.Controllers
             return (JsonSerializer.Serialize(payload), null);
         }
 
+        private async Task<string?> ValidateAndNormalizeSensitivityLabelAsync(string? label)
+        {
+            var trimmed = label?.Trim();
+            var enforce = await _settingsService.IsSensitivityLabelEnforcedAsync();
+
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                return enforce ? null : "Internal";
+            }
+
+            if (!AllowedSensitivityLabels.Contains(trimmed))
+            {
+                return null;
+            }
+
+            // Normalize casing to canonical values
+            return AllowedSensitivityLabels.First(x => string.Equals(x, trimmed, StringComparison.OrdinalIgnoreCase));
+        }
+
         private static List<(string Id, List<string> Roles)> ExtractRlsComponents(string layoutJson)
         {
             var result = new List<(string, List<string>)>();
@@ -325,6 +384,7 @@ namespace ReportTree.Server.Controllers
                 ParentId = request?.NewParentId ?? sourcePage.ParentId,
                 Order = sourcePage.Order + 1, // Place right after original
                 IsPublic = sourcePage.IsPublic,
+                SensitivityLabel = sourcePage.SensitivityLabel,
                 Layout = sourcePage.Layout, // Clone the entire layout configuration
                 AllowedUsers = new List<string>(sourcePage.AllowedUsers),
                 AllowedGroups = new List<string>(sourcePage.AllowedGroups),

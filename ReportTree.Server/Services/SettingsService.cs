@@ -44,6 +44,12 @@ public class SettingsService : ISettingsService
         return !bool.TryParse(value, out var enabled) || enabled;
     }
 
+    public async Task<bool> IsSensitivityLabelEnforcedAsync()
+    {
+        var value = await GetValueAsync("App.EnforceSensitivityLabels");
+        return bool.TryParse(value, out var enabled) && enabled;
+    }
+
     public async Task<IEnumerable<AppSetting>> GetAllSettingsAsync()
     {
         var settings = await _repo.GetAllAsync();
@@ -163,6 +169,19 @@ public class SettingsService : ISettingsService
                 "true",
                 "Application",
                 "Enable comments and annotations on report pages.",
+                false,
+                "System"
+            );
+        }
+
+        var enforceSensitivitySetting = await GetSettingAsync("App.EnforceSensitivityLabels");
+        if (enforceSensitivitySetting == null)
+        {
+            await UpsertSettingAsync(
+                "App.EnforceSensitivityLabels",
+                "false",
+                "Application",
+                "Require sensitivity labels on page create and update operations.",
                 false,
                 "System"
             );

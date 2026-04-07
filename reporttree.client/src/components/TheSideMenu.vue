@@ -164,6 +164,10 @@ const recentPages = computed(() =>
     .map(id => flatPages.value.find(page => page.id === id))
     .filter((page): page is Page => !!page)
 )
+
+function sensitivityClass(label?: string) {
+  return `sensitivity-${(label || 'internal').toLowerCase()}`
+}
 </script>
 
 <template>
@@ -177,6 +181,7 @@ const recentPages = computed(() =>
           @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
           <component :is="getIcon(page.icon)" slot="title-icon" />
           {{ page.title }}
+          <span class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
           <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
         </cds-side-nav-link>
       </cds-side-nav-menu>
@@ -187,6 +192,7 @@ const recentPages = computed(() =>
           @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
           <component :is="getIcon(page.icon)" slot="title-icon" />
           {{ page.title }}
+          <span class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
           <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
         </cds-side-nav-link>
       </cds-side-nav-menu>
@@ -207,6 +213,7 @@ const recentPages = computed(() =>
           @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
           <component :is="getIcon(page.icon)" slot="title-icon" />
           {{ page.title }}
+          <span class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
           <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
         </cds-side-nav-link>
 
@@ -225,6 +232,7 @@ const recentPages = computed(() =>
             @click="handleItemClick(child, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
             <component :is="getIcon(child.icon)" slot="title-icon" />
             {{ child.title }}
+            <span class="sensitivity-badge" :class="sensitivityClass(child.sensitivityLabel)">{{ child.sensitivityLabel || 'Internal' }}</span>
             <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
           </cds-side-nav-link>
 
@@ -323,6 +331,38 @@ const recentPages = computed(() =>
   background-color: rgba(141, 141, 141, 0.08);
   border-left: 3px solid var(--cds-border-strong, #8d8d8d);
   font-style: italic;
+}
+
+.sensitivity-badge {
+  margin-left: 0.5rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.65rem;
+  border: 1px solid transparent;
+}
+
+.sensitivity-public {
+  background: #e8f5e9;
+  color: #0e6027;
+  border-color: #8fd19e;
+}
+
+.sensitivity-internal {
+  background: #edf5ff;
+  color: #0f62fe;
+  border-color: #a6c8ff;
+}
+
+.sensitivity-confidential {
+  background: #fff4e5;
+  color: #8a3800;
+  border-color: #f1c21b;
+}
+
+.sensitivity-restricted {
+  background: #fff1f1;
+  color: #a2191f;
+  border-color: #ff8389;
 }
 
 .edit-badge {

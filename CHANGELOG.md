@@ -14,11 +14,14 @@ All notable changes to this project will be documented in this file. The format 
 - Added backend enforcement to fully disable comments endpoints when comments feature is turned off.
 - Added page layout version history with rollback endpoints (`/api/pages/{id}/versions` and rollback action).
 - Added backend integration tests for page version save and rollback behavior.
+- Added page sensitivity labels (`Public`, `Internal`, `Confidential`, `Restricted`) with backend validation and UI badges.
+- Added admin toggle `App.EnforceSensitivityLabels` to require labels on page create/update.
 
 ### Changed
 - Updated project documentation to reflect implemented external auth architecture, security boundaries, and admin mapping behavior.
 - Updated comments UI to respect static feature settings and hide/toggle comments controls when disabled.
 - Updated page edit UI with version history panel, diff summary, and one-click rollback.
+- Updated page create/edit flow and navigation/page headers to display and manage sensitivity labels.
 
 ## [0.3.0] - 2025-02-11
 ### Added

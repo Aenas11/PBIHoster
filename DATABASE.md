@@ -43,7 +43,7 @@ Stores user account information, authentication, and profile data.
 
 ### Page
 
-Represents pages/content in the navigation tree. Supports unlimited nesting via parent-child relationships.
+Represents pages/content in the navigation tree. Supports unlimited nesting via parent-child relationships and governance labels.
 
 ```csharp
 {
@@ -56,6 +56,7 @@ Represents pages/content in the navigation tree. Supports unlimited nesting via 
   "ChildPageIds": List<Guid>,
   "AllowedRoles": List<string>,           // Roles with access
   "IsPublic": bool,                       // No auth required
+  "SensitivityLabel": string,             // Public, Internal, Confidential, Restricted
   "Layout": PageLayout (nullable),        // Drag-drop layout config
   "CreatedAt": DateTime,
   "UpdatedAt": DateTime,
@@ -126,6 +127,7 @@ Stores application configuration and settings that can be managed via the admin 
 **Standard Settings**:
 - `App.DemoModeEnabled` → Show demo pages
 - `App.CommentsEnabled` → Enable/disable comments feature globally
+- `App.EnforceSensitivityLabels` → Require sensitivity labels on page create/update
 - `App.CompanyName` → Application name
 - `Email.SmtpServer` → Email configuration
 - `Security.ExternalAuth.ProviderOverrides` -> Stored non-secret external auth role/group mapping overrides

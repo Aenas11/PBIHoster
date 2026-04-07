@@ -10,7 +10,14 @@ export const usePagesStore = defineStore('pages', () => {
     const fetchPages = async () => {
         isLoading.value = true
         try {
-            const allPages = await api.get<Page[]>('/pages')
+            const allPages = await api.get<Page[]>(`/pages?_t=${Date.now()}`, {
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            })
             pages.value = buildTree(allPages)
         } catch (e) {
             console.error(e)

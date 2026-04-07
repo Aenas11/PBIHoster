@@ -303,7 +303,12 @@ const getConfigComponent = (item: GridItemWithComponent) => {
     </div>
 
     <div v-if="!gridLayout.isLoading.value" class="page-header">
-      <div class="page-title">{{ currentPage?.title || 'Page' }}</div>
+      <div class="page-title-wrap">
+        <div class="page-title">{{ currentPage?.title || 'Page' }}</div>
+        <span v-if="currentPage?.sensitivityLabel" class="sensitivity-badge" :class="`sensitivity-${(currentPage.sensitivityLabel || '').toLowerCase()}`">
+          {{ currentPage.sensitivityLabel }}
+        </span>
+      </div>
       <div class="page-actions">
         <cds-button v-if="editModeStore.isEditMode" kind="ghost" size="sm" @click="toggleVersions">
           {{ isVersionsOpen ? 'Close Versions' : 'Version History' }}
@@ -432,10 +437,50 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   padding: 0.75rem 0.5rem;
 }
 
+.page-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .page-title {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--cds-text-primary);
+}
+
+.sensitivity-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.sensitivity-public {
+  background: #e8f5e9;
+  color: #0e6027;
+  border-color: #8fd19e;
+}
+
+.sensitivity-internal {
+  background: #edf5ff;
+  color: #0f62fe;
+  border-color: #a6c8ff;
+}
+
+.sensitivity-confidential {
+  background: #fff4e5;
+  color: #8a3800;
+  border-color: #f1c21b;
+}
+
+.sensitivity-restricted {
+  background: #fff1f1;
+  color: #a2191f;
+  border-color: #ff8389;
 }
 
 @media (prefers-color-scheme: dark) {

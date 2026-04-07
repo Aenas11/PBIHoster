@@ -23,6 +23,7 @@ const emit = defineEmits(['close', 'create-child'])
 
 const store = usePagesStore()
 const auth = useAuthStore()
+const sensitivityLabels = ['Public', 'Internal', 'Confidential', 'Restricted'] as const
 
 const isCloneModalOpen = ref(false)
 
@@ -31,6 +32,7 @@ const formData = ref({
     icon: 'Document20',
     parentId: undefined as number | undefined,
     isPublic: false,
+    sensitivityLabel: 'Internal' as 'Public' | 'Internal' | 'Confidential' | 'Restricted',
     allowedUsers: [] as string[],
     allowedGroups: [] as string[]
 })
@@ -45,6 +47,7 @@ watch(() => props.open, (isOpen) => {
                 icon: props.page.icon,
                 parentId: props.page.parentId,
                 isPublic: props.page.isPublic,
+                sensitivityLabel: props.page.sensitivityLabel || 'Internal',
                 allowedUsers: props.page.allowedUsers || [],
                 allowedGroups: props.page.allowedGroups || []
             }
@@ -54,6 +57,7 @@ watch(() => props.open, (isOpen) => {
                 icon: 'Document20',
                 parentId: props.parentId || undefined,
                 isPublic: false,
+                sensitivityLabel: 'Internal',
                 allowedUsers: [],
                 allowedGroups: []
             }
@@ -62,6 +66,20 @@ watch(() => props.open, (isOpen) => {
 })
 
 const icons = ['Dashboard20', 'Document20', 'Folder20', 'ChartBar20', 'Table20']
+
+function onIconChange(event: CustomEvent<{ value?: string }> | Event) {
+    const value = (event as CustomEvent<{ value?: string }>).detail?.value
+        || (event.target as HTMLSelectElement | null)?.value
+        || formData.value.icon
+    formData.value.icon = value
+}
+
+function onSensitivityLabelChange(event: CustomEvent<{ value?: string }> | Event) {
+    const value = (event as CustomEvent<{ value?: string }>).detail?.value
+        || (event.target as HTMLSelectElement | null)?.value
+        || 'Internal'
+    formData.value.sensitivityLabel = value as typeof formData.value.sensitivityLabel
+}
 
 const searchQuery = ref('')
 const searchResults = ref<{ type: 'user' | 'group', name: string }[]>([])
@@ -185,8 +203,13 @@ function closeCloneModal() {
                     <cds-text-input label="Title" :value="formData.title" @input="formData.title = $event.target.value"
                         placeholder="Page Title"></cds-text-input>
                     <br />
-                    <cds-select label-text="Icon" :value="formData.icon" @change="formData.icon = $event.target.value">
+                    <cds-select label-text="Icon" :value="formData.icon" @cds-select-selected="onIconChange">
                         <cds-select-item v-for="icon in icons" :key="icon" :value="icon">{{ icon }}</cds-select-item>
+                    </cds-select>
+                    <br />
+                    <cds-select label-text="Sensitivity Label" :value="formData.sensitivityLabel"
+                        @cds-select-selected="onSensitivityLabelChange">
+                        <cds-select-item v-for="label in sensitivityLabels" :key="label" :value="label">{{ label }}</cds-select-item>
                     </cds-select>
                 </div>
 

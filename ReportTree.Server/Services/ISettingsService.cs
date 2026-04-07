@@ -8,6 +8,7 @@ namespace ReportTree.Server.Services
         Task<string?> GetValueAsync(string key);
         Task<bool> IsDemoModeEnabledAsync();
         Task<bool> IsCommentsEnabledAsync();
+        Task<bool> IsSensitivityLabelEnforcedAsync();
         Task<IEnumerable<AppSetting>> GetAllSettingsAsync();
         Task<IEnumerable<AppSetting>> GetByCategoryAsync(string category);
         Task UpsertSettingAsync(string key, string value, string category, string description, bool isEncrypted, string modifiedBy);

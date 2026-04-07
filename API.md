@@ -116,7 +116,7 @@ Response 200 OK:
 | GET | `/pages` | ❌ No | Public/All | List accessible pages (auth applied if logged in) |
 | GET | `/pages/{pageId}` | ❌ No | Public/All | Get page details (auth required if not public) |
 | POST | `/pages` | ✅ Yes | Admin, Editor | Create new page |
-| PUT | `/pages/{pageId}` | ✅ Yes | Admin, Editor | Update page metadata/layout |
+| PUT | `/pages/{pageId}` | ✅ Yes | Admin, Editor | Update page metadata/layout (including sensitivity label) |
 | DELETE | `/pages/{pageId}` | ✅ Yes | Admin, Editor | Delete page |
 | POST | `/pages/{pageId}/layout` | ✅ Yes | Admin, Editor | Save layout JSON for page |
 | POST | `/pages/{pageId}/clone` | ✅ Yes | Admin, Editor | Clone page (optionally set new title/parent) |
@@ -137,6 +137,7 @@ Response 200 OK:
     "icon": "dashboard",
     "parentId": null,
     "isPublic": false,
+    "sensitivityLabel": "Confidential",
     "allowedUsers": ["alice", "bob"],
     "allowedGroups": ["Sales"],
     "layout": {
@@ -393,7 +394,7 @@ Response 200 OK:
 | DELETE | `/branding/assets/{assetType}` | ✅ Yes | Admin | Remove `logo` or `favicon` |
 
 **Branding and static feature settings** are exposed via `GET /settings/static` and updated via `PUT /settings` with keys:
-`Branding.AppName`, `Branding.FooterText`, `Branding.FooterLinkUrl`, `Branding.FooterLinkLabel`, `Branding.LogoAssetId`, `Branding.FaviconAssetId`, `App.DemoModeEnabled`, `App.CommentsEnabled`.
+`Branding.AppName`, `Branding.FooterText`, `Branding.FooterLinkUrl`, `Branding.FooterLinkLabel`, `Branding.LogoAssetId`, `Branding.FaviconAssetId`, `App.DemoModeEnabled`, `App.CommentsEnabled`, `App.EnforceSensitivityLabels`.
 
 ### Power BI (`/powerbi`)
 

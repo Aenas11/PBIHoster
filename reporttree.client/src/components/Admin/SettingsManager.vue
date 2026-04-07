@@ -71,6 +71,7 @@ const isEditing = ref(false)
 const homePageId = ref<string>('')
 const demoModeEnabled = ref(false)
 const commentsEnabled = ref(true)
+const enforceSensitivityLabels = ref(false)
 const appName = ref('ReportTree')
 const footerText = ref('')
 const footerLinkUrl = ref('')
@@ -132,6 +133,13 @@ async function loadSettings() {
             commentsEnabled.value = commentsEnabledSetting.value?.toLowerCase() === 'true'
         } else {
             commentsEnabled.value = true
+        }
+
+        const enforceSensitivitySetting = settings.value.find(s => s.key === 'App.EnforceSensitivityLabels')
+        if (enforceSensitivitySetting) {
+            enforceSensitivityLabels.value = enforceSensitivitySetting.value?.toLowerCase() === 'true'
+        } else {
+            enforceSensitivityLabels.value = false
         }
 
         const appNameSetting = settings.value.find(s => s.key === 'Branding.AppName')
@@ -201,6 +209,12 @@ async function saveStaticSettings() {
                 value: commentsEnabled.value.toString(),
                 category: 'Application',
                 description: 'Enable comments and annotations on report pages.'
+            },
+            {
+                key: 'App.EnforceSensitivityLabels',
+                value: enforceSensitivityLabels.value.toString(),
+                category: 'Application',
+                description: 'Require page sensitivity labels during page create and update.'
             },
             {
                 key: 'Branding.AppName',
@@ -410,6 +424,10 @@ function onCommentsToggle(e: CustomEvent) {
     const value = (e.detail?.checked ?? e.detail?.value) as boolean | undefined
     commentsEnabled.value = value ?? false
 }
+function onEnforceSensitivityToggle(e: CustomEvent) {
+    const value = (e.detail?.checked ?? e.detail?.value) as boolean | undefined
+    enforceSensitivityLabels.value = value ?? false
+}
 function onAppNameInput(e: Event) { appName.value = (e.target as HTMLInputElement).value }
 function onFooterTextInput(e: Event) { footerText.value = (e.target as HTMLInputElement).value }
 function onFooterLinkUrlInput(e: Event) { footerLinkUrl.value = (e.target as HTMLInputElement).value }
@@ -569,6 +587,15 @@ onMounted(() => {
                     <div class="setting-input">
                         <cds-toggle id="comments-toggle" :checked="commentsEnabled" @cds-toggle-changed="onCommentsToggle">
                             Enable page comments and threaded annotations for users who can access the page
+                        </cds-toggle>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="sensitivity-enforce-toggle">Sensitivity Labels</label>
+                    <div class="setting-input">
+                        <cds-toggle id="sensitivity-enforce-toggle" :checked="enforceSensitivityLabels" @cds-toggle-changed="onEnforceSensitivityToggle">
+                            Require sensitivity labels for page create and update operations
                         </cds-toggle>
                     </div>
                 </div>

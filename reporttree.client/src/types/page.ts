@@ -5,6 +5,7 @@ export interface Page {
     parentId?: number
     order: number
     isPublic: boolean
+    sensitivityLabel?: 'Public' | 'Internal' | 'Confidential' | 'Restricted'
     allowedUsers: string[]
     allowedGroups: string[]
     layout?: string

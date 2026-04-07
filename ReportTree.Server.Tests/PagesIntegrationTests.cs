@@ -43,6 +43,7 @@ public class PagesIntegrationTests : IClassFixture<TestWebApplicationFactory>
             parentId = (int?)null,
             order = 0,
             isPublic = true,
+            sensitivityLabel = "Internal",
             layout = "[]",
             allowedUsers = Array.Empty<string>(),
             allowedGroups = Array.Empty<string>(),
@@ -59,6 +60,7 @@ public class PagesIntegrationTests : IClassFixture<TestWebApplicationFactory>
             parentId = (int?)null,
             order = 0,
             isPublic = true,
+            sensitivityLabel = "Internal",
             layout = "[]",
             allowedUsers = Array.Empty<string>(),
             allowedGroups = Array.Empty<string>(),
@@ -67,6 +69,49 @@ public class PagesIntegrationTests : IClassFixture<TestWebApplicationFactory>
 
         var editorResponse = await _client.SendAsync(editorRequest);
         Assert.Equal(HttpStatusCode.Created, editorResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task EnforcedSensitivityLabels_RejectsMissingOrInvalidLabel()
+    {
+        var adminToken = await RegisterAndLoginAsync($"admin_{Guid.NewGuid():N}", "Password123!", new[] { "Admin" });
+        await UpsertSettingAsync(adminToken, "App.EnforceSensitivityLabels", "true", "Application", "Require page sensitivity labels");
+
+        var invalidLabelRequest = BuildAuthorizedRequest(HttpMethod.Post, "/api/pages", adminToken, new
+        {
+            title = "Invalid Label Page",
+            icon = "Document",
+            parentId = (int?)null,
+            order = 0,
+            isPublic = true,
+            sensitivityLabel = "TopSecret",
+            layout = "[]",
+            allowedUsers = Array.Empty<string>(),
+            allowedGroups = Array.Empty<string>(),
+            isDemo = false
+        });
+
+        var invalidLabelResponse = await _client.SendAsync(invalidLabelRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidLabelResponse.StatusCode);
+
+        var emptyLabelRequest = BuildAuthorizedRequest(HttpMethod.Post, "/api/pages", adminToken, new
+        {
+            title = "Empty Label Page",
+            icon = "Document",
+            parentId = (int?)null,
+            order = 0,
+            isPublic = true,
+            sensitivityLabel = "",
+            layout = "[]",
+            allowedUsers = Array.Empty<string>(),
+            allowedGroups = Array.Empty<string>(),
+            isDemo = false
+        });
+
+        var emptyLabelResponse = await _client.SendAsync(emptyLabelRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, emptyLabelResponse.StatusCode);
+
+        await UpsertSettingAsync(adminToken, "App.EnforceSensitivityLabels", "false", "Application", "Disable label enforcement");
     }
 
     private async Task<int> CreatePageAsync(string token, string title, bool isPublic)
@@ -78,6 +123,7 @@ public class PagesIntegrationTests : IClassFixture<TestWebApplicationFactory>
             parentId = (int?)null,
             order = 0,
             isPublic,
+            sensitivityLabel = "Internal",
             layout = "[]",
             allowedUsers = Array.Empty<string>(),
             allowedGroups = Array.Empty<string>(),
@@ -112,6 +158,20 @@ public class PagesIntegrationTests : IClassFixture<TestWebApplicationFactory>
         var loginBody = await loginResponse.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(loginBody);
         return doc.RootElement.GetProperty("token").GetString() ?? string.Empty;
+    }
+
+    private async Task UpsertSettingAsync(string token, string key, string value, string category, string description)
+    {
+        var request = BuildAuthorizedRequest(HttpMethod.Put, "/api/settings", token, new
+        {
+            key,
+            value,
+            category,
+            description
+        });
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     private static HttpRequestMessage BuildAuthorizedRequest(HttpMethod method, string url, string token, object body)
