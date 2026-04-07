@@ -188,6 +188,33 @@ Stores threaded page comments and @mentions.
 
 ---
 
+### PageVersion
+
+Stores immutable snapshots of page layout saves and rollback checkpoints.
+
+```csharp
+{
+  "_id": ObjectId,
+  "Id": int,
+  "PageId": int,
+  "Layout": string,                     // Serialized layout JSON
+  "ChangedBy": string,
+  "ChangedAt": DateTime,
+  "ChangeDescription": string
+}
+```
+
+**Indexes**:
+- PageId
+- ChangedAt
+
+**Usage**:
+- Layout history timeline for editors/admins
+- One-click rollback to prior layout state
+- Change accountability via actor and timestamp
+
+---
+
 ### AuditLog
 
 Comprehensive log of all security-relevant user actions.

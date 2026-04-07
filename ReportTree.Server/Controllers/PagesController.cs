@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using ReportTree.Server.DTOs;
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
 using ReportTree.Server.Services;
@@ -20,6 +21,7 @@ namespace ReportTree.Server.Controllers
         private readonly SettingsService _settingsService;
         private readonly DemoContentService _demoContentService;
         private readonly AuditLogService _auditLogService;
+        private readonly IPageVersionRepository _pageVersionRepo;
         private const string PAGES_CACHE_KEY = "all_pages";
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
@@ -30,7 +32,8 @@ namespace ReportTree.Server.Controllers
             IMemoryCache cache,
             SettingsService settingsService,
             DemoContentService demoContentService,
-            AuditLogService auditLogService)
+            AuditLogService auditLogService,
+            IPageVersionRepository pageVersionRepo)
         {
             _repo = repo;
             _authService = authService;
@@ -39,6 +42,7 @@ namespace ReportTree.Server.Controllers
             _settingsService = settingsService;
             _demoContentService = demoContentService;
             _auditLogService = auditLogService;
+            _pageVersionRepo = pageVersionRepo;
         }
 
         [HttpGet]
@@ -131,17 +135,25 @@ namespace ReportTree.Server.Controllers
 
         [HttpPost("{id}/layout")]
         [Authorize(Roles = "Admin,Editor")]
-        public async Task<IActionResult> SaveLayout(int id, [FromBody] object layout)
+        public async Task<IActionResult> SaveLayout(int id, [FromBody] JsonElement payload)
         {
             var page = await _repo.GetByIdAsync(id);
             if (page == null) return NotFound();
 
             var oldLayout = page.Layout;
-            
-            // Serialize the layout object to string for storage
-            var layoutJson = JsonSerializer.Serialize(layout);
+            var (layoutJson, changeDescription) = ExtractLayoutSavePayload(payload);
+
             page.Layout = layoutJson;
             await _repo.UpdateAsync(page);
+
+            var username = User.Identity?.Name ?? "Unknown";
+            await _pageVersionRepo.CreateAsync(new PageVersion
+            {
+                PageId = id,
+                Layout = layoutJson,
+                ChangedBy = username,
+                ChangeDescription = string.IsNullOrWhiteSpace(changeDescription) ? "Layout saved" : changeDescription.Trim()
+            });
 
             // Invalidate cache
             _cache.Remove(PAGES_CACHE_KEY);
@@ -191,6 +203,81 @@ namespace ReportTree.Server.Controllers
             }
 
             return Ok(new { success = true, message = "Layout saved successfully" });
+        }
+
+        [HttpGet("{id}/versions")]
+        [Authorize(Roles = "Admin,Editor")]
+        public async Task<ActionResult<IEnumerable<PageVersionDto>>> GetVersions(int id, [FromQuery] int take = 20)
+        {
+            var page = await _repo.GetByIdAsync(id);
+            if (page == null)
+            {
+                return NotFound();
+            }
+
+            var versions = await _pageVersionRepo.GetByPageIdAsync(id, take);
+            var response = versions.Select(v => new PageVersionDto(
+                v.Id,
+                v.PageId,
+                v.Layout,
+                v.ChangedBy,
+                v.ChangedAt,
+                v.ChangeDescription
+            ));
+
+            return Ok(response);
+        }
+
+        [HttpPost("{id}/versions/{versionId}/rollback")]
+        [Authorize(Roles = "Admin,Editor")]
+        public async Task<IActionResult> RollbackToVersion(int id, int versionId, [FromBody] PageRollbackRequest? request)
+        {
+            var page = await _repo.GetByIdAsync(id);
+            if (page == null)
+            {
+                return NotFound();
+            }
+
+            var version = await _pageVersionRepo.GetByIdAsync(versionId);
+            if (version == null || version.PageId != id)
+            {
+                return NotFound();
+            }
+
+            page.Layout = version.Layout;
+            await _repo.UpdateAsync(page);
+
+            var username = User.Identity?.Name ?? "Unknown";
+            var rollbackDescription = string.IsNullOrWhiteSpace(request?.ChangeDescription)
+                ? $"Rolled back to version #{versionId}"
+                : request!.ChangeDescription!.Trim();
+
+            var newVersionId = await _pageVersionRepo.CreateAsync(new PageVersion
+            {
+                PageId = id,
+                Layout = version.Layout,
+                ChangedBy = username,
+                ChangeDescription = rollbackDescription
+            });
+
+            _cache.Remove(PAGES_CACHE_KEY);
+            await _auditLogService.LogAsync("ROLLBACK_PAGE_LAYOUT", id.ToString(), $"fromVersion={versionId}; newVersion={newVersionId}");
+
+            return Ok(new { success = true, message = "Layout rolled back successfully" });
+        }
+
+        private static (string LayoutJson, string? ChangeDescription) ExtractLayoutSavePayload(JsonElement payload)
+        {
+            if (payload.ValueKind == JsonValueKind.Object && payload.TryGetProperty("layout", out var layoutElement))
+            {
+                var changeDescription = payload.TryGetProperty("changeDescription", out var changeDescriptionElement)
+                    ? changeDescriptionElement.GetString()
+                    : null;
+
+                return (JsonSerializer.Serialize(layoutElement), changeDescription);
+            }
+
+            return (JsonSerializer.Serialize(payload), null);
         }
 
         private static List<(string Id, List<string> Roles)> ExtractRlsComponents(string layoutJson)

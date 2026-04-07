@@ -120,6 +120,8 @@ Response 200 OK:
 | DELETE | `/pages/{pageId}` | ✅ Yes | Admin, Editor | Delete page |
 | POST | `/pages/{pageId}/layout` | ✅ Yes | Admin, Editor | Save layout JSON for page |
 | POST | `/pages/{pageId}/clone` | ✅ Yes | Admin, Editor | Clone page (optionally set new title/parent) |
+| GET | `/pages/{pageId}/versions?take=20` | ✅ Yes | Admin, Editor | List recent saved layout versions for page |
+| POST | `/pages/{pageId}/versions/{versionId}/rollback` | ✅ Yes | Admin, Editor | Roll back page layout to a previous version |
 
 #### Get Pages (Accessible)
 
@@ -172,6 +174,24 @@ Response 201 Created:
   "id": 101,
   "title": "Sales Dashboard",
   ...
+}
+```
+
+#### Roll Back To Previous Version
+
+```http
+POST /api/pages/101/versions/44/rollback
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "changeDescription": "Rollback after accidental layout edit"
+}
+
+Response 200 OK:
+{
+  "success": true,
+  "message": "Layout rolled back successfully"
 }
 ```
 

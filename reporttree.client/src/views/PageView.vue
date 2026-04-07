@@ -15,9 +15,11 @@ import { useAuthStore } from '../stores/auth'
 import { usePagesStore } from '../stores/pages'
 import { useFavoritesStore } from '../stores/favorites'
 import { useStaticSettingsStore } from '../stores/staticSettings'
+import { useToastStore } from '../stores/toast'
 import ErrorComponent from '../components/DashboardComponents/ErrorComponent.vue'
 import MetadataEditor from '../components/DashboardComponents/MetadataEditor.vue'
 import CommentsPanel from '../components/CommentsPanel.vue'
+import { pageVersionsService, type PageVersionItem } from '../services/pageVersionsService'
 import type { GridItemWithComponent } from '../composables/useGridLayout'
 import type { Page } from '../types/page'
 
@@ -29,6 +31,7 @@ const authStore = useAuthStore()
 const pagesStore = usePagesStore()
 const favoritesStore = useFavoritesStore()
 const staticSettingsStore = useStaticSettingsStore()
+const toastStore = useToastStore()
 
 // Modal state
 const isConfigModalOpen = ref(false)
@@ -44,6 +47,10 @@ const configModalMetadata = ref<GridItemWithComponent['metadata']>({
 const activeTab = ref('general')
 const isCommentsOpen = ref(false)
 const commentsEnabled = computed(() => staticSettingsStore.commentsEnabled)
+const isVersionsOpen = ref(false)
+const versionsLoading = ref(false)
+const versions = ref<PageVersionItem[]>([])
+const rollbackInProgress = ref<number | null>(null)
 
 // Force refresh key to bust cache
 const layoutKey = ref(0)
@@ -105,6 +112,93 @@ watch(commentsEnabled, (enabled) => {
     isCommentsOpen.value = false
   }
 })
+
+watch(() => editModeStore.isEditMode, (enabled) => {
+  if (!enabled) {
+    isVersionsOpen.value = false
+  }
+})
+
+watch([isVersionsOpen, currentPageId], async ([open]) => {
+  if (open && editModeStore.isEditMode) {
+    await loadVersions()
+  }
+})
+
+const parseVersionLayout = (layoutJson: string): GridItemWithComponent[] => {
+  try {
+    const parsed = JSON.parse(layoutJson)
+    return Array.isArray(parsed) ? (parsed as GridItemWithComponent[]) : []
+  } catch {
+    return []
+  }
+}
+
+const getDiffSummary = (version: PageVersionItem): string => {
+  const current = gridLayout.layout.value
+  const historical = parseVersionLayout(version.layout)
+
+  const currentMap = new Map(current.map(item => [item.i, item]))
+  const historicalMap = new Map(historical.map(item => [item.i, item]))
+
+  let changed = 0
+  for (const [id, item] of historicalMap) {
+    const now = currentMap.get(id)
+    if (!now) continue
+    if (now.x !== item.x || now.y !== item.y || now.w !== item.w || now.h !== item.h || now.componentType !== item.componentType) {
+      changed++
+    }
+  }
+
+  const added = current.filter(item => !historicalMap.has(item.i)).length
+  const removed = historical.filter(item => !currentMap.has(item.i)).length
+  return `${changed} changed, ${added} added, ${removed} removed`
+}
+
+const formatVersionTime = (value: string) => new Date(value).toLocaleString()
+
+const toggleVersions = async () => {
+  isVersionsOpen.value = !isVersionsOpen.value
+  if (isVersionsOpen.value) {
+    await loadVersions()
+  }
+}
+
+const loadVersions = async () => {
+  if (!currentPageId.value || !editModeStore.isEditMode) {
+    return
+  }
+
+  versionsLoading.value = true
+  try {
+    versions.value = await pageVersionsService.getByPage(currentPageId.value)
+  } catch (error) {
+    console.error('Failed to load page versions', error)
+    toastStore.error('Error', 'Failed to load page versions')
+  } finally {
+    versionsLoading.value = false
+  }
+}
+
+const rollbackVersion = async (version: PageVersionItem) => {
+  if (!currentPageId.value) {
+    return
+  }
+
+  rollbackInProgress.value = version.id
+  try {
+    await pageVersionsService.rollback(currentPageId.value, version.id, `Rollback via UI to version #${version.id}`)
+    await gridLayout.loadLayout(String(currentPageId.value))
+    layoutKey.value++
+    await loadVersions()
+    toastStore.success('Success', 'Layout rolled back successfully')
+  } catch (error) {
+    console.error('Failed to rollback layout', error)
+    toastStore.error('Error', 'Failed to rollback layout')
+  } finally {
+    rollbackInProgress.value = null
+  }
+}
 
 const toggleFavorite = async () => {
   if (!authStore.isAuthenticated || !currentPageId.value) {
@@ -211,6 +305,9 @@ const getConfigComponent = (item: GridItemWithComponent) => {
     <div v-if="!gridLayout.isLoading.value" class="page-header">
       <div class="page-title">{{ currentPage?.title || 'Page' }}</div>
       <div class="page-actions">
+        <cds-button v-if="editModeStore.isEditMode" kind="ghost" size="sm" @click="toggleVersions">
+          {{ isVersionsOpen ? 'Close Versions' : 'Version History' }}
+        </cds-button>
         <cds-button v-if="commentsEnabled" kind="ghost" size="sm" @click="isCommentsOpen = !isCommentsOpen">
           {{ isCommentsOpen ? 'Close Comments' : 'Comments' }}
         </cds-button>
@@ -253,6 +350,34 @@ const getConfigComponent = (item: GridItemWithComponent) => {
     <div v-if="!gridLayout.isLoading.value && gridLayout.layout.value.length === 0" class="empty-state">
       <p>No panels configured for this page. Use the Tools menu to add panels.</p>
     </div>
+
+    <aside v-if="editModeStore.isEditMode && isVersionsOpen" class="versions-panel">
+      <div class="versions-header">
+        <h3>Version History</h3>
+        <div class="versions-header-actions">
+          <cds-button kind="ghost" size="sm" @click="loadVersions">Refresh</cds-button>
+          <cds-button kind="ghost" size="sm" @click="isVersionsOpen = false">Close</cds-button>
+        </div>
+      </div>
+
+      <p v-if="versionsLoading" class="versions-loading">Loading versions...</p>
+      <p v-else-if="versions.length === 0" class="versions-empty">No versions saved yet.</p>
+
+      <div v-else class="versions-list">
+        <article v-for="version in versions" :key="version.id" class="version-card">
+          <div class="version-meta">
+            <strong>#{{ version.id }}</strong>
+            <span>{{ formatVersionTime(version.changedAt) }}</span>
+          </div>
+          <div class="version-by">By {{ version.changedBy }}</div>
+          <div class="version-desc">{{ version.changeDescription || 'Layout saved' }}</div>
+          <div class="version-diff">Diff: {{ getDiffSummary(version) }}</div>
+          <cds-button kind="secondary" size="sm" :disabled="rollbackInProgress === version.id" @click="rollbackVersion(version)">
+            {{ rollbackInProgress === version.id ? 'Rolling back...' : 'Rollback to this version' }}
+          </cds-button>
+        </article>
+      </div>
+    </aside>
 
     <CommentsPanel v-if="commentsEnabled" :open="isCommentsOpen" :page-id="currentPageId" @close="isCommentsOpen = false" />
 
@@ -417,6 +542,66 @@ const getConfigComponent = (item: GridItemWithComponent) => {
   padding: 4rem 2rem;
   color: #525252;
   font-size: 1rem;
+}
+
+.versions-panel {
+  position: fixed;
+  top: 3.5rem;
+  right: 0;
+  width: min(430px, 95vw);
+  height: calc(100vh - 3.5rem);
+  background: var(--cds-layer);
+  border-left: 1px solid var(--cds-border-subtle);
+  z-index: 1200;
+  padding: 1rem;
+  overflow: auto;
+}
+
+.versions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.versions-header-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.versions-header h3 {
+  margin: 0;
+}
+
+.versions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.version-card {
+  border: 1px solid var(--cds-border-subtle);
+  background: var(--cds-layer-accent);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.version-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--cds-text-secondary);
+}
+
+.version-by,
+.version-desc,
+.version-diff,
+.versions-loading,
+.versions-empty {
+  font-size: 0.85rem;
+  color: var(--cds-text-secondary);
 }
 
 @media (prefers-color-scheme: dark) {

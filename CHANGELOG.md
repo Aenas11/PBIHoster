@@ -12,10 +12,13 @@ All notable changes to this project will be documented in this file. The format 
 - Added backend integration tests for external auth admin mapping settings endpoints.
 - Added admin-configurable comments feature toggle via `App.CommentsEnabled` in static settings.
 - Added backend enforcement to fully disable comments endpoints when comments feature is turned off.
+- Added page layout version history with rollback endpoints (`/api/pages/{id}/versions` and rollback action).
+- Added backend integration tests for page version save and rollback behavior.
 
 ### Changed
 - Updated project documentation to reflect implemented external auth architecture, security boundaries, and admin mapping behavior.
 - Updated comments UI to respect static feature settings and hide/toggle comments controls when disabled.
+- Updated page edit UI with version history panel, diff summary, and one-click rollback.
 
 ## [0.3.0] - 2025-02-11
 ### Added

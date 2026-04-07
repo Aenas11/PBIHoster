@@ -96,6 +96,7 @@ The API follows a hybrid pattern:
 - **SettingsService**: Configuration management with encryption
 - **AuditLogService**: Comprehensive logging of user actions
 - **CommentsController + ICommentRepository**: Threaded comments with owner/admin moderation and page-access checks
+- **PagesController + IPageVersionRepository**: Layout version history snapshots and rollback workflow
 - **BrandingService**: Logo and custom theme management
 - **RefreshSchedulerHostedService**: Background job scheduler for dataset refreshes
 
@@ -113,6 +114,7 @@ IAuditLogRepository  // Audit logging
 IThemeRepository     // Custom themes
 IGroupRepository     // User groups
 ICommentRepository   // Page comments
+IPageVersionRepository // Page layout version history
 ```
 
 ### Data Model
@@ -185,7 +187,7 @@ public class AuditLog
 }
 ```
 
-**Additional Entities**: Group, Comment, BrandingAsset, CustomTheme, LoginAttempt, DatasetRefreshSchedule, DatasetRefreshRun
+**Additional Entities**: Group, Comment, PageVersion, BrandingAsset, CustomTheme, LoginAttempt, DatasetRefreshSchedule, DatasetRefreshRun
 
 ### Feature Toggles
 

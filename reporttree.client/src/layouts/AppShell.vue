@@ -27,9 +27,14 @@ function toggleToolsPanel() {
   isToolsPanelExpanded.value = !isToolsPanelExpanded.value
 }
 
-// Auto-close tools panel when exiting edit mode
+// Auto-open tools panel when entering edit mode; auto-close when exiting.
 watch(() => editModeStore.isEditMode, (newValue) => {
-  if (!newValue && isToolsPanelExpanded.value) {
+  if (newValue) {
+    isToolsPanelExpanded.value = true
+    return
+  }
+
+  if (isToolsPanelExpanded.value) {
     isToolsPanelExpanded.value = false
   }
 })

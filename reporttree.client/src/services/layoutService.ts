@@ -40,7 +40,10 @@ export const layoutService = {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${auth.token}`
                 },
-                body: JSON.stringify(request.layout)
+                body: JSON.stringify({
+                    layout: request.layout,
+                    changeDescription: request.metadata?.description ?? request.metadata?.name ?? 'Layout saved from tools panel'
+                })
             })
 
             if (!res.ok) throw new Error('Failed to save layout')
