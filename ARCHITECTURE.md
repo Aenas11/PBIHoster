@@ -73,6 +73,7 @@ The API follows a hybrid pattern:
 /api/users/          - User management and profiles
 /api/admin/          - Admin operations (requires Admin role)
 /api/settings/       - Application settings
+/api/comments/       - Page comments and threaded replies
 /api/themes/         - Theme management
 /api/powerbi/        - Power BI integration
 /api/refreshes/      - Dataset refresh management
@@ -94,6 +95,7 @@ The API follows a hybrid pattern:
 - **PowerBIService**: Azure AD authentication and Power BI API calls
 - **SettingsService**: Configuration management with encryption
 - **AuditLogService**: Comprehensive logging of user actions
+- **CommentsController + ICommentRepository**: Threaded comments with owner/admin moderation and page-access checks
 - **BrandingService**: Logo and custom theme management
 - **RefreshSchedulerHostedService**: Background job scheduler for dataset refreshes
 
@@ -110,6 +112,7 @@ ISettingRepository   // Settings operations
 IAuditLogRepository  // Audit logging
 IThemeRepository     // Custom themes
 IGroupRepository     // User groups
+ICommentRepository   // Page comments
 ```
 
 ### Data Model
@@ -182,7 +185,12 @@ public class AuditLog
 }
 ```
 
-**Additional Entities**: Group, BrandingAsset, CustomTheme, LoginAttempt, DatasetRefreshSchedule, DatasetRefreshRun
+**Additional Entities**: Group, Comment, BrandingAsset, CustomTheme, LoginAttempt, DatasetRefreshSchedule, DatasetRefreshRun
+
+### Feature Toggles
+
+- `App.DemoModeEnabled`: controls demo content visibility.
+- `App.CommentsEnabled`: controls comments availability globally. When disabled, the frontend hides comments UI and backend comments endpoints return `404 Not Found`.
 
 ## Authentication & Authorization
 

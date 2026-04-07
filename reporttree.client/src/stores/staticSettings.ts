@@ -4,6 +4,7 @@ import { ref } from 'vue'
 export const useStaticSettingsStore = defineStore('staticSettings', () => {
     const homePageId = ref<string>('')
     const demoModeEnabled = ref(false)
+    const commentsEnabled = ref(true)
     const version = ref('0.0.0')
     const appName = ref('ReportTree')
     const footerText = ref('')
@@ -35,6 +36,15 @@ export const useStaticSettingsStore = defineStore('staticSettings', () => {
             } else {
                 demoModeEnabled.value = !!demoRaw
             }
+
+            const commentsRaw = data.CommentsEnabled ?? data.commentsEnabled
+            if (typeof commentsRaw === 'string') {
+                commentsEnabled.value = commentsRaw.toLowerCase() === 'true'
+            } else if (commentsRaw === undefined || commentsRaw === null) {
+                commentsEnabled.value = true
+            } else {
+                commentsEnabled.value = !!commentsRaw
+            }
         } catch (error) {
             console.error('Static settings load failed', error)
         } finally {
@@ -45,6 +55,7 @@ export const useStaticSettingsStore = defineStore('staticSettings', () => {
     return {
         homePageId,
         demoModeEnabled,
+        commentsEnabled,
         version,
         appName,
         footerText,

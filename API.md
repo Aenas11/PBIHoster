@@ -202,6 +202,19 @@ Content-Type: application/json
 }
 ```
 
+### Comments (`/comments`)
+
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| GET | `/comments/page/{pageId}` | ❌ No* | Public/All | List comments for a page (subject to page access and comments feature toggle) |
+| POST | `/comments/page/{pageId}` | ✅ Yes | All | Create a comment or reply on a page |
+| PUT | `/comments/{id}` | ✅ Yes | Owner | Update own comment content/mentions |
+| DELETE | `/comments/{id}` | ✅ Yes | Owner, Admin | Delete own comment or any comment as Admin |
+
+\*Public only for public pages. Private pages still require authorization.
+
+When `App.CommentsEnabled=false`, all comments endpoints return `404 Not Found` to fully disable the feature.
+
 ### Users & Profile (`/admin/users`, `/profile`, `/directory`)
 
 **Admin User Management** (`/admin/users`)
@@ -259,7 +272,7 @@ Content-Type: application/json
 | DELETE | `/settings/{key}` | ✅ Yes | Admin | Delete setting |
 | GET | `/settings/external-auth/providers` | ✅ Yes | Admin | Get effective external auth non-secret mapping configuration |
 | PUT | `/settings/external-auth/providers` | ✅ Yes | Admin | Update external auth non-secret mapping overrides |
-| GET | `/settings/static` | ❌ No | Public | Get public app settings (branding + version) |
+| GET | `/settings/static` | ❌ No | Public | Get public app settings (branding + version + feature flags) |
 
 #### Update Setting (Admin)
 
@@ -359,8 +372,8 @@ Response 200 OK:
 | POST | `/branding/assets/{assetType}` | ✅ Yes | Admin | Upload `logo` or `favicon` |
 | DELETE | `/branding/assets/{assetType}` | ✅ Yes | Admin | Remove `logo` or `favicon` |
 
-**Branding settings** (app name, footer text/links, logo/favicon URLs) are exposed via `GET /settings/static` and updated via `PUT /settings` with keys:
-`Branding.AppName`, `Branding.FooterText`, `Branding.FooterLinkUrl`, `Branding.FooterLinkLabel`, `Branding.LogoAssetId`, `Branding.FaviconAssetId`.
+**Branding and static feature settings** are exposed via `GET /settings/static` and updated via `PUT /settings` with keys:
+`Branding.AppName`, `Branding.FooterText`, `Branding.FooterLinkUrl`, `Branding.FooterLinkLabel`, `Branding.LogoAssetId`, `Branding.FaviconAssetId`, `App.DemoModeEnabled`, `App.CommentsEnabled`.
 
 ### Power BI (`/powerbi`)
 

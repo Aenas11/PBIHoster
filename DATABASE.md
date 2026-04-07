@@ -125,6 +125,7 @@ Stores application configuration and settings that can be managed via the admin 
 
 **Standard Settings**:
 - `App.DemoModeEnabled` → Show demo pages
+- `App.CommentsEnabled` → Enable/disable comments feature globally
 - `App.CompanyName` → Application name
 - `Email.SmtpServer` → Email configuration
 - `Security.ExternalAuth.ProviderOverrides` -> Stored non-secret external auth role/group mapping overrides
@@ -153,6 +154,37 @@ var powerBiSettings = _settingRepository.GetByCategory("PowerBI");
 // Get single setting
 var demoEnabled = _settingRepository.GetByKey("App.DemoModeEnabled");
 ```
+
+---
+
+### Comment
+
+Stores threaded page comments and @mentions.
+
+```csharp
+{
+  "_id": ObjectId,
+  "Id": int,
+  "PageId": int,
+  "ParentId": int (nullable),
+  "Username": string,
+  "Content": string,
+  "Mentions": List<string>,
+  "CreatedAt": DateTime,
+  "UpdatedAt": DateTime (nullable)
+}
+```
+
+**Indexes**:
+- PageId
+- ParentId
+- Username
+- CreatedAt
+
+**Usage**:
+- Per-page threaded collaboration
+- Owner/admin moderation controls
+- Mention extraction for downstream notifications
 
 ---
 

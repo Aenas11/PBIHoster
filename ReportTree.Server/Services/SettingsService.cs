@@ -38,6 +38,12 @@ public class SettingsService : ISettingsService
         return bool.TryParse(value, out var enabled) && enabled;
     }
 
+    public async Task<bool> IsCommentsEnabledAsync()
+    {
+        var value = await GetValueAsync("App.CommentsEnabled");
+        return !bool.TryParse(value, out var enabled) || enabled;
+    }
+
     public async Task<IEnumerable<AppSetting>> GetAllSettingsAsync()
     {
         var settings = await _repo.GetAllAsync();
@@ -144,6 +150,19 @@ public class SettingsService : ISettingsService
                 "false",
                 "Application",
                 "Enables demo content and sample data without tenant connections.",
+                false,
+                "System"
+            );
+        }
+
+        var commentsEnabledSetting = await GetSettingAsync("App.CommentsEnabled");
+        if (commentsEnabledSetting == null)
+        {
+            await UpsertSettingAsync(
+                "App.CommentsEnabled",
+                "true",
+                "Application",
+                "Enable comments and annotations on report pages.",
                 false,
                 "System"
             );

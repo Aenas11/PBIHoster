@@ -14,8 +14,10 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { usePagesStore } from '../stores/pages'
 import { useFavoritesStore } from '../stores/favorites'
+import { useStaticSettingsStore } from '../stores/staticSettings'
 import ErrorComponent from '../components/DashboardComponents/ErrorComponent.vue'
 import MetadataEditor from '../components/DashboardComponents/MetadataEditor.vue'
+import CommentsPanel from '../components/CommentsPanel.vue'
 import type { GridItemWithComponent } from '../composables/useGridLayout'
 import type { Page } from '../types/page'
 
@@ -26,6 +28,7 @@ const { getComponent } = useComponentRegistry()
 const authStore = useAuthStore()
 const pagesStore = usePagesStore()
 const favoritesStore = useFavoritesStore()
+const staticSettingsStore = useStaticSettingsStore()
 
 // Modal state
 const isConfigModalOpen = ref(false)
@@ -39,6 +42,8 @@ const configModalMetadata = ref<GridItemWithComponent['metadata']>({
 })
 
 const activeTab = ref('general')
+const isCommentsOpen = ref(false)
+const commentsEnabled = computed(() => staticSettingsStore.commentsEnabled)
 
 // Force refresh key to bust cache
 const layoutKey = ref(0)
@@ -77,6 +82,10 @@ onMounted(async () => {
   if (authStore.isAuthenticated && currentPageId.value) {
     await favoritesStore.recordRecent(currentPageId.value)
   }
+
+  if (!staticSettingsStore.isLoaded) {
+    await staticSettingsStore.load()
+  }
 })
 
 // Watch for route changes
@@ -88,6 +97,12 @@ watch(() => route.params.id, async (newId) => {
     if (authStore.isAuthenticated) {
       await favoritesStore.recordRecent(Number(newId))
     }
+  }
+})
+
+watch(commentsEnabled, (enabled) => {
+  if (!enabled) {
+    isCommentsOpen.value = false
   }
 })
 
@@ -195,9 +210,12 @@ const getConfigComponent = (item: GridItemWithComponent) => {
 
     <div v-if="!gridLayout.isLoading.value" class="page-header">
       <div class="page-title">{{ currentPage?.title || 'Page' }}</div>
-      <div class="page-actions" v-if="authStore.isAuthenticated">
-        <cds-button kind="ghost" size="sm" @click="toggleFavorite">
-          <component :is="isFavorite ? StarFilled20 : Star20" slot="icon" />          
+      <div class="page-actions">
+        <cds-button v-if="commentsEnabled" kind="ghost" size="sm" @click="isCommentsOpen = !isCommentsOpen">
+          {{ isCommentsOpen ? 'Close Comments' : 'Comments' }}
+        </cds-button>
+        <cds-button v-if="authStore.isAuthenticated" kind="ghost" size="sm" @click="toggleFavorite">
+          <component :is="isFavorite ? StarFilled20 : Star20" slot="icon" />
         </cds-button>
       </div>
     </div>
@@ -235,6 +253,8 @@ const getConfigComponent = (item: GridItemWithComponent) => {
     <div v-if="!gridLayout.isLoading.value && gridLayout.layout.value.length === 0" class="empty-state">
       <p>No panels configured for this page. Use the Tools menu to add panels.</p>
     </div>
+
+    <CommentsPanel v-if="commentsEnabled" :open="isCommentsOpen" :page-id="currentPageId" @close="isCommentsOpen = false" />
 
     <!-- Config Modal -->
     <cds-modal :open="isConfigModalOpen" @cds-modal-closed="cancelConfig" size="lg" class="config-modal">

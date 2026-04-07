@@ -10,9 +10,12 @@ All notable changes to this project will be documented in this file. The format 
 	- Frontend SSO login and callback handling.
 	- Admin non-secret external mapping configuration endpoints and UI.
 - Added backend integration tests for external auth admin mapping settings endpoints.
+- Added admin-configurable comments feature toggle via `App.CommentsEnabled` in static settings.
+- Added backend enforcement to fully disable comments endpoints when comments feature is turned off.
 
 ### Changed
 - Updated project documentation to reflect implemented external auth architecture, security boundaries, and admin mapping behavior.
+- Updated comments UI to respect static feature settings and hide/toggle comments controls when disabled.
 
 ## [0.3.0] - 2025-02-11
 ### Added

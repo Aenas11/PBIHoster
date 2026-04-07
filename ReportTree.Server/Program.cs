@@ -81,6 +81,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<IDatasetRefreshRunRepository, LiteDbDatasetRefreshRunRepository>();
             builder.Services.AddSingleton<IExternalAuthProviderRepository, ConfigurationExternalAuthProviderRepository>();
             builder.Services.AddSingleton<IUsageEventRepository, LiteDbUsageEventRepository>();
+            builder.Services.AddSingleton<ICommentRepository, LiteDbCommentRepository>();
             builder.Services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" })
                 .AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });

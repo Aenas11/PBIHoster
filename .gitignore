@@ -80,3 +80,4 @@ appsettings.Development.json
 *.db
 /website
 ReportTree.Server/wwwroot/
+documentation/

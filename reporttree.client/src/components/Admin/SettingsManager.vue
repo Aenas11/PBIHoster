@@ -70,6 +70,7 @@ const isEditing = ref(false)
 // Static app settings
 const homePageId = ref<string>('')
 const demoModeEnabled = ref(false)
+const commentsEnabled = ref(true)
 const appName = ref('ReportTree')
 const footerText = ref('')
 const footerLinkUrl = ref('')
@@ -124,6 +125,13 @@ async function loadSettings() {
             demoModeEnabled.value = demoModeSetting.value?.toLowerCase() === 'true'
         } else {
             demoModeEnabled.value = false
+        }
+
+        const commentsEnabledSetting = settings.value.find(s => s.key === 'App.CommentsEnabled')
+        if (commentsEnabledSetting) {
+            commentsEnabled.value = commentsEnabledSetting.value?.toLowerCase() === 'true'
+        } else {
+            commentsEnabled.value = true
         }
 
         const appNameSetting = settings.value.find(s => s.key === 'Branding.AppName')
@@ -187,6 +195,12 @@ async function saveStaticSettings() {
                 value: demoModeEnabled.value.toString(),
                 category: 'Application',
                 description: 'Enable safe demo pages and sample dataset links'
+            },
+            {
+                key: 'App.CommentsEnabled',
+                value: commentsEnabled.value.toString(),
+                category: 'Application',
+                description: 'Enable comments and annotations on report pages.'
             },
             {
                 key: 'Branding.AppName',
@@ -392,6 +406,10 @@ function onDemoModeToggle(e: CustomEvent) {
     const value = (e.detail?.checked ?? e.detail?.value) as boolean | undefined
     demoModeEnabled.value = value ?? false
 }
+function onCommentsToggle(e: CustomEvent) {
+    const value = (e.detail?.checked ?? e.detail?.value) as boolean | undefined
+    commentsEnabled.value = value ?? false
+}
 function onAppNameInput(e: Event) { appName.value = (e.target as HTMLInputElement).value }
 function onFooterTextInput(e: Event) { footerText.value = (e.target as HTMLInputElement).value }
 function onFooterLinkUrlInput(e: Event) { footerLinkUrl.value = (e.target as HTMLInputElement).value }
@@ -543,6 +561,15 @@ onMounted(() => {
                             and
                             <a href="/onboarding/sample-report.svg" target="_blank">sample report preview</a>.
                         </div>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="comments-toggle">Comments</label>
+                    <div class="setting-input">
+                        <cds-toggle id="comments-toggle" :checked="commentsEnabled" @cds-toggle-changed="onCommentsToggle">
+                            Enable page comments and threaded annotations for users who can access the page
+                        </cds-toggle>
                     </div>
                 </div>
 
