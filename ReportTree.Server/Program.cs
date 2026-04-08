@@ -92,6 +92,7 @@ namespace ReportTree.Server
             builder.Services.AddSingleton<ISettingsService>(sp => sp.GetRequiredService<SettingsService>());
             builder.Services.AddSingleton<BrandingService>();
             builder.Services.AddSingleton<MetricsService>();
+            builder.Services.AddSingleton<AuditExportService>();
             builder.Services.AddScoped<AuditLogService>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<PageAuthorizationService>();

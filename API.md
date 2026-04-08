@@ -466,19 +466,20 @@ Response 200 OK:
 
 | Method | Endpoint | Auth | Roles | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/audit` | ✅ Yes | Admin | List audit logs (supports `skip`/`take`) |
+| GET | `/audit` | ✅ Yes | Admin | List audit logs (supports `skip`, `take`, `username`, `actionType`, `resource`, `fromUtc`, `toUtc`, `success`) |
 | GET | `/audit/user/{username}` | ✅ Yes | Admin | Filter logs by username |
 | GET | `/audit/resource/{resource}` | ✅ Yes | Admin | Filter logs by resource |
+| GET | `/audit/export` | ✅ Yes | Admin | Export filtered audit logs as `csv` or `pdf` |
 
 #### Query Audit Logs
 
 ```http
-GET /api/audit?skip=0&take=100
+GET /api/audit?skip=0&take=100&actionType=UPDATE&fromUtc=2025-02-01T00:00:00Z&toUtc=2025-02-06T23:59:59Z
 Authorization: Bearer <token>
 
 Response 200 OK:
 {
-  "total": 23,
+  "count": 23,
   "logs": [
     {
       "id": 101,
@@ -495,6 +496,22 @@ Response 200 OK:
   ]
 }
 ```
+
+#### Export Audit Logs
+
+```http
+GET /api/audit/export?format=csv&username=john.doe&actionType=UPDATE&fromUtc=2025-02-01T00:00:00Z&toUtc=2025-02-06T23:59:59Z
+Authorization: Bearer <token>
+
+Response 200 OK:
+Content-Type: text/csv
+Content-Disposition: attachment; filename=audit-export-20250206113000.csv
+```
+
+Supported export formats:
+
+- `csv`: machine-readable compliance export including timestamp, actor, action, resource, network context, and details.
+- `pdf`: human-readable compliance report with filter summary and paginated audit entries.
 
 ### Health & Status
 

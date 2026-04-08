@@ -27,18 +27,25 @@ public class LiteDbAuditLogRepository : IAuditLogRepository
 
     public Task<IEnumerable<AuditLog>> GetAllAsync(int skip = 0, int take = 100, string? actionType = null)
     {
-        var query = _collection.Query();
-        
-        if (!string.IsNullOrEmpty(actionType))
+        return GetAllAsync(new AuditLogQuery
         {
-            query = query.Where(x => x.Action == actionType);
-        }
-        
-        var logs = query
+            Skip = skip,
+            Take = take,
+            ActionType = actionType
+        });
+    }
+
+    public Task<IEnumerable<AuditLog>> GetAllAsync(AuditLogQuery query)
+    {
+        var normalized = Normalize(query);
+        var liteQuery = ApplyFilters(_collection.Query(), normalized);
+
+        var logs = liteQuery
             .OrderByDescending(x => x.Timestamp)
-            .Skip(skip)
-            .Limit(take)
+            .Skip(normalized.Skip)
+            .Limit(normalized.Take)
             .ToEnumerable();
+
         return Task.FromResult(logs);
     }
 
@@ -68,14 +75,68 @@ public class LiteDbAuditLogRepository : IAuditLogRepository
 
     public Task<long> GetCountAsync(string? actionType = null)
     {
-        if (string.IsNullOrEmpty(actionType))
+        return GetCountAsync(new AuditLogQuery
         {
-            return Task.FromResult((long)_collection.Count());
-        }
-        
-        var count = _collection.Query()
-            .Where(x => x.Action == actionType)
+            ActionType = actionType
+        });
+    }
+
+    public Task<long> GetCountAsync(AuditLogQuery query)
+    {
+        var normalized = Normalize(query);
+        var count = ApplyFilters(_collection.Query(), normalized)
             .Count();
+
         return Task.FromResult((long)count);
+    }
+
+    private static ILiteQueryable<AuditLog> ApplyFilters(ILiteQueryable<AuditLog> query, AuditLogQuery filters)
+    {
+        if (!string.IsNullOrWhiteSpace(filters.ActionType))
+        {
+            query = query.Where(x => x.Action == filters.ActionType);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filters.Username))
+        {
+            query = query.Where(x => x.Username == filters.Username);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filters.Resource))
+        {
+            query = query.Where(x => x.Resource == filters.Resource);
+        }
+
+        if (filters.FromUtc.HasValue)
+        {
+            query = query.Where(x => x.Timestamp >= filters.FromUtc.Value);
+        }
+
+        if (filters.ToUtc.HasValue)
+        {
+            query = query.Where(x => x.Timestamp <= filters.ToUtc.Value);
+        }
+
+        if (filters.Success.HasValue)
+        {
+            query = query.Where(x => x.Success == filters.Success.Value);
+        }
+
+        return query;
+    }
+
+    private static AuditLogQuery Normalize(AuditLogQuery query)
+    {
+        return new AuditLogQuery
+        {
+            Skip = Math.Max(query.Skip, 0),
+            Take = query.Take <= 0 ? 100 : query.Take,
+            Username = string.IsNullOrWhiteSpace(query.Username) ? null : query.Username,
+            ActionType = string.IsNullOrWhiteSpace(query.ActionType) ? null : query.ActionType,
+            Resource = string.IsNullOrWhiteSpace(query.Resource) ? null : query.Resource,
+            FromUtc = query.FromUtc,
+            ToUtc = query.ToUtc,
+            Success = query.Success
+        };
     }
 }

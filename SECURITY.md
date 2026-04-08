@@ -110,6 +110,7 @@ JWT_EXPIRY_HOURS=8
 - **Event Types**: Login attempts, password changes, lockouts, failed auth
 - **Context Capture**: Username, IP, user agent, timestamp
 - **Success/Failure**: Tracks both successful and failed operations
+- **Compliance Export**: Administrators can export filtered audit logs by date range, user, action type, resource, and success state as CSV or PDF for review and retention workflows
 
 ## 🚀 Deployment Configuration
 

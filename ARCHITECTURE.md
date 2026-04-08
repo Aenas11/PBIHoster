@@ -77,7 +77,7 @@ The API follows a hybrid pattern:
 /api/themes/         - Theme management
 /api/powerbi/        - Power BI integration
 /api/refreshes/      - Dataset refresh management
-/api/audit/          - Audit log queries
+/api/audit/          - Audit log queries and compliance exports
 ```
 
 ### Service Layer
@@ -95,6 +95,7 @@ The API follows a hybrid pattern:
 - **PowerBIService**: Azure AD authentication and Power BI API calls
 - **SettingsService**: Configuration management with encryption and governance feature toggles
 - **AuditLogService**: Comprehensive logging of user actions
+- **AuditExportService**: Filtered compliance exports for audit records in CSV and PDF formats
 - **CommentsController + ICommentRepository**: Threaded comments with owner/admin moderation and page-access checks
 - **PagesController + IPageVersionRepository**: Layout version history snapshots and rollback workflow
 - **BrandingService**: Logo and custom theme management
@@ -194,6 +195,8 @@ public class AuditLog
 - `App.DemoModeEnabled`: controls demo content visibility.
 - `App.CommentsEnabled`: controls comments availability globally. When disabled, the frontend hides comments UI and backend comments endpoints return `404 Not Found`.
 - `App.EnforceSensitivityLabels`: requires a valid sensitivity label (`Public`, `Internal`, `Confidential`, `Restricted`) during page create/update operations.
+
+Audit queries support date-range, username, action-type, resource, and success filtering. Compliance exports are generated from the same filtered query path and are available as CSV or PDF downloads for administrators.
 
 ## Authentication & Authorization
 

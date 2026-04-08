@@ -42,6 +42,11 @@ public class AuditLogService
         return await _repo.GetAllAsync(skip, take, actionType);
     }
 
+    public async Task<IEnumerable<AuditLog>> GetLogsAsync(AuditLogQuery query)
+    {
+        return await _repo.GetAllAsync(query);
+    }
+
     public async Task<IEnumerable<AuditLog>> GetLogsByUsernameAsync(string username, int skip = 0, int take = 100)
     {
         return await _repo.GetByUsernameAsync(username, skip, take);
@@ -55,5 +60,10 @@ public class AuditLogService
     public async Task<long> GetCountAsync(string? actionType = null)
     {
         return await _repo.GetCountAsync(actionType);
+    }
+
+    public async Task<long> GetCountAsync(AuditLogQuery query)
+    {
+        return await _repo.GetCountAsync(query);
     }
 }
