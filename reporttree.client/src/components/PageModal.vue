@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import { usePagesStore } from '../stores/pages'
 import { useAuthStore } from '../stores/auth'
+import { useStaticSettingsStore } from '../stores/staticSettings'
 import type { Page } from '../types/page'
 import { Close20 } from '@carbon/icons-vue'
 import ClonePageModal from './ClonePageModal.vue'
@@ -23,7 +24,9 @@ const emit = defineEmits(['close', 'create-child'])
 
 const store = usePagesStore()
 const auth = useAuthStore()
+const staticSettingsStore = useStaticSettingsStore()
 const sensitivityLabels = ['Public', 'Internal', 'Confidential', 'Restricted'] as const
+const showSensitivityLabels = computed(() => staticSettingsStore.enforceSensitivityLabels)
 
 const isCloneModalOpen = ref(false)
 
@@ -207,7 +210,7 @@ function closeCloneModal() {
                         <cds-select-item v-for="icon in icons" :key="icon" :value="icon">{{ icon }}</cds-select-item>
                     </cds-select>
                     <br />
-                    <cds-select label-text="Sensitivity Label" :value="formData.sensitivityLabel"
+                    <cds-select v-if="showSensitivityLabels" label-text="Sensitivity Label" :value="formData.sensitivityLabel"
                         @cds-select-selected="onSensitivityLabelChange">
                         <cds-select-item v-for="label in sensitivityLabels" :key="label" :value="label">{{ label }}</cds-select-item>
                     </cds-select>

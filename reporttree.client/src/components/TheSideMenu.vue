@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { useEditModeStore } from '../stores/editMode'
 import { usePagesStore } from '../stores/pages'
 import { useFavoritesStore } from '../stores/favorites'
+import { useStaticSettingsStore } from '../stores/staticSettings'
 import { useLayout } from '../composables/useLayout'
 import { useGridLayout } from '../composables/useGridLayout'
 import {
@@ -26,6 +27,7 @@ const auth = useAuthStore()
 const editModeStore = useEditModeStore()
 const pagesStore = usePagesStore()
 const favoritesStore = useFavoritesStore()
+const staticSettingsStore = useStaticSettingsStore()
 const layout = useLayout()
 const gridLayout = useGridLayout()
 const router = useRouter()
@@ -36,6 +38,7 @@ const attrs = useAttrs()
 const isConfirmModalOpen = ref(false)
 
 const isAdmin = computed(() => auth.roles.includes('Admin'))
+const showSensitivityLabels = computed(() => staticSettingsStore.enforceSensitivityLabels)
 
 const isModalOpen = ref(false)
 const selectedPage = ref<Page | null>(null)
@@ -181,7 +184,7 @@ function sensitivityClass(label?: string) {
           @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
           <component :is="getIcon(page.icon)" slot="title-icon" />
           {{ page.title }}
-          <span class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
+          <span v-if="showSensitivityLabels" class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
           <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
         </cds-side-nav-link>
       </cds-side-nav-menu>
@@ -192,7 +195,7 @@ function sensitivityClass(label?: string) {
           @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
           <component :is="getIcon(page.icon)" slot="title-icon" />
           {{ page.title }}
-          <span class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
+          <span v-if="showSensitivityLabels" class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
           <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
         </cds-side-nav-link>
       </cds-side-nav-menu>
@@ -213,7 +216,7 @@ function sensitivityClass(label?: string) {
           @click="handleItemClick(page, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
           <component :is="getIcon(page.icon)" slot="title-icon" />
           {{ page.title }}
-          <span class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
+          <span v-if="showSensitivityLabels" class="sensitivity-badge" :class="sensitivityClass(page.sensitivityLabel)">{{ page.sensitivityLabel || 'Internal' }}</span>
           <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
         </cds-side-nav-link>
 
@@ -232,7 +235,7 @@ function sensitivityClass(label?: string) {
             @click="handleItemClick(child, $event)" :class="{ 'edit-mode-item': editModeStore.isEditMode }">
             <component :is="getIcon(child.icon)" slot="title-icon" />
             {{ child.title }}
-            <span class="sensitivity-badge" :class="sensitivityClass(child.sensitivityLabel)">{{ child.sensitivityLabel || 'Internal' }}</span>
+            <span v-if="showSensitivityLabels" class="sensitivity-badge" :class="sensitivityClass(child.sensitivityLabel)">{{ child.sensitivityLabel || 'Internal' }}</span>
             <span v-if="editModeStore.isEditMode" class="edit-badge">✎</span>
           </cds-side-nav-link>
 

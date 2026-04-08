@@ -125,8 +125,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 
 ### 📋 Audit & Compliance
 - ✅ Comprehensive audit logging
-- ✅ Filtering by user or resource (API)
-- ⏳ Export audit logs (planned)
+- ✅ Filtering by user, resource, action, date range, and success state
+- ✅ Export audit logs as CSV and PDF
 - ✅ Security event tracking (failed logins, lockouts, etc.)
 
 ---

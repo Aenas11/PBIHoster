@@ -214,7 +214,7 @@ async function saveStaticSettings() {
                 key: 'App.EnforceSensitivityLabels',
                 value: enforceSensitivityLabels.value.toString(),
                 category: 'Application',
-                description: 'Require page sensitivity labels during page create and update.'
+                description: 'Show page sensitivity labels in navigation and page headers.'
             },
             {
                 key: 'Branding.AppName',
@@ -595,7 +595,7 @@ onMounted(() => {
                     <label for="sensitivity-enforce-toggle">Sensitivity Labels</label>
                     <div class="setting-input">
                         <cds-toggle id="sensitivity-enforce-toggle" :checked="enforceSensitivityLabels" @cds-toggle-changed="onEnforceSensitivityToggle">
-                            Require sensitivity labels for page create and update operations
+                            Show sensitivity labels in page navigation and page headers
                         </cds-toggle>
                     </div>
                 </div>

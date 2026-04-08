@@ -47,6 +47,7 @@ const configModalMetadata = ref<GridItemWithComponent['metadata']>({
 const activeTab = ref('general')
 const isCommentsOpen = ref(false)
 const commentsEnabled = computed(() => staticSettingsStore.commentsEnabled)
+const showSensitivityLabels = computed(() => staticSettingsStore.enforceSensitivityLabels)
 const isVersionsOpen = ref(false)
 const versionsLoading = ref(false)
 const versions = ref<PageVersionItem[]>([])
@@ -305,7 +306,7 @@ const getConfigComponent = (item: GridItemWithComponent) => {
     <div v-if="!gridLayout.isLoading.value" class="page-header">
       <div class="page-title-wrap">
         <div class="page-title">{{ currentPage?.title || 'Page' }}</div>
-        <span v-if="currentPage?.sensitivityLabel" class="sensitivity-badge" :class="`sensitivity-${(currentPage.sensitivityLabel || '').toLowerCase()}`">
+        <span v-if="showSensitivityLabels && currentPage?.sensitivityLabel" class="sensitivity-badge" :class="`sensitivity-${(currentPage.sensitivityLabel || '').toLowerCase()}`">
           {{ currentPage.sensitivityLabel }}
         </span>
       </div>
