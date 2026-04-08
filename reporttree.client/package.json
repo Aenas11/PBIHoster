@@ -15,32 +15,31 @@
   },
   "dependencies": {
     "@carbon/icons-vue": "^10.99.1",
-    "@carbon/styles": "^1.96.0",
-    "@carbon/themes": "^11.64.0",
-    "@carbon/web-components": "^2.44.0",
+    "@carbon/styles": "^1.103.0",
+    "@carbon/themes": "^11.70.0",
+    "@carbon/web-components": "^2.51.1",
     "grid-layout-plus": "^1.1.1",
     "jwt-decode": "^4.0.0",
     "pinia": "^3.0.4",
-    "powerbi-client": "^2.23.9",
+    "powerbi-client": "^2.23.10",
     "powerbi-models": "^2.0.1",
-    "vue": "^3.5.25",
-    "vue-router": "^4.6.4"
+    "vue": "^3.5.32",
+    "vue-router": "^5.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@tsconfig/node20": "^20.1.8",
-    "@types/node": "^25.0.2",
-    "@vitejs/plugin-vue": "^6.0.2",
+    "@tsconfig/node20": "^20.1.9",
+    "@types/node": "^25.5.2",
+    "@vitejs/plugin-vue": "^6.0.5",
     "@vue/eslint-config-typescript": "^14.7.0",
-    "@vue/tsconfig": "^0.8.1",
-    "eslint": "^10.0.1",
+    "@vue/tsconfig": "^0.9.1",
+    "eslint": "^10.2.0",
     "eslint-plugin-vue": "^10.8.0",
-    "globals": "^16.5.0",
-    "sass": "^1.97.0",
-    "typescript": "^5.9.3",
-    "vite": "^7.2.4",
-    "vite-plugin-vue-devtools": "^8.0.5",
-    "vue-tsc": "^3.1.8"
+    "globals": "^17.4.0",
+    "sass": "^1.99.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.7",
+    "vue-tsc": "^3.2.6"
   },
   "overrides": {
     "minimatch": ">=10.2.1"
