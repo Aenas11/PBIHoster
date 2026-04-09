@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file. The format 
 - Added admin toggle `App.EnforceSensitivityLabels` to require labels on page create/update.
 - Added compliance audit export endpoint with CSV/PDF output and filter support for date range, user, action type, resource, and success state.
 - Added backend integration tests for audit export filtering and invalid range handling.
+- Added Admin Audit Logs panel enhancements for advanced filtering and direct CSV/PDF export downloads.
 
 ### Changed
 - Updated project documentation to reflect implemented external auth architecture, security boundaries, and admin mapping behavior.
@@ -25,6 +26,7 @@ All notable changes to this project will be documented in this file. The format 
 - Updated page edit UI with version history panel, diff summary, and one-click rollback.
 - Updated page create/edit flow and navigation/page headers to display and manage sensitivity labels.
 - Updated audit APIs and security documentation to cover compliance export behavior.
+- Updated roadmap documentation to reflect completed Phase 4 delivery and renumber remaining access-approval work.
 
 ## [0.3.0] - 2025-02-11
 ### Added

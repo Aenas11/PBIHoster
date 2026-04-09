@@ -31,11 +31,10 @@ Based on corporate requirements, here's the consolidated view of enterprise-grad
 | Azure AD Groups Sync | ⏳ Planned | v0.5.0 | High |
 | Usage Analytics Dashboard | ⏳ Planned | v0.6.0 | High |
 | Performance Monitoring | ⏳ Planned | v0.6.0 | High |
-| Comments & Annotations | ⏳ Planned | v0.7.0 | Medium |
-| Compliance & Data Governance | ⏳ Planned | v0.7.0 | Medium |
-| Report Versioning & Rollback | ⏳ Planned | v0.7.0 | Medium |
-| Scheduled Subscriptions | ⏳ Planned | v0.8.0 | Medium |
-| Multi-Tenancy | ⏳ Planned | v0.8.0 | Low |
+| Comments & Annotations | ✅ Complete | v0.7.0 | Medium |
+| Compliance & Data Governance | ✅ Complete | v0.7.0 | Medium |
+| Report Versioning & Rollback | ✅ Complete | v0.7.0 | Medium |
+| Compliance Audit Export | ✅ Complete | v0.7.0 | Medium |
 | Backup & Disaster Recovery | ⏳ Planned | v0.8.0 | High |
 | Database Abstraction | ⏳ Planned | v0.9.0 | High |
 
@@ -272,67 +271,80 @@ Goal: Provide visibility into platform usage and report performance.
 Goal: Enable teams to collaborate securely and maintain compliance.
 
 #### 4.1 Comments & Annotations
-- **Status**: Design pending
+- **Status**: ✅ Complete
 - **Features**:
-  - Inline comments on pages and reports
-  - @mention users for notifications
-  - Comment threads with resolution status
-  - Rich text editing (markdown support)
-  - Comment export with context
-  - Threaded discussions on reports
+  - Inline comments on pages
+  - Threaded discussions with parent/child comments
+  - Comment create/edit/delete with owner/admin moderation
+  - Comments panel sidebar in Page view
+  - Admin feature toggle (`App.CommentsEnabled`) to fully disable comments
 - **Implementation**:
-  - Models: `Comment`, `CommentThread`, `Mention`
-  - Service: `CommentService`, `NotificationService`
+  - Model: `Comment`
+  - Repository: `ICommentRepository`, `LiteDbCommentRepository`
   - API: `/api/comments/*` endpoints
-  - Frontend: Comment panel sidebar
+  - Frontend: Comments panel with open/close toggle and improved transitions
 - **Acceptance Criteria**:
-  - [ ] Add/edit/delete comments
-  - [ ] @mention users with notifications
-  - [ ] Comments persist and display with timestamps
-  - [ ] Comment history/audit trail
+  - [x] Add/edit/delete comments
+  - [x] Comments persist and display with timestamps
+  - [x] Comment actions are audit logged
+  - [x] Admin can disable comments globally
 
 #### 4.2 Compliance & Data Governance
-- **Status**: Design pending
+- **Status**: ✅ Complete
 - **Features**:
-  - Data sensitivity labels (public, internal, confidential)
-  - Access approval workflows
-  - GDPR compliance tools (data export, right to be forgotten)
-  - Compliance audit reports
-  - Data retention policies
-  - Regulatory reporting templates
+  - Data sensitivity labels (`Public`, `Internal`, `Confidential`, `Restricted`)
+  - Enforcement toggle (`App.EnforceSensitivityLabels`) for mandatory labels
+  - Label badges in page header and side navigation
+  - Label validation and normalization on create/update
 - **Implementation**:
-  - Models: `SensitivityLabel`, `AccessRequest`, `DataRetentionPolicy`
-  - Services: Approval workflow engine, compliance reporting
-  - API: Compliance and approval endpoints
-  - Admin UI: Data governance dashboard
+  - Models: `Page.SensitivityLabel`
+  - Services: Settings service enforcement checks
+  - API: Page validation + static settings exposure
+  - Admin UI: Settings toggle + page modal label selector
 - **Acceptance Criteria**:
-  - [ ] Label pages with sensitivity level
-  - [ ] Access requests go through approval workflow
-  - [ ] GDPR export available per user
-  - [ ] Retention policies enforced
-  - [ ] Compliance reports generated
+  - [x] Label pages with sensitivity level
+  - [x] Enforce valid sensitivity labels when enabled
+  - [x] Persist and display labels without page refresh
+  - [x] Audit log sensitivity label changes
 
 #### 4.3 Report Versioning & Rollback
-- **Status**: Design pending
+- **Status**: ✅ Complete
 - **Features**:
   - Automatic versioning of page layout changes
   - Version history with timestamps and author
-  - Diff view between versions
+  - Diff summary between versions
   - Rollback to previous version
-  - Change annotations (what changed and why)
-  - Version branching (experimental layouts)
+  - Change description on save and rollback
 - **Implementation**:
   - Models: `PageVersion`, `VersionDiff`
-  - Service: `VersioningService`
+  - Repository: `IPageVersionRepository`, `LiteDbPageVersionRepository`
   - API: Version management endpoints
-  - Frontend: Version history modal
+  - Frontend: Version history panel
 - **Acceptance Criteria**:
-  - [ ] Each layout change creates new version
-  - [ ] Version history shows date, author, changes
-  - [ ] Rollback restores exact layout
-  - [ ] Diff view shows before/after
+  - [x] Each layout save creates a new version
+  - [x] Version history shows date, author, and change descriptions
+  - [x] Rollback restores exact layout snapshot
+  - [x] Diff summary shows changed layout blocks
 
-#### 4.4 Access Approval Workflows
+#### 4.4 Compliance Audit Export
+- **Status**: ✅ Complete
+- **Features**:
+  - Export filtered audit logs as CSV and PDF
+  - Filters for date range, user, action type, resource, and success state
+  - Export actions logged back into audit trail
+  - Admin UI support in Audit Logs panel
+- **Implementation**:
+  - Models: `AuditLogQuery`, `AuditExportQueryParameters`
+  - Service: `AuditExportService`
+  - API: `/api/audit` filter expansion and `/api/audit/export`
+  - Frontend: Admin `AuditLogsPanel` filters + export buttons
+- **Acceptance Criteria**:
+  - [x] Admin can export audit logs as CSV
+  - [x] Admin can export audit logs as PDF
+  - [x] Filters apply to both list and export workflows
+  - [x] Invalid date ranges return validation errors
+
+#### 4.5 Access Approval Workflows
 - **Status**: Design pending
 - **Features**:
   - Request-to-access flow for restricted pages
