@@ -24,6 +24,10 @@ All notable changes to this project will be documented in this file. The format 
 - Added relational database readiness health check and startup schema initialization for relational providers.
 - Added provider-agnostic branding asset file repository for relational mode (`Database:BrandingAssetsPath`).
 - Added relational integration tests covering auth/page CRUD flow and audit export behavior under Sqlite.
+- Added repo-local EF tooling manifest for reproducible migration commands (`dotnet-tools.json`).
+- Added initial committed relational migration set for `AppDbContext`.
+- Added optional containerized relational provider smoke tests for SQL Server and PostgreSQL (enabled with `RUN_RELATIONAL_CONTAINER_TESTS=true`).
+- Added dedicated provider-specific EF migration projects for SQL Server and PostgreSQL with initial migration chains.
 
 ### Changed
 - Updated project documentation to reflect implemented external auth architecture, security boundaries, and admin mapping behavior.
@@ -33,6 +37,9 @@ All notable changes to this project will be documented in this file. The format 
 - Updated audit APIs and security documentation to cover compliance export behavior.
 - Updated roadmap documentation to reflect completed Phase 4 delivery and renumber remaining access-approval work.
 - Updated backend startup wiring to switch persistence registrations by configuration while retaining LiteDB as the default.
+- Updated relational startup initialization to apply committed EF migrations for `Sqlite` and keep safe schema bootstrapping for the other relational providers until dedicated migration sets are added.
+- Updated relational startup initialization to select provider-specific migration assemblies (`Sqlite`, `SqlServer`, `PostgreSql`) and apply migrations when assemblies are available, with `EnsureCreated()` fallback if unavailable.
+- Updated server build/publish pipeline to include provider migration assemblies automatically for runtime migration discovery.
 - Updated server dependency graph with EF Core provider packages and aligned Azure.Identity package version.
 - Updated audit export string handling to safely process null values in CSV/PDF paths.
 

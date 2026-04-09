@@ -32,6 +32,10 @@
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.3.0" />
     <PackageReference Include="Azure.Identity" Version="1.14.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.1" />
     <PackageReference Include="Microsoft.Identity.Client" Version="4.79.2" />
@@ -63,6 +67,40 @@
       <FrontendAssets Include="..\reporttree.client\dist\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(FrontendAssets)" DestinationFolder="wwwroot\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Build provider migration assemblies so runtime can apply provider-specific migrations. -->
+  <Target Name="BuildProviderMigrationAssemblies" AfterTargets="Build" Condition="'$(SkipProviderMigrationAssemblyBuild)' != 'true'">
+    <MSBuild Projects="..\ReportTree.Server.Migrations.SqlServer\ReportTree.Server.Migrations.SqlServer.csproj;..\ReportTree.Server.Migrations.PostgreSql\ReportTree.Server.Migrations.PostgreSql.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);SkipProviderMigrationAssemblyBuild=true" />
+
+    <ItemGroup>
+      <ProviderMigrationAssemblies Include="..\ReportTree.Server.Migrations.SqlServer\bin\$(Configuration)\net10.0\ReportTree.Server.Migrations.SqlServer.dll" />
+      <ProviderMigrationAssemblies Include="..\ReportTree.Server.Migrations.PostgreSql\bin\$(Configuration)\net10.0\ReportTree.Server.Migrations.PostgreSql.dll" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ProviderMigrationAssemblies)"
+          DestinationFolder="$(OutDir)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('%(ProviderMigrationAssemblies.Identity)')" />
+  </Target>
+
+  <!-- Include provider migration assemblies in publish output for runtime migration discovery. -->
+  <Target Name="PublishProviderMigrationAssemblies" AfterTargets="Publish" Condition="'$(SkipProviderMigrationAssemblyBuild)' != 'true'">
+    <MSBuild Projects="..\ReportTree.Server.Migrations.SqlServer\ReportTree.Server.Migrations.SqlServer.csproj;..\ReportTree.Server.Migrations.PostgreSql\ReportTree.Server.Migrations.PostgreSql.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);SkipProviderMigrationAssemblyBuild=true" />
+
+    <ItemGroup>
+      <PublishedProviderMigrationAssemblies Include="..\ReportTree.Server.Migrations.SqlServer\bin\$(Configuration)\net10.0\ReportTree.Server.Migrations.SqlServer.dll" />
+      <PublishedProviderMigrationAssemblies Include="..\ReportTree.Server.Migrations.PostgreSql\bin\$(Configuration)\net10.0\ReportTree.Server.Migrations.PostgreSql.dll" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(PublishedProviderMigrationAssemblies)"
+          DestinationFolder="$(PublishDir)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('%(PublishedProviderMigrationAssemblies.Identity)')" />
   </Target>
 
 </Project>

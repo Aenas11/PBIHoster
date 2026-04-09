@@ -3,6 +3,7 @@ using Azure.Identity;
 using System.Diagnostics;
 using ReportTree.Server.Models;
 using ReportTree.Server.Persistance;
+using ReportTree.Server.Persistance.Relational;
 using ReportTree.Server.Security;
 using ReportTree.Server.DTOs;
 using ReportTree.Server.Services;
@@ -67,8 +68,8 @@ namespace ReportTree.Server
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
-            var databaseProvider = (builder.Configuration["Database:Provider"] ?? "LiteDb").Trim();
-            var isLiteDbProvider = string.Equals(databaseProvider, "LiteDb", StringComparison.OrdinalIgnoreCase);
+            var databaseProvider = (builder.Configuration["Database:Provider"] ?? RelationalDatabaseProvider.LiteDbProvider).Trim();
+            var isLiteDbProvider = RelationalDatabaseProvider.IsLiteDb(databaseProvider);
 
             var healthChecks = builder.Services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" });
@@ -102,23 +103,7 @@ namespace ReportTree.Server
 
                 builder.Services.AddPooledDbContextFactory<Persistance.Relational.AppDbContext>(options =>
                 {
-                    if (string.Equals(databaseProvider, "SqlServer", StringComparison.OrdinalIgnoreCase))
-                    {
-                        options.UseSqlServer(relationalConnectionString);
-                    }
-                    else if (string.Equals(databaseProvider, "PostgreSql", StringComparison.OrdinalIgnoreCase) ||
-                             string.Equals(databaseProvider, "Postgres", StringComparison.OrdinalIgnoreCase))
-                    {
-                        options.UseNpgsql(relationalConnectionString);
-                    }
-                    else if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
-                    {
-                        options.UseSqlite(relationalConnectionString);
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'. Supported providers are LiteDb, Sqlite, SqlServer, PostgreSql.");
-                    }
+                    RelationalDatabaseProvider.Configure(options, databaseProvider, relationalConnectionString);
                 });
 
                 var assetsPath = builder.Configuration["Database:BrandingAssetsPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "data", "branding-assets");
@@ -574,9 +559,22 @@ namespace ReportTree.Server
             {
                 if (!isLiteDbProvider)
                 {
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
                     var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<Persistance.Relational.AppDbContext>>();
                     using var dbContext = contextFactory.CreateDbContext();
-                    dbContext.Database.EnsureCreated();
+                    if (RelationalDatabaseProvider.SupportsCommittedMigrations(databaseProvider) &&
+                        RelationalDatabaseProvider.IsMigrationsAssemblyAvailable(databaseProvider))
+                    {
+                        logger.LogInformation("Applying EF migrations for provider {Provider}.", databaseProvider);
+                        dbContext.Database.Migrate();
+                    }
+                    else
+                    {
+                        logger.LogWarning(
+                            "Migration assembly for provider {Provider} is not available. Falling back to EnsureCreated().",
+                            databaseProvider);
+                        dbContext.Database.EnsureCreated();
+                    }
                 }
 
                 var settingsService = scope.ServiceProvider.GetRequiredService<SettingsService>();

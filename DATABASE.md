@@ -31,7 +31,84 @@ Provider notes:
 - `SqlServer`: Uses `Database:ConnectionString` (ADO.NET SQL Server format).
 - `PostgreSql`: Uses `Database:ConnectionString` (Npgsql format).
 
-At startup, relational mode initializes the schema with `EnsureCreated()`.
+At startup, relational mode currently behaves as follows:
+- `Sqlite`: applies committed EF migrations with `Database.Migrate()`.
+- `SqlServer`: applies committed EF migrations when `ReportTree.Server.Migrations.SqlServer` assembly is available; otherwise falls back to `EnsureCreated()`.
+- `PostgreSql`: applies committed EF migrations when `ReportTree.Server.Migrations.PostgreSql` assembly is available; otherwise falls back to `EnsureCreated()`.
+
+### EF Migration Workflow
+
+The repository tracks EF tooling through the root tool manifest:
+- `dotnet tool restore`
+- `dotnet dotnet-ef --version`
+
+Current committed migration set:
+- `ReportTree.Server/Persistance/Relational/Migrations/*`
+- Scoped to the `Sqlite` relational provider for now.
+
+Provider-specific migration projects are also available:
+- `ReportTree.Server.Migrations.SqlServer`
+- `ReportTree.Server.Migrations.PostgreSql`
+
+Runtime migration assembly mapping:
+- `Sqlite` -> `ReportTree.Server`
+- `SqlServer` -> `ReportTree.Server.Migrations.SqlServer`
+- `PostgreSql` -> `ReportTree.Server.Migrations.PostgreSql`
+
+Build/publish behavior:
+- Server build now compiles provider migration projects and copies their migration assemblies to server output.
+- Server publish includes provider migration assemblies in publish output so runtime migration discovery works without manual copy steps.
+
+Common commands:
+
+```bash
+dotnet tool restore
+dotnet dotnet-ef migrations list --project ReportTree.Server/ReportTree.Server.csproj --startup-project ReportTree.Server/ReportTree.Server.csproj --context ReportTree.Server.Persistance.Relational.AppDbContext
+dotnet dotnet-ef database update --project ReportTree.Server/ReportTree.Server.csproj --startup-project ReportTree.Server/ReportTree.Server.csproj --context ReportTree.Server.Persistance.Relational.AppDbContext
+```
+
+To scaffold the next relational migration:
+
+```bash
+dotnet tool restore
+dotnet dotnet-ef migrations add <MigrationName> --project ReportTree.Server/ReportTree.Server.csproj --startup-project ReportTree.Server/ReportTree.Server.csproj --context ReportTree.Server.Persistance.Relational.AppDbContext --output-dir Persistance/Relational/Migrations
+```
+
+To apply provider-specific migration chains:
+
+```bash
+dotnet tool restore
+
+# SQL Server
+dotnet dotnet-ef database update --project ReportTree.Server.Migrations.SqlServer/ReportTree.Server.Migrations.SqlServer.csproj --startup-project ReportTree.Server.Migrations.SqlServer/ReportTree.Server.Migrations.SqlServer.csproj --context ReportTree.Server.Migrations.SqlServer.SqlServerMigrationsDbContext
+
+# PostgreSQL
+dotnet dotnet-ef database update --project ReportTree.Server.Migrations.PostgreSql/ReportTree.Server.Migrations.PostgreSql.csproj --startup-project ReportTree.Server.Migrations.PostgreSql/ReportTree.Server.Migrations.PostgreSql.csproj --context ReportTree.Server.Migrations.PostgreSql.PostgreSqlMigrationsDbContext
+```
+
+To create the next provider-specific migration:
+
+```bash
+# SQL Server
+dotnet dotnet-ef migrations add <MigrationName> --project ReportTree.Server.Migrations.SqlServer/ReportTree.Server.Migrations.SqlServer.csproj --startup-project ReportTree.Server.Migrations.SqlServer/ReportTree.Server.Migrations.SqlServer.csproj --context ReportTree.Server.Migrations.SqlServer.SqlServerMigrationsDbContext --output-dir Migrations
+
+# PostgreSQL
+dotnet dotnet-ef migrations add <MigrationName> --project ReportTree.Server.Migrations.PostgreSql/ReportTree.Server.Migrations.PostgreSql.csproj --startup-project ReportTree.Server.Migrations.PostgreSql/ReportTree.Server.Migrations.PostgreSql.csproj --context ReportTree.Server.Migrations.PostgreSql.PostgreSqlMigrationsDbContext --output-dir Migrations
+```
+
+### Containerized Provider Smoke Tests
+
+Optional integration smoke tests exist for `SqlServer` and `PostgreSql` providers using Testcontainers.
+
+By default these tests are skipped unless explicitly enabled:
+
+```bash
+RUN_RELATIONAL_CONTAINER_TESTS=true dotnet test ReportTree.Server.Tests/ReportTree.Server.Tests.csproj
+```
+
+Notes:
+- Docker must be available to the test process.
+- Tests validate startup + register/login flow for SQL Server and PostgreSQL provider configuration paths.
 
 ### Storage Behavior by Provider
 
