@@ -11,6 +11,7 @@ using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -66,26 +67,80 @@ namespace ReportTree.Server
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
-            // LiteDB
-            var dbConnectionString = builder.Configuration["LiteDb:ConnectionString"] ?? "Filename=reporttree.db;Connection=shared";
-            builder.Services.AddSingleton<LiteDB.LiteDatabase>(_ => new LiteDB.LiteDatabase(dbConnectionString));
-            builder.Services.AddSingleton<IUserRepository, LiteDbUserRepository>();
-            builder.Services.AddSingleton<IGroupRepository, LiteDbGroupRepository>();
-            builder.Services.AddSingleton<IThemeRepository, LiteDbThemeRepository>();
-            builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
-            builder.Services.AddSingleton<ISettingsRepository, LiteDbSettingsRepository>();
-            builder.Services.AddSingleton<IBrandingAssetRepository, LiteDbBrandingAssetRepository>();
-            builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
-            builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
-            builder.Services.AddSingleton<IDatasetRefreshScheduleRepository, LiteDbDatasetRefreshScheduleRepository>();
-            builder.Services.AddSingleton<IDatasetRefreshRunRepository, LiteDbDatasetRefreshRunRepository>();
+            var databaseProvider = (builder.Configuration["Database:Provider"] ?? "LiteDb").Trim();
+            var isLiteDbProvider = string.Equals(databaseProvider, "LiteDb", StringComparison.OrdinalIgnoreCase);
+
+            var healthChecks = builder.Services.AddHealthChecks()
+                .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" });
+
+            if (isLiteDbProvider)
+            {
+                var dbConnectionString = builder.Configuration["LiteDb:ConnectionString"] ?? "Filename=reporttree.db;Connection=shared";
+                builder.Services.AddSingleton<LiteDB.LiteDatabase>(_ => new LiteDB.LiteDatabase(dbConnectionString));
+                builder.Services.AddSingleton<IUserRepository, LiteDbUserRepository>();
+                builder.Services.AddSingleton<IGroupRepository, LiteDbGroupRepository>();
+                builder.Services.AddSingleton<IThemeRepository, LiteDbThemeRepository>();
+                builder.Services.AddSingleton<IPageRepository, LiteDbPageRepository>();
+                builder.Services.AddSingleton<ISettingsRepository, LiteDbSettingsRepository>();
+                builder.Services.AddSingleton<IBrandingAssetRepository, LiteDbBrandingAssetRepository>();
+                builder.Services.AddSingleton<IAuditLogRepository, LiteDbAuditLogRepository>();
+                builder.Services.AddSingleton<ILoginAttemptRepository, LiteDbLoginAttemptRepository>();
+                builder.Services.AddSingleton<IDatasetRefreshScheduleRepository, LiteDbDatasetRefreshScheduleRepository>();
+                builder.Services.AddSingleton<IDatasetRefreshRunRepository, LiteDbDatasetRefreshRunRepository>();
+                builder.Services.AddSingleton<IUsageEventRepository, LiteDbUsageEventRepository>();
+                builder.Services.AddSingleton<ICommentRepository, LiteDbCommentRepository>();
+                builder.Services.AddSingleton<IPageVersionRepository, LiteDbPageVersionRepository>();
+                healthChecks.AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });
+            }
+            else
+            {
+                var relationalConnectionString = builder.Configuration["Database:ConnectionString"];
+                if (string.IsNullOrWhiteSpace(relationalConnectionString))
+                {
+                    throw new InvalidOperationException("Database:ConnectionString is required when Database:Provider is not LiteDb.");
+                }
+
+                builder.Services.AddPooledDbContextFactory<Persistance.Relational.AppDbContext>(options =>
+                {
+                    if (string.Equals(databaseProvider, "SqlServer", StringComparison.OrdinalIgnoreCase))
+                    {
+                        options.UseSqlServer(relationalConnectionString);
+                    }
+                    else if (string.Equals(databaseProvider, "PostgreSql", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(databaseProvider, "Postgres", StringComparison.OrdinalIgnoreCase))
+                    {
+                        options.UseNpgsql(relationalConnectionString);
+                    }
+                    else if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
+                    {
+                        options.UseSqlite(relationalConnectionString);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'. Supported providers are LiteDb, Sqlite, SqlServer, PostgreSql.");
+                    }
+                });
+
+                var assetsPath = builder.Configuration["Database:BrandingAssetsPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "data", "branding-assets");
+
+                builder.Services.AddSingleton<IUserRepository, Persistance.Relational.EfUserRepository>();
+                builder.Services.AddSingleton<IGroupRepository, Persistance.Relational.EfGroupRepository>();
+                builder.Services.AddSingleton<IThemeRepository, Persistance.Relational.EfThemeRepository>();
+                builder.Services.AddSingleton<IPageRepository, Persistance.Relational.EfPageRepository>();
+                builder.Services.AddSingleton<ISettingsRepository, Persistance.Relational.EfSettingsRepository>();
+                builder.Services.AddSingleton<IBrandingAssetRepository>(_ => new LocalFileBrandingAssetRepository(assetsPath));
+                builder.Services.AddSingleton<IAuditLogRepository, Persistance.Relational.EfAuditLogRepository>();
+                builder.Services.AddSingleton<ILoginAttemptRepository, Persistance.Relational.EfLoginAttemptRepository>();
+                builder.Services.AddSingleton<IDatasetRefreshScheduleRepository, Persistance.Relational.EfDatasetRefreshScheduleRepository>();
+                builder.Services.AddSingleton<IDatasetRefreshRunRepository, Persistance.Relational.EfDatasetRefreshRunRepository>();
+                builder.Services.AddSingleton<IUsageEventRepository, Persistance.Relational.EfUsageEventRepository>();
+                builder.Services.AddSingleton<ICommentRepository, Persistance.Relational.EfCommentRepository>();
+                builder.Services.AddSingleton<IPageVersionRepository, Persistance.Relational.EfPageVersionRepository>();
+
+                healthChecks.AddCheck<RelationalDbHealthCheck>("database", tags: new[] { "ready" });
+            }
+
             builder.Services.AddSingleton<IExternalAuthProviderRepository, ConfigurationExternalAuthProviderRepository>();
-            builder.Services.AddSingleton<IUsageEventRepository, LiteDbUsageEventRepository>();
-            builder.Services.AddSingleton<ICommentRepository, LiteDbCommentRepository>();
-            builder.Services.AddSingleton<IPageVersionRepository, LiteDbPageVersionRepository>();
-            builder.Services.AddHealthChecks()
-                .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" })
-                .AddCheck<LiteDbHealthCheck>("database", tags: new[] { "ready" });
             
             // Services
             builder.Services.AddSingleton<SettingsService>();
@@ -517,6 +572,13 @@ namespace ReportTree.Server
             // Initialize default settings
             using (var scope = app.Services.CreateScope())
             {
+                if (!isLiteDbProvider)
+                {
+                    var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<Persistance.Relational.AppDbContext>>();
+                    using var dbContext = contextFactory.CreateDbContext();
+                    dbContext.Database.EnsureCreated();
+                }
+
                 var settingsService = scope.ServiceProvider.GetRequiredService<SettingsService>();
                 settingsService.InitializeDefaultSettingsAsync().Wait();
             }

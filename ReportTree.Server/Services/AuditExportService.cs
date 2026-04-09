@@ -237,12 +237,13 @@ public class AuditExportService
         }
     }
 
-    private static string Quote(string value)
+    private static string Quote(string? value)
     {
-        return $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal).Replace("\r", " ", StringComparison.Ordinal).Replace("\n", " ", StringComparison.Ordinal)}\"";
+        var safeValue = value ?? string.Empty;
+        return $"\"{safeValue.Replace("\"", "\"\"", StringComparison.Ordinal).Replace("\r", " ", StringComparison.Ordinal).Replace("\n", " ", StringComparison.Ordinal)}\"";
     }
 
-    private static string TrimToWidth(string value, int maxLength)
+    private static string TrimToWidth(string? value, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value))
         {

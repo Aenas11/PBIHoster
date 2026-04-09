@@ -2,11 +2,43 @@
 
 ## Overview
 
-PBIHoster uses **LiteDB**, an embedded NoSQL database. All data is stored in a single file (`/data/reporttree.db`) with no external database server required.
+PBIHoster uses a provider-based persistence abstraction with a shared repository interface surface.
 
-**Location**: `/data/reporttree.db` (in Docker: mounted volume)  
-**ORM/Access**: Direct LiteDB API via Repository Pattern  
-**Persistence**: `ReportTree.Server/Persistance/`
+- Default: **LiteDB** embedded mode with a single data file.
+- Optional: **Relational mode** through EF Core using `Sqlite`, `SqlServer`, or `PostgreSql` providers.
+
+**Persistence root**: `ReportTree.Server/Persistance/`  
+**Relational context**: `ReportTree.Server/Persistance/Relational/AppDbContext.cs`
+
+### Provider Configuration
+
+```json
+{
+  "Database": {
+    "Provider": "LiteDb",
+    "ConnectionString": "",
+    "BrandingAssetsPath": "data/branding-assets"
+  },
+  "LiteDb": {
+    "ConnectionString": "Filename=reporttree.db;Connection=shared"
+  }
+}
+```
+
+Provider notes:
+- `LiteDb`: Uses `LiteDb:ConnectionString`.
+- `Sqlite`: Uses `Database:ConnectionString` (example `Data Source=reporttree.db`).
+- `SqlServer`: Uses `Database:ConnectionString` (ADO.NET SQL Server format).
+- `PostgreSql`: Uses `Database:ConnectionString` (Npgsql format).
+
+At startup, relational mode initializes the schema with `EnsureCreated()`.
+
+### Storage Behavior by Provider
+
+- Repository interfaces remain unchanged across providers.
+- Relational mode stores list/dictionary model properties as JSON values through EF converters/comparers.
+- Branding assets are persisted as files in `Database:BrandingAssetsPath` when relational mode is enabled.
+- Health checks resolve to provider-specific implementations (`LiteDbHealthCheck` or `RelationalDbHealthCheck`).
 
 ## Collections & Entities
 

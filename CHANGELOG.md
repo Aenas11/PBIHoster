@@ -19,6 +19,11 @@ All notable changes to this project will be documented in this file. The format 
 - Added compliance audit export endpoint with CSV/PDF output and filter support for date range, user, action type, resource, and success state.
 - Added backend integration tests for audit export filtering and invalid range handling.
 - Added Admin Audit Logs panel enhancements for advanced filtering and direct CSV/PDF export downloads.
+- Added Phase 5.1 database abstraction layer with provider-based persistence selection (`LiteDb`, `Sqlite`, `SqlServer`, `PostgreSql`).
+- Added EF Core relational persistence stack (`AppDbContext`, JSON value converters/comparers, and `Ef*Repository` implementations for existing repository interfaces).
+- Added relational database readiness health check and startup schema initialization for relational providers.
+- Added provider-agnostic branding asset file repository for relational mode (`Database:BrandingAssetsPath`).
+- Added relational integration tests covering auth/page CRUD flow and audit export behavior under Sqlite.
 
 ### Changed
 - Updated project documentation to reflect implemented external auth architecture, security boundaries, and admin mapping behavior.
@@ -27,6 +32,9 @@ All notable changes to this project will be documented in this file. The format 
 - Updated page create/edit flow and navigation/page headers to display and manage sensitivity labels.
 - Updated audit APIs and security documentation to cover compliance export behavior.
 - Updated roadmap documentation to reflect completed Phase 4 delivery and renumber remaining access-approval work.
+- Updated backend startup wiring to switch persistence registrations by configuration while retaining LiteDB as the default.
+- Updated server dependency graph with EF Core provider packages and aligned Azure.Identity package version.
+- Updated audit export string handling to safely process null values in CSV/PDF paths.
 
 ## [0.3.0] - 2025-02-11
 ### Added

@@ -28,11 +28,10 @@ PBIHoster is an enterprise-grade Power BI hosting platform built with a modern, 
         ┌────────────▼───────────────────────────────────┐
         │           Data & External Services             │
         │  ┌─────────────────────────────────────────┐  │
-        │  │  LiteDB (Embedded Database)             │  │
-        │  │  - Users & Authentication               │  │
-        │  │  - Page & Content Structure             │  │
-        │  │  - Settings & Configuration             │  │
-        │  │  - Audit Logs                           │  │
+        │  │  Pluggable Persistence Layer            │  │
+        │  │  - LiteDB (embedded default)            │  │
+        │  │  - Relational via EF Core               │  │
+        │  │    (Sqlite / SQL Server / PostgreSQL)   │  │
         │  └─────────────────────────────────────────┘  │
         │  ┌─────────────────────────────────────────┐  │
         │  │  External Services                      │  │
@@ -103,8 +102,16 @@ The API follows a hybrid pattern:
 
 ### Data Access Layer (Repository Pattern)
 
-**Technology**: LiteDB with Repository Pattern  
+**Technology**: Repository Pattern with provider abstraction  
 **Location**: `ReportTree.Server/Persistance/`
+
+Runtime database provider selection is controlled through `Database:Provider`:
+- `LiteDb` (default): existing LiteDB repositories.
+- `Sqlite`, `SqlServer`, `PostgreSql`: EF Core repositories backed by `AppDbContext`.
+
+For relational mode, collection/dictionary fields are persisted with JSON value converters to preserve existing model shapes without changing service contracts.
+
+Branding binaries use `LocalFileBrandingAssetRepository` in relational mode and remain in LiteDB in embedded mode.
 
 Each entity has a corresponding repository:
 ```csharp
@@ -117,6 +124,10 @@ IGroupRepository     // User groups
 ICommentRepository   // Page comments
 IPageVersionRepository // Page layout version history
 ```
+
+Provider-specific repository implementations:
+- LiteDB: `LiteDb*Repository` classes.
+- Relational: `Persistance/Relational/Ef*Repository` classes using `IDbContextFactory<AppDbContext>`.
 
 ### Data Model
 
