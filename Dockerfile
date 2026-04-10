@@ -20,8 +20,12 @@ FROM with-node AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["ReportTree.Server/ReportTree.Server.csproj", "ReportTree.Server/"]
+COPY ["ReportTree.Server.Migrations.SqlServer/ReportTree.Server.Migrations.SqlServer.csproj", "ReportTree.Server.Migrations.SqlServer/"]
+COPY ["ReportTree.Server.Migrations.PostgreSql/ReportTree.Server.Migrations.PostgreSql.csproj", "ReportTree.Server.Migrations.PostgreSql/"]
 COPY ["reporttree.client/reporttree.client.esproj", "reporttree.client/"]
-RUN dotnet restore "./ReportTree.Server/ReportTree.Server.csproj"
+RUN dotnet restore "./ReportTree.Server/ReportTree.Server.csproj" && \
+    dotnet restore "./ReportTree.Server.Migrations.SqlServer/ReportTree.Server.Migrations.SqlServer.csproj" && \
+    dotnet restore "./ReportTree.Server.Migrations.PostgreSql/ReportTree.Server.Migrations.PostgreSql.csproj"
 COPY . .
 WORKDIR "/src/reporttree.client"
 RUN npm install
