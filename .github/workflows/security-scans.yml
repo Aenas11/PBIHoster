@@ -43,7 +43,10 @@ jobs:
           include-prerelease: true
 
       - name: Restore .NET dependencies
-        run: dotnet restore ReportTree.Server/ReportTree.Server.csproj
+        run: |
+          dotnet restore ReportTree.Server/ReportTree.Server.csproj
+          dotnet restore ReportTree.Server.Migrations.SqlServer/ReportTree.Server.Migrations.SqlServer.csproj
+          dotnet restore ReportTree.Server.Migrations.PostgreSql/ReportTree.Server.Migrations.PostgreSql.csproj
 
       - name: Build .NET solution
         run: dotnet build ReportTree.Server/ReportTree.Server.csproj --no-restore
