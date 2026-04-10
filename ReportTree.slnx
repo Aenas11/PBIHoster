@@ -4,5 +4,7 @@
     <Deploy />
   </Project>
   <Project Path="ReportTree.Server/ReportTree.Server.csproj" />
+  <Project Path="ReportTree.Server.Migrations.SqlServer/ReportTree.Server.Migrations.SqlServer.csproj" />
+  <Project Path="ReportTree.Server.Migrations.PostgreSql/ReportTree.Server.Migrations.PostgreSql.csproj" />
   <Project Path="ReportTree.Server.Tests/ReportTree.Server.Tests.csproj" />
 </Solution>
