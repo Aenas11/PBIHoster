@@ -199,7 +199,10 @@ public class DatasetRefreshService
             run.Status = RefreshStatus.Failed;
             run.CompletedAtUtc = DateTime.UtcNow;
             run.FailureReason = ex.Message;
-            _logger.LogWarning(ex, "Failed to start refresh for dataset {DatasetId}", run.DatasetId);
+            var safeDatasetId = (run.DatasetId ?? string.Empty)
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty);
+            _logger.LogWarning(ex, "Failed to start refresh for dataset {DatasetId}", safeDatasetId);
         }
         finally
         {
