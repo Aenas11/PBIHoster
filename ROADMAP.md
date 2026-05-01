@@ -28,15 +28,39 @@ Based on corporate requirements, here's the consolidated view of enterprise-grad
 | RLS Management UI | ✅ Complete | v0.4.0 | High |
 | RLS Audit Logging | ✅ Complete | v0.4.0 | High |
 | Token Refresh Endpoint | ✅ Complete | v0.4.0 | High |
+| External Auth / OIDC | ✅ Complete | v0.4.x | High |
+| Comments & Annotations | ✅ Complete | v0.4.x | Medium |
+| Compliance & Data Governance | ✅ Complete | v0.4.x | Medium |
+| Report Versioning & Rollback | ✅ Complete | v0.4.x | Medium |
+| Compliance Audit Export | ✅ Complete | v0.4.x | Medium |
+| Database Abstraction (EF Core) | ✅ Complete | v0.4.x | High |
 | Azure AD Groups Sync | ⏳ Planned | v0.5.0 | High |
 | Usage Analytics Dashboard | ⏳ Planned | v0.6.0 | High |
 | Performance Monitoring | ⏳ Planned | v0.6.0 | High |
-| Comments & Annotations | ✅ Complete | v0.7.0 | Medium |
-| Compliance & Data Governance | ✅ Complete | v0.7.0 | Medium |
-| Report Versioning & Rollback | ✅ Complete | v0.7.0 | Medium |
-| Compliance Audit Export | ✅ Complete | v0.7.0 | Medium |
 | Backup & Disaster Recovery | ⏳ Planned | v0.8.0 | High |
-| Database Abstraction | ⏳ Planned | v0.9.0 | High |
+
+### Release Timeline
+
+```mermaid
+gantt
+    title PBIHoster Release Roadmap
+    dateFormat YYYY-MM-DD
+    axisFormat %b %Y
+
+    section Completed
+    v0.3.0 White-label & Favorites      :done, v030, 2025-10-01, 2025-11-01
+    v0.4.0 Refresh, RLS, Token Refresh  :done, v040, 2025-11-01, 2026-02-20
+    v0.4.x OIDC, Comments, Governance   :done, v04x, 2026-02-20, 2026-04-30
+
+    section In Progress
+    v0.5.0 Azure AD Groups Sync / MFA   :active, v050, 2026-05-01, 2026-06-15
+
+    section Planned
+    v0.6.0 Analytics & Monitoring       :v060, 2026-06-15, 2026-07-31
+    v0.7.0 Access Workflows             :v070, 2026-07-31, 2026-09-15
+    v0.8.0 Backup & DR                  :v080, 2026-09-15, 2026-10-31
+    v1.0.0 GA & SOC2 readiness          :milestone, v100, 2026-10-31, 1d
+```
 
 ---
 
@@ -136,30 +160,25 @@ Goal: Enable power users to manage datasets and implement advanced features quic
 Goal: Support enterprise identity providers (Azure AD, Okta, Auth0, Clerk) and group synchronization.
 
 #### 2.1 OpenID Connect (OIDC) / OAuth2 Integration
-- **Status**: Architecture defined, implementation pending
+- **Status**: ✅ Complete
 - **Features**:
   - Support multiple OIDC providers simultaneously
   - Just-In-Time (JIT) user provisioning from external identity
-  - Claim-based role mapping
-  - Optional password policy enforcement for external users
+  - Claim-based role and group mapping
+  - Admin-manageable non-secret mapping overrides (default role, claim types, group/role mappings)
+  - Short-lived external cookie callback with open-redirect protection
   - Session management (cookies + JWT)
-- **Implementation**:
-  - Backend: OIDC handler in authentication middleware
-  - Database: `AppUser.AuthProvider` and `AppUser.ExternalUserId` fields
-  - Config: Environment variables for provider settings
-  - Frontend: Login button with provider selection
 - **Supported Providers**:
   - Azure AD / Entra ID (Microsoft)
   - Okta
   - Auth0
-  - Clerk
   - Any OIDC-compliant provider
 - **Acceptance Criteria**:
-  - [ ] Login redirects to Azure AD, returns with claims
-  - [ ] User auto-created with JIT sync
-  - [ ] Roles mapped from group claims
-  - [ ] Mixed mode (local + OIDC users) supported
-  - [ ] Fallback for local admin user always works
+  - [x] Login redirects to external IDP, returns with claims
+  - [x] User auto-created with JIT sync
+  - [x] Roles and groups mapped from external claims
+  - [x] Mixed mode (local + OIDC users) supported
+  - [x] Fallback for local admin user always works
 
 #### 2.2 Azure AD Groups Synchronization
 - **Status**: Design pending

@@ -67,7 +67,7 @@
 
 9. **Access application**
    - Navigate to `https://your-domain.com`
-   - The first user to register will need to be promoted to Admin manually
+   - Register the first user account — it is **automatically promoted to Admin**
 
 ## Security Configuration
 
@@ -300,15 +300,45 @@ See [SECURITY.md](../SECURITY.md) for comprehensive security documentation.
 
 ## Updating the Application
 
+### Standard Upgrade (No Breaking Schema Changes)
+
 ```bash
 # Pull latest image
 docker-compose pull pbihoster
 
-# Restart with new image
+# Restart with new image (zero-downtime rolling not supported with LiteDB)
 docker-compose up -d pbihoster
 
-# View logs
+# Verify startup
 docker-compose logs -f pbihoster
+curl https://your-domain.com/health
+```
+
+> **LiteDB**: Migrations are handled automatically at startup via schema evolution — no manual steps required.
+
+### Relational Database Upgrade (Sqlite / SQL Server / PostgreSQL)
+
+When using a relational provider, EF Core migrations run automatically at startup (`Database.Migrate()`). However, it is good practice to:
+
+1. **Back up the database** before upgrading.
+2. **Review the changelog** for any breaking schema notes.
+3. **Restart the container** — migrations apply automatically on first boot.
+4. **Verify** with `GET /ready` — returns `200 OK` once migrations complete.
+
+### Rollback
+
+If the new version introduces issues:
+
+```bash
+# Stop and remove new container
+docker-compose down pbihoster
+
+# Restore database backup (LiteDB)
+docker run --rm -v pbihoster_data:/data -v $(pwd):/backup \
+  alpine sh -c "cd /data && tar xzf /backup/reporttree-backup-YYYYMMDD.tar.gz"
+
+# Pin to previous image version in docker-compose.yml, then:
+docker-compose up -d pbihoster
 ```
 
 ## Backup and Restore
@@ -411,25 +441,14 @@ Users locked out after failed attempts can be unlocked by:
 
 ## Architecture
 
-```
-┌─────────────┐
-│   Internet  │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────────────────────────┐
-│  Caddy (Port 80/443)            │
-│  - HTTPS/TLS Termination        │
-│  - Automatic Certificates       │
-└──────┬──────────────────────────┘
-       │ HTTP (Internal)
-       ▼
-┌─────────────────────────────────┐
-│  PBIHoster (Port 8080)          │
-│  - ASP.NET Core API             │
-│  - Vue 3 SPA                    │
-│  - LiteDB Database              │
-└─────────────────────────────────┘
+```mermaid
+graph TD
+    Internet(["🌐 Internet"])
+    Caddy["Caddy (Port 80/443)\nHTTPS/TLS Termination\nAutomatic Certificates"]
+    App["PBIHoster (Port 8080)\nASP.NET Core API\nVue 3 SPA\nLiteDB Database"]
+
+    Internet -->|HTTPS| Caddy
+    Caddy -->|HTTP internal| App
 ```
 
 ## Support

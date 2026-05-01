@@ -279,6 +279,39 @@ Content-Type: application/json
 }
 ```
 
+Events are best-effort and batched server-side. A `200 OK` response does not guarantee persistence.
+
+#### Get Analytics Summary
+
+```http
+GET /api/analytics/summary?days=30
+Authorization: Bearer <token>
+
+Response 200 OK:
+{
+  "period": {
+    "from": "2026-04-01T00:00:00Z",
+    "to": "2026-05-01T00:00:00Z",
+    "days": 30
+  },
+  "totalPageViews": 4821,
+  "uniqueUsers": 143,
+  "topPages": [
+    { "pageId": "3fa85f64-...", "title": "Sales Dashboard", "views": 1203 },
+    { "pageId": "7be12a31-...", "title": "Finance Overview", "views": 874 }
+  ],
+  "viewsByDay": [
+    { "date": "2026-04-01", "views": 152 },
+    ...
+  ],
+  "deviceBreakdown": {
+    "desktop": 3204,
+    "mobile": 1402,
+    "tablet": 215
+  }
+}
+```
+
 ### Comments (`/comments`)
 
 | Method | Endpoint | Auth | Roles | Description |
@@ -317,8 +350,8 @@ When `App.CommentsEnabled=false`, all comments endpoints return `404 Not Found` 
 | GET | `/profile/favorites` | ✅ Yes | All | Get favorite page IDs |
 | POST | `/profile/favorites/{pageId}` | ✅ Yes | All | Add favorite page |
 | DELETE | `/profile/favorites/{pageId}` | ✅ Yes | All | Remove favorite page |
-| GET | `/profile/recent` | ✅ Yes | All | Get recent page IDs |
-| POST | `/profile/recent/{pageId}` | ✅ Yes | All | Record recently viewed page |
+| GET | `/profile/recent` | ✅ Yes | All | Get recent page IDs (up to 20, most recent first) |
+| POST | `/profile/recent/{pageId}` | ✅ Yes | All | Record recently viewed page (deduplicates; moves existing entry to top) |
 
 **Directory Search** (`/directory`)
 
@@ -589,6 +622,23 @@ Supported export formats:
 | GET | `/health` | ❌ No | Liveness check (process up) |
 | GET | `/ready` | ❌ No | Readiness check (LiteDB accessible) |
 | GET | `/metrics` | ❌ No | Prometheus metrics |
+| GET | `/version` | ❌ No | Application version info |
+
+#### Version
+
+```http
+GET /version
+
+Response 200 OK:
+{
+  "version": "0.4.0",
+  "environment": "Production",
+  "dotnetVersion": "10.0.x",
+  "buildDate": "2026-02-20T00:00:00Z"
+}
+```
+
+Useful for verifying deployed version when reporting issues.
 
 ## Error Handling
 

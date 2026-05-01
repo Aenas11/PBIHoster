@@ -93,17 +93,17 @@ ReportTree.Server/
 │   ├── PageAuthorizationService.cs
 │   └── ...
 ├── Persistance/                  # Repository pattern for data access
-│   ├── Interfaces/
-│   │   ├── IUserRepository.cs
-│   │   ├── IPageRepository.cs
-│   │   └── ...
-│   └── Implementations/
-│       ├── LiteDbUserRepository.cs
-│       ├── LiteDbPageRepository.cs
-│       └── ...
+│   ├── Interfaces/               # IUserRepository, IPageRepository, etc.
+│   ├── LiteDbUserRepository.cs   # LiteDB implementations (flat in Persistance/)
+│   ├── LiteDbPageRepository.cs
+│   ├── ...                       # Other LiteDb*Repository files
+│   └── Relational/               # EF Core implementations
+│       ├── AppDbContext.cs
+│       ├── EfUserRepository.cs
+│       ├── EfPageRepository.cs
+│       └── Migrations/
 ├── Security/                     # Security-related utilities
 │   ├── TokenService.cs
-│   ├── AuthenticationMiddleware.cs
 │   └── ...
 ├── HealthChecks/                 # Health check implementations
 └── ReportTree.Server.csproj      # Project file
@@ -623,6 +623,15 @@ Fixes #89
    - Ensure all CI checks pass
    - Request review from maintainers
 
+   **PR Checklist**:
+   - [ ] Tests pass (`dotnet test` + `npm run test`)
+   - [ ] Lint clean (`npm run lint`)
+   - [ ] New API endpoints documented in `API.md`
+   - [ ] New audit-log actions documented in `DATABASE.md` (Common Actions)
+   - [ ] Sensitive new settings use encrypted storage (key contains `key`, `secret`, or `password`)
+   - [ ] New controller actions include `[Authorize]` with correct roles
+   - [ ] Breaking changes noted in `CHANGELOG.md`
+
 6. **Address review feedback**
    ```bash
    git add .
@@ -649,6 +658,90 @@ All documentation uses Markdown and follows these standards:
 - Code comments: Explain "why", not "what"
 
 ## Common Tasks
+
+### Adding a New Database Entity (End-to-End)
+
+This walkthrough covers adding a completely new entity — model, repositories, EF migration, controller, DTO, and documentation.
+
+1. **Create the model** in `Models/`
+   ```csharp
+   // Models/MyEntity.cs
+   public class MyEntity
+   {
+       public Guid Id { get; set; } = Guid.NewGuid();
+       public string Name { get; set; } = string.Empty;
+       public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+       public Guid CreatedByUserId { get; set; }
+   }
+   ```
+
+2. **Create the repository interface** in `Persistance/Interfaces/`
+   ```csharp
+   // Persistance/Interfaces/IMyEntityRepository.cs
+   public interface IMyEntityRepository
+   {
+       Task<MyEntity?> GetByIdAsync(Guid id);
+       Task<List<MyEntity>> GetAllAsync();
+       Task<MyEntity> CreateAsync(MyEntity entity);
+       Task<bool> DeleteAsync(Guid id);
+   }
+   ```
+
+3. **Create the LiteDB implementation** in `Persistance/`
+   ```csharp
+   // Persistance/LiteDbMyEntityRepository.cs
+   public class LiteDbMyEntityRepository : IMyEntityRepository
+   {
+       private readonly ILiteCollection<MyEntity> _col;
+       public LiteDbMyEntityRepository(ILiteDatabase db)
+           => _col = db.GetCollection<MyEntity>("MyEntities");
+       // implement interface...
+   }
+   ```
+
+4. **Create the EF Core implementation** in `Persistance/Relational/`
+   ```csharp
+   // Persistance/Relational/EfMyEntityRepository.cs
+   public class EfMyEntityRepository : IMyEntityRepository
+   {
+       private readonly IDbContextFactory<AppDbContext> _factory;
+       public EfMyEntityRepository(IDbContextFactory<AppDbContext> factory)
+           => _factory = factory;
+       // implement interface using _factory.CreateDbContext()...
+   }
+   ```
+
+5. **Add `DbSet` to `AppDbContext`**
+   ```csharp
+   // Persistance/Relational/AppDbContext.cs
+   public DbSet<MyEntity> MyEntities => Set<MyEntity>();
+   ```
+
+6. **Scaffold the EF migration**
+   ```bash
+   dotnet tool restore
+   dotnet dotnet-ef migrations add AddMyEntity \
+     --project ReportTree.Server/ReportTree.Server.csproj \
+     --startup-project ReportTree.Server/ReportTree.Server.csproj \
+     --context ReportTree.Server.Persistance.Relational.AppDbContext \
+     --output-dir Persistance/Relational/Migrations
+   ```
+
+7. **Register the repository** in `Program.cs`
+   ```csharp
+   // Alongside existing registrations, inside the provider switch:
+   // LiteDB branch:
+   services.AddScoped<IMyEntityRepository, LiteDbMyEntityRepository>();
+   // Relational branch:
+   services.AddScoped<IMyEntityRepository, EfMyEntityRepository>();
+   ```
+
+8. **Create DTOs** in `DTOs/` and the controller in `Controllers/`
+
+9. **Update documentation**:
+   - Add the entity to the ER diagram and schema section in `DATABASE.md`
+   - Add new endpoints to `API.md`
+   - Add to the PR checklist items above
 
 ### Adding a New API Endpoint
 

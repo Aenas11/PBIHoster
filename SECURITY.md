@@ -136,7 +136,7 @@ JWT_EXPIRY_HOURS=8
 - **Role/group allowlist normalization**: External mappings are normalized and restricted to internal roles `Admin|Editor|Viewer`.
 - **Least privilege fallback**: When mappings do not resolve, users fall back to configured default role.
 
-### 8. Audit Logging
+### 9. Audit Logging
 - **Comprehensive Tracking**: All security events logged
 - **Event Types**: Login attempts, password changes, lockouts, failed auth
 - **Context Capture**: Username, IP, user agent, timestamp
@@ -295,7 +295,7 @@ Check for suspicious activity:
 ### Contributing Security Improvements
 If you identify security vulnerabilities or have enhancement suggestions:
 1. **Do not** create public GitHub issues for vulnerabilities
-2. Email security concerns to: [your-security-email]
+2. Use [GitHub Security Advisories](https://github.com/aenas11/pbihoster/security/advisories/new) to report vulnerabilities privately
 3. Include detailed description and reproduction steps
 4. Allow reasonable time for patching before public disclosure
 

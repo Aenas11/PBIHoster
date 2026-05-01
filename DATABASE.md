@@ -268,13 +268,13 @@ Stores user account information, authentication, and profile data.
 ```csharp
 {
   "_id": ObjectId,
-  "Id": int,
+  "Id": Guid (unique),
   "Username": string (unique),
   "Email": string,
   "PasswordHash": string,
   "Roles": List<string>,           // ["Admin", "Editor", "Viewer"]
-  "FavoritePageIds": List<int>,
-  "RecentPageIds": List<int>,
+  "FavoritePageIds": List<Guid>,
+  "RecentPageIds": List<Guid>,
   "HomeFavoritesSeeded": bool,
   "CreatedAt": DateTime,
   "LastLogin": DateTime (nullable)
@@ -898,6 +898,24 @@ docker-compose restart pbihoster
 - Indexes on frequently queried columns (Username, Email, ParentPageId, CreatedAt)
 - Compound indexes for common filter combinations
 - No index on binary data columns (BrandingAsset.Data)
+
+**Relational providers (Sqlite / SQL Server / PostgreSQL)**:
+EF Core migrations create the following indexes automatically:
+
+| Table | Indexed Column(s) | Type |
+|-------|------------------|------|
+| `AppUsers` | `Username` | Unique |
+| `AppUsers` | `Email` | Non-unique |
+| `Pages` | `ParentPageId` | Non-unique |
+| `Pages` | `CreatedAt` | Non-unique |
+| `AuditLogs` | `CreatedAt` | Non-unique |
+| `AuditLogs` | `Action` | Non-unique |
+| `AuditLogs` | `UserId` | Non-unique |
+| `Groups` | `Name` | Unique |
+| `Comments` | `PageId` | Non-unique |
+| `PageVersions` | `PageId`, `ChangedAt` | Non-unique |
+
+For high-volume deployments on SQL Server or PostgreSQL, consider adding a covering index on `AuditLogs (CreatedAt, Action, UserId)` for the common filtered-query path used by the audit export.
 
 ### Query Optimization
 
