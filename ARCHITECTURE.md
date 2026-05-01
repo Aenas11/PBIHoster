@@ -4,42 +4,37 @@
 
 PBIHoster is an enterprise-grade Power BI hosting platform built with a modern, scalable architecture. The system follows a clear separation between the backend API, frontend SPA, and data persistence layers.
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                         Internet / Users                          │
-└────────────────────────┬─────────────────────────────────────────┘
-                         │
-                         ▼
-        ┌────────────────────────────────────┐
-        │  Caddy Reverse Proxy / HTTPS       │
-        │  - Certificate Management          │
-        │  - Traffic Routing                 │
-        │  - Security Headers                │
-        └────────────┬───────────────────────┘
-                     │
-        ┌────────────▼───────────────────────┐
-        │  ASP.NET Core Backend              │
-        │  - REST API (Controllers)          │
-        │  - Authentication & Authorization  │
-        │  - Power BI Integration            │
-        │  - Static SPA Serving              │
-        └────────────┬───────────────────────┘
-                     │
-        ┌────────────▼───────────────────────────────────┐
-        │           Data & External Services             │
-        │  ┌─────────────────────────────────────────┐  │
-        │  │  Pluggable Persistence Layer            │  │
-        │  │  - LiteDB (embedded default)            │  │
-        │  │  - Relational via EF Core               │  │
-        │  │    (Sqlite / SQL Server / PostgreSQL)   │  │
-        │  └─────────────────────────────────────────┘  │
-        │  ┌─────────────────────────────────────────┐  │
-        │  │  External Services                      │  │
-        │  │  - Azure AD / Power BI API              │  │
-        │  │  - Email Service (optional)             │  │
-        │  │  - Key Vault (optional)                 │  │
-        │  └─────────────────────────────────────────┘  │
-        └────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    Users(["👤 Internet / Users"])
+
+    subgraph Proxy["Caddy Reverse Proxy / HTTPS"]
+        Caddy["Certificate Management<br/>Traffic Routing<br/>Security Headers"]
+    end
+
+    subgraph Backend["ASP.NET Core Backend"]
+        API["REST API (Controllers)"]
+        Auth["Authentication & Authorization"]
+        PBI["Power BI Integration"]
+        SPA["Static SPA Serving"]
+    end
+
+    subgraph Data["Data & External Services"]
+        subgraph DB["Pluggable Persistence Layer"]
+            LiteDB["LiteDB (default)"]
+            EF["EF Core: Sqlite / SQL Server / PostgreSQL"]
+        end
+        subgraph External["External Services"]
+            AzureAD["Azure AD / Power BI API"]
+            Email["Email Service (optional)"]
+            KeyVault["Key Vault (optional)"]
+        end
+    end
+
+    Users --> Proxy
+    Proxy --> Backend
+    Backend --> DB
+    Backend --> External
 ```
 
 ## Layered Architecture
@@ -64,6 +59,24 @@ The API follows a hybrid pattern:
 - **Minimal APIs** (Program.cs): Authentication endpoints (login, register, logout)
 - **Controllers**: Resource-based endpoints (pages, users, reports, settings)
 - **Middleware**: Cross-cutting concerns (auth, logging, rate limiting, CORS)
+
+#### Request Middleware Pipeline
+
+```mermaid
+graph LR
+    Req["Incoming Request"]
+    FH["Forwarded Headers"]
+    SH["Security Headers"]
+    RL["Rate Limiting"]
+    CORS["CORS"]
+    JWT["JWT Authentication"]
+    AZ["Authorization"]
+    EP["Endpoint / Controller"]
+    AL["Audit Logging"]
+    Res["Response"]
+
+    Req --> FH --> SH --> RL --> CORS --> JWT --> AZ --> EP --> AL --> Res
+```
 
 #### API Structure
 ```
@@ -213,20 +226,53 @@ Audit queries support date-range, username, action-type, resource, and success f
 
 ### Authentication Flow
 
-1. **Local Authentication** (Default)
-   ```
-   User enters credentials → Backend validates → JWT generated → Frontend stores token
-   ```
+#### Local Authentication (Default)
 
-2. **External Authentication** (OIDC/OAuth2 - Optional)
-   ```
-  Frontend calls /api/auth/external/challenge/{providerId}
-  → OIDC challenge (provider-specific scheme)
-  → temporary external cookie callback
-  → backend provisions/updates local user and applies role/group mapping
-  → backend issues local JWT
-  → callback redirects to SPA with token fragment
-   ```
+```mermaid
+sequenceDiagram
+    participant U as User/Browser
+    participant F as Vue Frontend
+    participant B as ASP.NET Core Backend
+    participant DB as Database
+
+    U->>F: Enter username & password
+    F->>B: POST /api/auth/login
+    B->>DB: Look up user by username
+    DB-->>B: AppUser record
+    B->>B: Verify BCrypt password hash
+    B->>B: Check account lockout status
+    B->>B: Generate JWT (roles + groups)
+    B-->>F: { token: "eyJ..." }
+    F->>F: Store token (localStorage/memory)
+    F-->>U: Redirect to home / dashboard
+```
+
+#### External Authentication (OIDC/OAuth2 — Optional)
+
+```mermaid
+sequenceDiagram
+    participant U as User/Browser
+    participant F as Vue Frontend
+    participant B as ASP.NET Core Backend
+    participant IDP as External Identity Provider
+    participant DB as Database
+
+    U->>F: Click "Sign in with [Provider]"
+    F->>B: GET /api/auth/external/challenge/{providerId}
+    B->>B: Normalize & store returnUrl
+    B-->>U: 302 Redirect → IDP login page
+    U->>IDP: Authenticate (SSO / credentials)
+    IDP-->>B: Callback with authorization code
+    B->>IDP: Exchange code for ID token + claims
+    B->>B: Validate token & extract claims
+    B->>DB: Provision/update local user
+    B->>B: Apply role & group mappings
+    B->>B: Issue local JWT
+    B-->>U: 302 Redirect → returnUrl#token=eyJ...
+    F->>F: Parse token from URL fragment
+    F->>F: Store token, clear URL fragment
+    F-->>U: Authenticated view
+```
 
 External auth provider secrets and protocol connection settings remain environment/config managed.
 Admin UI/API can only edit non-secret mapping behavior (default role, claim types, role/group mappings, membership removal policy).
@@ -234,11 +280,13 @@ Admin UI/API can only edit non-secret mapping behavior (default role, claim type
 ### Authorization Model
 
 **Role-Based Access Control (RBAC)**
-```
-Admin   → Full access, user/settings management
-Editor  → Create/edit content, manage pages
-Viewer  → Read-only access to assigned pages
-Public  → No authentication required (specific pages only)
+
+```mermaid
+graph LR
+    Admin["🔑 Admin<br/>Full access<br/>User & settings management"]
+    Editor["✏️ Editor<br/>Create/edit content<br/>Manage pages"]
+    Viewer["👁️ Viewer<br/>Read-only access<br/>to assigned pages"]
+    Public["🌐 Public<br/>No auth required<br/>(specific pages only)"]
 ```
 
 **Page-Level Access Control**
@@ -265,30 +313,21 @@ Public  → No authentication required (specific pages only)
 
 ### Embedding Model: "App Owns the Data"
 
-```
-┌─────────────┐
-│   Backend   │
-└──────┬──────┘
-       │ 1. App authenticates with Azure AD
-       │    (ClientSecret or Certificate)
-       ▼
-┌─────────────────────────┐
-│     Azure AD            │
-│  Returns Access Token   │
-└──────┬──────────────────┘
-       │ 2. App requests embed token
-       │    (specific report + user identity + RLS)
-       ▼
-┌─────────────────────────┐
-│   Power BI API          │
-│  Returns Embed Token    │
-└──────┬──────────────────┘
-       │ 3. Returns to frontend
-       │    (token + report metadata)
-       ▼
-┌─────────────┐
-│  Frontend   │ 4. Renders Power BI report using token
-└─────────────┘
+```mermaid
+sequenceDiagram
+    participant F as Vue Frontend
+    participant B as ASP.NET Core Backend
+    participant AAD as Azure AD
+    participant PBAPI as Power BI API
+
+    F->>B: POST /api/powerbi/embed/report<br/>{ reportId, workspaceId, pageId, rlsRoles }
+    B->>AAD: Authenticate with ClientSecret/Certificate
+    AAD-->>B: Access Token
+    B->>PBAPI: Request embed token<br/>(report + user identity + RLS roles)
+    PBAPI-->>B: Embed Token + Embed URL
+    B-->>F: { accessToken, embedUrl, expiration }
+    F->>F: Initialize Power BI JS SDK
+    F->>PBAPI: Render report using embedUrl + token
 ```
 
 ### RLS (Row-Level Security) Support
@@ -310,35 +349,15 @@ var embedToken = await _powerBIService.GenerateEmbedToken(
 
 ### Layers of Defense
 
-```
-Layer 1: Perimeter
-├─ HTTPS/TLS (Caddy reverse proxy)
-├─ Security Headers (X-Frame-Options, CSP, etc.)
-└─ CORS protection
+```mermaid
+graph TB
+    L1["Layer 1 — Perimeter<br/>HTTPS/TLS · Security Headers · CORS"]
+    L2["Layer 2 — Authentication<br/>JWT Bearer · Token Expiry · Password Policy · Account Lockout"]
+    L3["Layer 3 — Authorization<br/>RBAC · Page-Level Permissions · Endpoint Checks · Least Privilege"]
+    L4["Layer 4 — Data Protection<br/>BCrypt Passwords · Encrypted Settings · Clean Logs · DB File Protection"]
+    L5["Layer 5 — Monitoring<br/>Audit Logging · Rate Limiting · Brute Force Prevention · Health Checks"]
 
-Layer 2: Authentication
-├─ JWT Bearer tokens
-├─ Token expiration (8 hours default)
-├─ Password complexity requirements
-└─ Account lockout after failed attempts
-
-Layer 3: Authorization
-├─ Role-based access control
-├─ Page-level permissions
-├─ Endpoint authorization checks
-└─ External service least privilege
-
-Layer 4: Data Protection
-├─ Encrypted passwords (BCrypt)
-├─ Encrypted sensitive settings
-├─ No sensitive data in logs
-└─ Database file protection
-
-Layer 5: Monitoring
-├─ Comprehensive audit logging
-├─ Rate limiting (429 responses)
-├─ Brute force prevention
-└─ Health checks & alerting
+    L1 --> L2 --> L3 --> L4 --> L5
 ```
 
 ### Key Security Features
@@ -446,10 +465,14 @@ Benefits:
 
 ### Priority Order
 
-1. **Environment Variables** (Highest - runtime)
-2. **appsettings.{Environment}.json** (Build-time)
-3. **Azure Key Vault** (If `KEY_VAULT_URI` set)
-4. **Database Settings** (AppSetting collection)
+```mermaid
+graph LR
+    EV["1️⃣ Environment Variables<br/>(Highest — runtime)"]
+    AS["2️⃣ appsettings.{Environment}.json<br/>(Build-time)"]
+    KV["3️⃣ Azure Key Vault<br/>(If KEY_VAULT_URI set)"]
+    DB["4️⃣ Database Settings<br/>(AppSetting collection)"]
+    EV --> AS --> KV --> DB
+```
 
 ### Environment Variables by Category
 

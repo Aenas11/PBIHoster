@@ -10,6 +10,29 @@ PBIHoster uses a provider-based persistence abstraction with a shared repository
 **Persistence root**: `ReportTree.Server/Persistance/`  
 **Relational context**: `ReportTree.Server/Persistance/Relational/AppDbContext.cs`
 
+### Database Provider Selection
+
+```mermaid
+flowchart TD
+    Start(["Application Startup"])
+    Cfg{"Database:Provider\nconfig value"}
+    LiteDB["LiteDB\nLiteDb*Repository classes\nFile: reporttree.db"]
+    EF["EF Core (AppDbContext)\nEf*Repository classes"]
+    Sqlite["Sqlite\nApply EF migrations\n(ReportTree.Server)"]
+    SqlServer["SqlServer\nApply EF migrations\n(Migrations.SqlServer)"]
+    PgSql["PostgreSql\nApply EF migrations\n(Migrations.PostgreSql)"]
+    BrandingFile["Branding assets:\nLocalFileBrandingAssetRepository\n(BrandingAssetsPath)"]
+    BrandingDB["Branding assets:\nStored in LiteDB"]
+
+    Start --> Cfg
+    Cfg -->|LiteDb| LiteDB
+    Cfg -->|Sqlite| EF --> Sqlite
+    Cfg -->|SqlServer| EF --> SqlServer
+    Cfg -->|PostgreSql| EF --> PgSql
+    EF --> BrandingFile
+    LiteDB --> BrandingDB
+```
+
 ### Provider Configuration
 
 ```json
@@ -118,6 +141,125 @@ Notes:
 - Health checks resolve to provider-specific implementations (`LiteDbHealthCheck` or `RelationalDbHealthCheck`).
 
 ## Collections & Entities
+
+### Entity Relationship Overview
+
+```mermaid
+erDiagram
+    AppUser {
+        Guid Id PK
+        string Username
+        string Email
+        string PasswordHash
+        string[] Roles
+        Guid[] FavoritePageIds
+        Guid[] RecentPageIds
+        string AuthProvider
+        string ExternalUserId
+        bool IsLocked
+        DateTime CreatedAt
+        DateTime LastLoginAt
+    }
+
+    Page {
+        Guid Id PK
+        string Title
+        string Description
+        string Icon
+        Guid ParentPageId FK
+        Guid[] ChildPageIds
+        string[] AllowedRoles
+        Guid[] AllowedUserIds
+        Guid[] AllowedGroupIds
+        bool IsPublic
+        string SensitivityLabel
+        PageLayout Layout
+        DateTime CreatedAt
+        DateTime UpdatedAt
+        Guid CreatedByUserId FK
+    }
+
+    Group {
+        Guid Id PK
+        string Name
+        string Description
+        Guid[] MemberIds
+        DateTime CreatedAt
+        Guid CreatedByUserId FK
+    }
+
+    Comment {
+        int Id PK
+        Guid PageId FK
+        int ParentId FK
+        string Username
+        string Content
+        string[] Mentions
+        DateTime CreatedAt
+        DateTime UpdatedAt
+    }
+
+    PageVersion {
+        int Id PK
+        Guid PageId FK
+        string Layout
+        string ChangedBy
+        DateTime ChangedAt
+        string ChangeDescription
+    }
+
+    AuditLog {
+        Guid Id PK
+        string Action
+        string Resource
+        string ResourceId
+        Guid UserId FK
+        string Username
+        string IpAddress
+        bool Success
+        DateTime CreatedAt
+    }
+
+    AppSetting {
+        string Key PK
+        string Value
+        string Category
+        bool Encrypted
+        DateTime UpdatedAt
+        Guid UpdatedByUserId FK
+    }
+
+    DatasetRefreshSchedule {
+        Guid Id PK
+        Guid DatasetId
+        string Cron
+        string TimeZone
+        bool Enabled
+        DateTime LastRunAt
+        Guid CreatedByUserId FK
+    }
+
+    DatasetRefreshRun {
+        Guid Id PK
+        Guid ScheduleId FK
+        Guid DatasetId
+        string Status
+        DateTime RequestedAtUtc
+        DateTime CompletedAtUtc
+    }
+
+    AppUser ||--o{ Page : "creates"
+    AppUser }o--o{ Group : "member of"
+    Page ||--o{ Page : "parent/child"
+    Page ||--o{ Comment : "has"
+    Page ||--o{ PageVersion : "version history"
+    Comment ||--o{ Comment : "reply to"
+    DatasetRefreshSchedule ||--o{ DatasetRefreshRun : "produces"
+    AppUser ||--o{ AuditLog : "actor"
+    AppUser ||--o{ AppSetting : "updates"
+```
+
+---
 
 ### AppUser
 

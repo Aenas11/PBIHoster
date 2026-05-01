@@ -19,6 +19,32 @@ GET /api/pages HTTP/1.1
 Authorization: Bearer eyJhbGc...
 ```
 
+### Authentication Flows
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as /api/auth
+
+    Note over C,API: Local Login
+    C->>API: POST /login { username, password }
+    API-->>C: 200 { token } or 400 error
+
+    Note over C,API: Registration (first user = Admin)
+    C->>API: POST /register { username, password }
+    API-->>C: 200 OK
+
+    Note over C,API: Token Refresh
+    C->>API: POST /refresh (Authorization: Bearer <token>)
+    API-->>C: 200 { token } (new JWT)
+
+    Note over C,API: External (OIDC)
+    C->>API: GET /external/challenge/{providerId}?returnUrl=/
+    API-->>C: 302 → Identity Provider
+    Note over C: User authenticates at IDP
+    API-->>C: 302 → returnUrl#token=eyJ...
+```
+
 ### Token Acquisition
 
 #### 1. Register a New User
@@ -122,6 +148,36 @@ Response 200 OK:
 | POST | `/pages/{pageId}/clone` | ✅ Yes | Admin, Editor | Clone page (optionally set new title/parent) |
 | GET | `/pages/{pageId}/versions?take=20` | ✅ Yes | Admin, Editor | List recent saved layout versions for page |
 | POST | `/pages/{pageId}/versions/{versionId}/rollback` | ✅ Yes | Admin, Editor | Roll back page layout to a previous version |
+
+#### Page Access Control Logic
+
+```mermaid
+flowchart TD
+    Request(["GET /pages/{pageId}"])
+    IsPublic{"Page.IsPublic?"}
+    HasToken{"JWT token\npresent?"}
+    IsAdmin{"User role\n= Admin?"}
+    AllowedRole{"Role in\nAllowedRoles?"}
+    AllowedUser{"Username in\nAllowedUsers?"}
+    AllowedGroup{"User group in\nAllowedGroups?"}
+    Allow["✅ 200 OK — Page returned"]
+    Deny["❌ 403 Forbidden"]
+    Unauth["❌ 401 Unauthorized"]
+
+    Request --> IsPublic
+    IsPublic -->|Yes| Allow
+    IsPublic -->|No| HasToken
+    HasToken -->|No| Unauth
+    HasToken -->|Yes| IsAdmin
+    IsAdmin -->|Yes| Allow
+    IsAdmin -->|No| AllowedRole
+    AllowedRole -->|Yes| Allow
+    AllowedRole -->|No| AllowedUser
+    AllowedUser -->|Yes| Allow
+    AllowedUser -->|No| AllowedGroup
+    AllowedGroup -->|Yes| Allow
+    AllowedGroup -->|No| Deny
+```
 
 #### Get Pages (Accessible)
 
@@ -445,6 +501,19 @@ Response 200 OK:
 | PUT | `/refreshes/schedules/{scheduleId}` | ✅ Yes | Admin | Update schedule |
 | DELETE | `/refreshes/schedules/{scheduleId}` | ✅ Yes | Admin | Delete schedule |
 | POST | `/refreshes/schedules/{scheduleId}/toggle` | ✅ Yes | Admin | Enable/disable schedule |
+
+#### Refresh Run Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Queued : Manual trigger or\nscheduled cron fires
+    Queued --> Running : Scheduler picks up job
+    Running --> Succeeded : Power BI API confirms success
+    Running --> Failed : API error or timeout
+    Failed --> Queued : Retry (exponential backoff,\nup to RetryCount)
+    Succeeded --> [*] : Notify on success (if configured)
+    Failed --> [*] : Notify on failure (if configured)\nafter retries exhausted
+```
 
 #### Trigger Manual Refresh
 

@@ -34,11 +34,42 @@ PASSWORD_LOCKOUT_MINUTES=15
 - **Brute Force Prevention**: Rate limiting on auth endpoints prevents rapid-fire attacks
 
 **How it works**:
-1. Failed login attempt recorded with IP and timestamp
-2. System checks recent attempts within lockout window
-3. If attempts exceed threshold, account locked for configured minutes
-4. Successful login clears lockout and attempt history
-5. Audit log captures all lockout events
+
+```mermaid
+flowchart TD
+    Start(["Login Attempt"])
+    RateCheck{"Rate limit\nexceeded?"}
+    Return429["429 Too Many Requests"]
+    LookupUser["Look up user by username"]
+    UserExists{"User found?"}
+    LockCheck{"Account\nlocked?"}
+    LockExpired{"Lock window\nexpired?"}
+    ReturnLocked["400 Account Locked\n(retry in N minutes)"]
+    VerifyPwd{"Password\ncorrect?"}
+    CountFails["Record failed attempt\n+ check recent failure count"]
+    FailThreshold{"Failures ≥\nthreshold?"}
+    LockAccount["Lock account\n+ audit log ACCOUNT_LOCKED"]
+    ReturnInvalid["400 Invalid credentials"]
+    ClearAttempts["Clear lockout &\nfailed attempts"]
+    IssueJWT["Issue JWT\n+ audit log LOGIN"]
+    ReturnToken["200 { token }"]
+
+    Start --> RateCheck
+    RateCheck -->|Yes| Return429
+    RateCheck -->|No| LookupUser
+    LookupUser --> UserExists
+    UserExists -->|No| ReturnInvalid
+    UserExists -->|Yes| LockCheck
+    LockCheck -->|Yes| LockExpired
+    LockExpired -->|No| ReturnLocked
+    LockExpired -->|Yes| VerifyPwd
+    LockCheck -->|No| VerifyPwd
+    VerifyPwd -->|Wrong| CountFails
+    CountFails --> FailThreshold
+    FailThreshold -->|Yes| LockAccount --> ReturnInvalid
+    FailThreshold -->|No| ReturnInvalid
+    VerifyPwd -->|Correct| ClearAttempts --> IssueJWT --> ReturnToken
+```
 
 ### 3. API Rate Limiting
 - **General Endpoints**: 100 requests/minute (configurable)
@@ -196,29 +227,14 @@ All other security settings have production-ready defaults but can be customized
 
 ### Security Layers
 
-```
-┌─────────────────────────────────────────┐
-│  Internet                               │
-└──────────────┬──────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────┐
-│  Caddy (Reverse Proxy)                  │
-│  - HTTPS/TLS Termination                │
-│  - Certificate Management               │
-└──────────────┬──────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────┐
-│  ASP.NET Core Application               │
-│  - Security Headers                     │
-│  - Rate Limiting                        │
-│  - CORS                                 │
-│  - JWT Authentication                   │
-│  - Account Lockout                      │
-│  - Password Policy                      │
-│  - Audit Logging                        │
-└─────────────────────────────────────────┘
+```mermaid
+graph TB
+    Internet(["🌐 Internet"])
+    Caddy["Caddy Reverse Proxy<br/>HTTPS/TLS Termination · Certificate Management"]
+    App["ASP.NET Core Application<br/>Security Headers · Rate Limiting · CORS<br/>JWT Authentication · Account Lockout · Password Policy · Audit Logging"]
+    Data[("Database<br/>BCrypt Passwords · Encrypted Settings")]
+
+    Internet -->|HTTPS| Caddy -->|HTTP internal| App --> Data
 ```
 
 ## 📊 Security Monitoring
