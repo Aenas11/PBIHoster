@@ -149,8 +149,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 
 ### User & Deployment
 - 🚀 [**Deployment Guide**](deployment/DEPLOYMENT.md) - Production setup, Power BI configuration, security checklist
-- � [**Email Setup Guide**](documentation/EMAIL_SETUP_GUIDE.md) - Configure SMTP for refresh notifications (Gmail, Office 365, SendGrid, etc.)
-- �📖 [**User Guide**](README.md#user-guide) - Creating pages, managing users, configuring themes
+- 📧 [**Email Setup Guide**](documentation/EMAIL_SETUP_GUIDE.md) - Configure SMTP for refresh notifications (Gmail, Office 365, SendGrid, etc.)
+- 📖 [**User Guide**](README.md#user-guide) - Creating pages, managing users, configuring themes
 - 🔒 [**Security Guide**](SECURITY.md) - Authentication, authorization, best practices
 - 📋 [**Operations & Troubleshooting**](TROUBLESHOOTING.md) - Monitoring, common issues, recovery
 
@@ -199,75 +199,6 @@ Create reusable analytics hosting infrastructure as a platform component, with t
 
 ---
 
-#### Prerequisites
-- Docker and Docker Compose installed
-- A domain name pointing to your server (for HTTPS)
-- Ports 80 and 443 open on your firewall
-
-#### Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd PBIHoster/deployment
-   ```
-
-2. **Configure environment**
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Generate a secure JWT key**
-   ```bash
-   openssl rand -base64 32
-   ```
-   Copy the output for the next step.
-
-4. **Edit `.env` file**
-   ```bash
-   nano .env
-   ```
-   
-   **Critical settings to change:**
-   - `JWT_KEY`: Paste the key generated in step 3
-   - `CORS_ORIGIN_1`: Your domain (e.g., `https://reports.company.com`)
-
-5. **Update Caddyfile with your domain**
-   ```bash
-   nano Caddyfile
-   ```
-   Replace `your-domain.com` with your actual domain.
-
-6. **Deploy using Docker Compose**
-   ```bash
-   docker-compose up -d
-   ```
-   This will pull and run the official image `ghcr.io/aenas11/pbihoster:main` as defined in `docker-compose.yml`. The backend, frontend, and database are all included in this image. Caddy will handle HTTPS and reverse proxy.
-
-7. **Verify deployment**
-   ```bash
-   # Check containers are running
-   docker-compose ps
-   
-   # View logs
-   docker-compose logs -f pbihoster
-   ```
-
-8. **Access the application**
-   - Navigate to `https://your-domain.com`
-   - Register the first user account
-   - Promote first user to Admin (see [First Time Setup](#first-time-setup))
-
-### Development Setup
-
-For local development without Docker.
-
-#### Prerequisites
-- .NET 10 SDK
-- Node.js 18+ and npm
-- Git
-
-#### Steps
 ## User Guide
 
 ### First Time Setup
@@ -321,6 +252,27 @@ Useful for exploring without configuring Power BI first.
 
 ## Deployment
 
+### Deployment Options
+
+```mermaid
+graph LR
+    subgraph Docker["🐳 Docker Compose (Recommended)"]
+        D1["Single container\n(backend + frontend + LiteDB)"]
+        D2["Caddy sidecar\n(HTTPS + reverse proxy)"]
+        D1 --- D2
+    end
+
+    subgraph Local["💻 Local Development"]
+        L1["dotnet watch run\n:5001"]
+        L2["npm run dev\n:5173 (proxies /api → backend)"]
+    end
+
+    subgraph K8s["☸️ Kubernetes"]
+        K1["Single replica pod\n(LiteDB — RWO PVC)"]
+        K2["OR multi-replica\n(requires relational DB migration)"]
+    end
+```
+
 ### Production Deployment (Recommended)
 
 See the comprehensive [**Deployment Guide**](deployment/DEPLOYMENT.md) for:
@@ -370,16 +322,20 @@ See [**Security Guide**](SECURITY.md) for detailed security implementation and:
 
 PBIHoster follows a layered architecture:
 
-```
-Frontend (Vue 3 + TypeScript)
-        ↓
-API Layer (ASP.NET Core REST API)
-        ↓
-Service Layer (Business logic)
-        ↓
-Repository Layer (Data access with LiteDB)
-        ↓
-LiteDB (Embedded database)
+```mermaid
+graph TD
+    FE["Vue 3 + TypeScript\nPinia · Vue Router · Carbon Design System"]
+    API["ASP.NET Core REST API\nControllers · Minimal APIs · Middleware"]
+    SVC["Service Layer\nAuthService · PowerBIService · AuditLogService · ..."]
+    REPO["Repository Layer\nIUserRepository · IPageRepository · ..."]
+    DB[("Pluggable Database\nLiteDB (default) · Sqlite · SQL Server · PostgreSQL")]
+    EXT["External Services\nAzure AD · Power BI API · Email · Key Vault"]
+
+    FE -->|HTTP /api/*| API
+    API --> SVC
+    SVC --> REPO
+    REPO --> DB
+    SVC --> EXT
 ```
 
 See [**ARCHITECTURE.md**](ARCHITECTURE.md) for complete system design, data models, and integration patterns.
@@ -410,6 +366,8 @@ LiteDB collections and their relationships:
 | `LoginAttempt` | Failed login tracking (lockout) |
 | `DatasetRefreshSchedule` | Scheduled Power BI dataset refreshes |
 | `DatasetRefreshRun` | Refresh execution history |
+| `Comment` | Threaded page comments and @mentions |
+| `PageVersion` | Page layout version history and rollback snapshots |
 
 See [**DATABASE.md**](DATABASE.md) for complete schema documentation and query examples.
 
