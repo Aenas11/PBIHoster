@@ -104,6 +104,8 @@ public class UsageTrackingService
             .GroupBy(e => e.Timestamp.Date)
             .ToDictionary(g => g.Key, g => g.ToList());
 
+        // Include every calendar day in the range so the sparkline renders a continuous
+        // series without gaps, even on days with zero activity.
         var series = new List<DailyEventCountResponse>();
         for (var date = from.Date; date <= to.Date; date = date.AddDays(1))
         {

@@ -460,7 +460,7 @@ namespace ReportTree.Server
                 if (token != null)
                 {
                     await usageTracking.RecordAsync(
-                        new[] { new UsageEventRequest("user_login", null, null, null) },
+                        new[] { new UsageEventRequest(EventType: "user_login", Path: null, DeviceType: null, Metadata: null) },
                         req.Username);
                     return Results.Ok(new LoginResponse(token));
                 }

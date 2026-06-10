@@ -165,17 +165,25 @@ const topPath = computed(() => {
     return first ? first.path : 'N/A'
 })
 
-const firstDate = computed(() => summary.dailySeries[0]?.date?.slice(5) ?? '')
-const lastDate = computed(() => summary.dailySeries[summary.dailySeries.length - 1]?.date?.slice(5) ?? '')
+const firstDate = computed(() => {
+    // Dates are 'yyyy-MM-dd'; slice(5) extracts the 'MM-dd' portion for compact labels
+    return summary.dailySeries[0]?.date?.slice(5) ?? ''
+})
+const lastDate = computed(() => {
+    const last = summary.dailySeries[summary.dailySeries.length - 1]
+    return last?.date?.slice(5) ?? ''
+})
 
 function buildSparklinePoints(values: number[]): string {
     if (values.length === 0) return ''
     const maxVal = Math.max(...values, 1)
     const n = values.length
+    const drawWidth = sparklineWidth - sparklinePadding * 2
+    const drawHeight = sparklineHeight - sparklinePadding * 2
     return values.map((v, i) => {
-        const x = n === 1 ? sparklineWidth / 2 : (i / (n - 1)) * (sparklineWidth - sparklinePadding * 2) + sparklinePadding
-        const y = sparklineHeight - sparklinePadding - (v / maxVal) * (sparklineHeight - sparklinePadding * 2)
-        return `${x.toFixed(1)},${y.toFixed(1)}`
+        const xCoord = n === 1 ? sparklineWidth / 2 : (i / (n - 1)) * drawWidth + sparklinePadding
+        const yCoord = sparklineHeight - sparklinePadding - (v / maxVal) * drawHeight
+        return `${xCoord.toFixed(1)},${yCoord.toFixed(1)}`
     }).join(' ')
 }
 
