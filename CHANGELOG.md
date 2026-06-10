@@ -4,29 +4,35 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 ### Added
+- Added daily time-series breakdown to analytics summary API, returning per-day totals for page views, report views, and unique users.
+- Added device type breakdown to analytics summary response.
+- Added user login event type support so login events are automatically tracked per successful authentication.
+- Added analytics CSV export endpoint for admins to download raw event data.
+- Added backend integration tests covering daily series shape, CSV export content/headers, export role enforcement, and login event tracking.
+- Updated analytics dashboard UI with a full-width SVG sparkline trend chart (total events vs. page views), device type bar chart, and an Export CSV button.
 - Completed external authentication Section 2 delivery:
 	- OIDC provider discovery, challenge, and callback endpoints.
 	- External claim-to-role and claim-to-group sync services.
 	- Frontend SSO login and callback handling.
 	- Admin non-secret external mapping configuration endpoints and UI.
 - Added backend integration tests for external auth admin mapping settings endpoints.
-- Added admin-configurable comments feature toggle via `App.CommentsEnabled` in static settings.
+- Added admin-configurable comments feature toggle via static settings.
 - Added backend enforcement to fully disable comments endpoints when comments feature is turned off.
-- Added page layout version history with rollback endpoints (`/api/pages/{id}/versions` and rollback action).
+- Added page layout version history with rollback endpoints and rollback action.
 - Added backend integration tests for page version save and rollback behavior.
-- Added page sensitivity labels (`Public`, `Internal`, `Confidential`, `Restricted`) with backend validation and UI badges.
-- Added admin toggle `App.EnforceSensitivityLabels` to require labels on page create/update.
+- Added page sensitivity labels (Public, Internal, Confidential, Restricted) with backend validation and UI badges.
+- Added admin toggle to require sensitivity labels on page create/update.
 - Added compliance audit export endpoint with CSV/PDF output and filter support for date range, user, action type, resource, and success state.
 - Added backend integration tests for audit export filtering and invalid range handling.
 - Added Admin Audit Logs panel enhancements for advanced filtering and direct CSV/PDF export downloads.
-- Added Phase 5.1 database abstraction layer with provider-based persistence selection (`LiteDb`, `Sqlite`, `SqlServer`, `PostgreSql`).
-- Added EF Core relational persistence stack (`AppDbContext`, JSON value converters/comparers, and `Ef*Repository` implementations for existing repository interfaces).
+- Added Phase 5.1 database abstraction layer with provider-based persistence selection (LiteDb, Sqlite, SqlServer, PostgreSql).
+- Added EF Core relational persistence stack with repository implementations for existing interfaces.
 - Added relational database readiness health check and startup schema initialization for relational providers.
-- Added provider-agnostic branding asset file repository for relational mode (`Database:BrandingAssetsPath`).
+- Added provider-agnostic branding asset file repository for relational mode.
 - Added relational integration tests covering auth/page CRUD flow and audit export behavior under Sqlite.
-- Added repo-local EF tooling manifest for reproducible migration commands (`dotnet-tools.json`).
-- Added initial committed relational migration set for `AppDbContext`.
-- Added optional containerized relational provider smoke tests for SQL Server and PostgreSQL (enabled with `RUN_RELATIONAL_CONTAINER_TESTS=true`).
+- Added repo-local EF tooling manifest for reproducible migration commands.
+- Added initial committed relational migration set.
+- Added optional containerized relational provider smoke tests for SQL Server and PostgreSQL.
 - Added dedicated provider-specific EF migration projects for SQL Server and PostgreSQL with initial migration chains.
 
 ### Changed
@@ -37,8 +43,8 @@ All notable changes to this project will be documented in this file. The format 
 - Updated audit APIs and security documentation to cover compliance export behavior.
 - Updated roadmap documentation to reflect completed Phase 4 delivery and renumber remaining access-approval work.
 - Updated backend startup wiring to switch persistence registrations by configuration while retaining LiteDB as the default.
-- Updated relational startup initialization to apply committed EF migrations for `Sqlite` and keep safe schema bootstrapping for the other relational providers until dedicated migration sets are added.
-- Updated relational startup initialization to select provider-specific migration assemblies (`Sqlite`, `SqlServer`, `PostgreSql`) and apply migrations when assemblies are available, with `EnsureCreated()` fallback if unavailable.
+- Updated relational startup initialization to apply committed EF migrations for Sqlite and keep safe schema bootstrapping for the other relational providers until dedicated migration sets are added.
+- Updated relational startup initialization to select provider-specific migration assemblies and apply migrations when assemblies are available, with fallback if unavailable.
 - Updated server build/publish pipeline to include provider migration assemblies automatically for runtime migration discovery.
 - Updated server dependency graph with EF Core provider packages and aligned Azure.Identity package version.
 - Updated audit export string handling to safely process null values in CSV/PDF paths.

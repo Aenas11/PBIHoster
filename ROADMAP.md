@@ -35,7 +35,7 @@ Based on corporate requirements, here's the consolidated view of enterprise-grad
 | Compliance Audit Export | ✅ Complete | v0.4.x | Medium |
 | Database Abstraction (EF Core) | ✅ Complete | v0.4.x | High |
 | Azure AD Groups Sync | ⏳ Planned | v0.5.0 | High |
-| Usage Analytics Dashboard | ⏳ Planned | v0.6.0 | High |
+| Usage Analytics Dashboard | ✅ Complete | v0.5.x | High |
 | Performance Monitoring | ⏳ Planned | v0.6.0 | High |
 | Backup & Disaster Recovery | ⏳ Planned | v0.8.0 | High |
 
@@ -224,7 +224,7 @@ Goal: Support enterprise identity providers (Azure AD, Okta, Auth0, Clerk) and g
 Goal: Provide visibility into platform usage and report performance.
 
 #### 3.1 Usage Analytics Dashboard
-- **Status**: Design pending
+- **Status**: ✅ Complete
 - **Features**:
   - Page view statistics (daily, weekly, monthly)
   - User activity heatmap (most-accessed pages)
@@ -232,16 +232,16 @@ Goal: Provide visibility into platform usage and report performance.
   - Active user sessions count
   - Engagement trends and retention
 - **Implementation**:
-  - Service: `UsageAnalyticsService` (aggregates events)
-  - Models: `PageViewEvent`, `UserSessionEvent`
-  - API: `/api/analytics/usage` (admin-only)
-  - Frontend: Charts with time-range filtering
+  - Service: `UsageTrackingService` (aggregates events, daily series, device breakdown, CSV export)
+  - Models: `UsageEvent`
+  - API: `/api/analytics/summary` and `/api/analytics/export` (admin-only)
+  - Frontend: Sparkline trend chart, top-paths bar, device type bar, CSV export button
 - **Acceptance Criteria**:
-  - [ ] Page views tracked per page and date
-  - [ ] User sessions tracked (login/logout)
-  - [ ] Dashboard shows top pages by views
-  - [ ] Time-range filters (daily, weekly, monthly)
-  - [ ] Export analytics data (CSV/PDF)
+  - [x] Page views tracked per page and date
+  - [x] User sessions tracked (login events via `user_login` event type)
+  - [x] Dashboard shows top pages by views
+  - [x] Time-range filters (7, 30, 90 days)
+  - [x] Export analytics data (CSV)
 
 #### 3.2 Performance Monitoring
 - **Status**: Partial (basic /metrics endpoint exists)

@@ -19,11 +19,26 @@ export interface PathCount {
   count: number
 }
 
+export interface DailyEventCount {
+  date: string
+  totalEvents: number
+  pageViews: number
+  reportViews: number
+  uniqueUsers: number
+}
+
+export interface DeviceTypeCount {
+  deviceType: string
+  count: number
+}
+
 export interface UsageSummaryResponse {
   totalEvents: number
   uniqueUsers: number
   eventTypes: EventTypeCount[]
   topPaths: PathCount[]
+  dailySeries: DailyEventCount[]
+  deviceTypes: DeviceTypeCount[]
 }
 
 function detectDeviceType(): 'mobile' | 'tablet' | 'desktop' | 'unknown' {
@@ -95,4 +110,9 @@ export async function trackWidgetInteraction(path: string, metadata?: Record<str
 export async function getAnalyticsSummary(days = 30): Promise<UsageSummaryResponse> {
   const safeDays = Math.min(90, Math.max(1, days))
   return api.get<UsageSummaryResponse>(`/analytics/summary?days=${safeDays}`)
+}
+
+export function getAnalyticsExportUrl(days = 30): string {
+  const safeDays = Math.min(90, Math.max(1, days))
+  return `/api/analytics/export?days=${safeDays}`
 }
