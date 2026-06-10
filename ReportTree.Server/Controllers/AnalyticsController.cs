@@ -37,4 +37,13 @@ public class AnalyticsController : ControllerBase
         var summary = await _usageTrackingService.GetSummaryAsync(days);
         return Ok(summary);
     }
+
+    [HttpGet("export")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Export([FromQuery] int days = 30)
+    {
+        var csv = await _usageTrackingService.ExportCsvAsync(days);
+        var filename = $"analytics-export-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", filename);
+    }
 }

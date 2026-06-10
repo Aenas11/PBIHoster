@@ -12,7 +12,8 @@ public class UsageTrackingService
     {
         "page_view",
         "report_view",
-        "widget_interaction"
+        "widget_interaction",
+        "user_login"
     };
 
     private readonly IUsageEventRepository _usageEventRepository;
@@ -78,7 +79,52 @@ public class UsageTrackingService
             .Take(10)
             .ToList();
 
-        return new UsageSummaryResponse(total, uniqueUsers, typeCounts, pathCounts);
+        var dailySeries = BuildDailySeries(events, from, to);
+
+        var deviceCounts = events
+            .GroupBy(e => e.DeviceType)
+            .Select(g => new DeviceTypeCountResponse(g.Key, g.LongCount()))
+            .OrderByDescending(x => x.Count)
+            .ToList();
+
+        return new UsageSummaryResponse(total, uniqueUsers, typeCounts, pathCounts, dailySeries, deviceCounts);
+    }
+
+    public async Task<IEnumerable<UsageEvent>> GetRawEventsAsync(int days)
+    {
+        var safeDays = Math.Clamp(days, 1, 90);
+        var to = DateTime.UtcNow;
+        var from = to.AddDays(-safeDays);
+        return await _usageEventRepository.GetRangeAsync(from, to);
+    }
+
+    private static List<DailyEventCountResponse> BuildDailySeries(List<UsageEvent> events, DateTime from, DateTime to)
+    {
+        var eventsByDay = events
+            .GroupBy(e => e.Timestamp.Date)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var series = new List<DailyEventCountResponse>();
+        for (var date = from.Date; date <= to.Date; date = date.AddDays(1))
+        {
+            if (!eventsByDay.TryGetValue(date, out var dayEvents))
+            {
+                series.Add(new DailyEventCountResponse(date.ToString("yyyy-MM-dd"), 0, 0, 0, 0));
+                continue;
+            }
+
+            var pageViews = dayEvents.LongCount(e => string.Equals(e.EventType, "page_view", StringComparison.OrdinalIgnoreCase));
+            var reportViews = dayEvents.LongCount(e => string.Equals(e.EventType, "report_view", StringComparison.OrdinalIgnoreCase));
+            var dayUniqueUsers = dayEvents
+                .Where(e => !string.Equals(e.Username, "anonymous", StringComparison.OrdinalIgnoreCase))
+                .Select(e => e.Username)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .LongCount();
+
+            series.Add(new DailyEventCountResponse(date.ToString("yyyy-MM-dd"), dayEvents.Count, pageViews, reportViews, dayUniqueUsers));
+        }
+
+        return series;
     }
 
     private static string NormalizePath(string? path)
@@ -123,5 +169,38 @@ public class UsageTrackingService
             );
 
         return JsonSerializer.Serialize(safe);
+    }
+
+    public async Task<string> ExportCsvAsync(int days)
+    {
+        var rawEvents = (await GetRawEventsAsync(days)).ToList();
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Timestamp,EventType,Username,Path,DeviceType");
+        foreach (var e in rawEvents)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvEscape(e.Timestamp.ToString("o")),
+                CsvEscape(e.EventType),
+                CsvEscape(e.Username),
+                CsvEscape(e.Path),
+                CsvEscape(e.DeviceType)));
+        }
+
+        return sb.ToString();
+    }
+
+    private static string CsvEscape(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
+
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
+        {
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        }
+
+        return value;
     }
 }

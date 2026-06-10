@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 ### Added
+- Added daily time-series breakdown (`dailySeries`) to analytics summary API (`/api/analytics/summary`), returning per-day totals for page views, report views, and unique users.
+- Added device type breakdown (`deviceTypes`) to analytics summary response.
+- Added `user_login` event type support so login events are automatically tracked per successful authentication.
+- Added analytics CSV export endpoint (`GET /api/analytics/export?days=N`) for admins to download raw event data.
+- Added backend integration tests covering daily series shape, CSV export content/headers, export role enforcement, and login event tracking.
+- Updated analytics dashboard UI with a full-width SVG sparkline trend chart (total events vs. page views), device type bar chart, and an Export CSV button.
 - Completed external authentication Section 2 delivery:
 	- OIDC provider discovery, challenge, and callback endpoints.
 	- External claim-to-role and claim-to-group sync services.

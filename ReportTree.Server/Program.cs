@@ -454,10 +454,17 @@ namespace ReportTree.Server
                 return success ? Results.Ok() : Results.BadRequest(new { Errors = errors });
             });
 
-            app.MapPost("/api/auth/login", async (LoginRequest req, AuthService auth) =>
+            app.MapPost("/api/auth/login", async (LoginRequest req, AuthService auth, UsageTrackingService usageTracking) =>
             {
                 var (token, errorMessage) = await auth.LoginAsync(req.Username, req.Password);
-                return token != null ? Results.Ok(new LoginResponse(token)) : Results.BadRequest(new { Error = errorMessage });
+                if (token != null)
+                {
+                    await usageTracking.RecordAsync(
+                        new[] { new UsageEventRequest("user_login", null, null, null) },
+                        req.Username);
+                    return Results.Ok(new LoginResponse(token));
+                }
+                return Results.BadRequest(new { Error = errorMessage });
             });
 
             app.MapPost("/api/auth/refresh", async (HttpContext context, IUserRepository users, ITokenService tokenService) =>
