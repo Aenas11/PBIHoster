@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 ### Added
+- No unreleased changes yet.
+
+## [0.5.0] - 2026-06-12
+### Added
 - Added daily time-series breakdown to analytics summary API, returning per-day totals for page views, report views, and unique users.
 - Added device type breakdown to analytics summary response.
 - Added user login event type support so login events are automatically tracked per successful authentication.

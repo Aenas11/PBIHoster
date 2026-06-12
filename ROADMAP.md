@@ -1,18 +1,16 @@
 # Product Roadmap & Implementation Plans
 
-## Current Version: 0.4.0 (2026-02-20)
+## Current Version: 0.5.0 (2026-06-12)
 
-### v0.4.0 Highlights (Phase 1: Quick Wins)
-- ✅ Data Refresh Management (scheduled & manual refresh with notifications)
-- ✅ Email notifications for dataset refresh (configurable SMTP)
-- ✅ Webhook support for refresh notifications
-- ✅ RLS audit logging (track permission changes)
-- ✅ RLS Management UI (component-level configuration)
-- ✅ Refresh history with CSV export
-- ✅ Cron-based scheduling with time zone support
-- ✅ Retry policy with exponential backoff
-- ✅ Token refresh endpoint (extend session without re-login)
-- All v0.3.0 features included
+### v0.5.0 Highlights
+- ✅ Analytics dashboard enhancements (daily trends, device breakdown, CSV export)
+- ✅ External authentication phase 2 (OIDC challenge/callback, role/group sync)
+- ✅ Comments feature toggle and enforcement
+- ✅ Page layout version history and rollback
+- ✅ Sensitivity labels and enforcement toggle
+- ✅ Compliance audit export (CSV/PDF with filters)
+- ✅ Relational database abstraction and provider-specific migration support
+- All v0.4.0 features included
 
 ---
 

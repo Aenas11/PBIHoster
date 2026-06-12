@@ -209,8 +209,8 @@ README.md (Entry point)
 ### [ROADMAP.md](ROADMAP.md)
 **Feature roadmap and implementation plans**
 
-- Current version (v0.3.0) highlights
-- Planned phases (v0.4.0 through v0.8.0+)
+- Current version (v0.5.0) highlights
+- Planned phases (v0.6.0 through v0.8.0+)
 - Detailed feature descriptions
 - Implementation details and components
 - Acceptance criteria
@@ -340,5 +340,5 @@ If documentation is unclear or missing:
 
 ---
 
-**Last Updated**: 2025-02-06  
-**Documentation Version**: Aligned with v0.3.0
+**Last Updated**: 2026-06-12  
+**Documentation Version**: Aligned with v0.5.0

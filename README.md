@@ -2,7 +2,7 @@
 
 > A modern, secure Power BI hosting platform for embedding analytics into applications and portals. Built for ISVs, consultancies, and enterprises that need to manage Power BI reports with user authentication, role-based access control, and corporate branding.
 
-**Current Version**: v0.4.0 | **License**: MIT | **Status**: Actively Maintained
+**Current Version**: v0.5.0 | **License**: MIT | **Status**: Actively Maintained
 
 [![CI/CD](https://github.com/Aenas11/PBIHoster/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Aenas11/PBIHoster/actions/workflows/docker-publish.yml)
 [![Security Scans](https://github.com/aenas11/pbihoster/workflows/Security%20Scans/badge.svg)](https://github.com/aenas11/pbihoster/actions)
@@ -461,7 +461,7 @@ You are free to:
 
 ---
 
-**Last Updated**: 2025-02-06 | **Version**: 0.3.0
+**Last Updated**: 2026-06-12 | **Version**: 0.5.0
 
 #### Rate Limiting (429 Errors)
 
